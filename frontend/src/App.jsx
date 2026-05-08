@@ -1,28 +1,46 @@
-import {useState} from 'react';
-import logo from './assets/images/logo-universal.png';
-import './App.css';
-import {Greet} from "../wailsjs/go/main/App";
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import Sidebar from './components/Sidebar'
+import CustomerList from './pages/customers/CustomerList'
+import CustomerProfile from './pages/customers/CustomerProfile'
+import './App.css'
+
+// Placeholder pages for future steps
+const Placeholder = ({ title }) => (
+  <div className="page-view">
+    <div className="page-header">
+      <div>
+        <div className="page-title">{title}</div>
+        <div className="page-meta">อยู่ระหว่างการพัฒนา</div>
+      </div>
+    </div>
+    <div className="empty-state">
+      <div className="empty-state-icon">🚧</div>
+      <div className="empty-state-text">จะเปิดใช้งานเร็วๆ นี้</div>
+    </div>
+  </div>
+)
 
 function App() {
-    const [resultText, setResultText] = useState("Please enter your name below 👇");
-    const [name, setName] = useState('');
-    const updateName = (e) => setName(e.target.value);
-    const updateResultText = (result) => setResultText(result);
-
-    function greet() {
-        Greet(name).then(updateResultText);
-    }
-
-    return (
-        <div id="App">
-            <img src={logo} id="logo" alt="logo"/>
-            <div id="result" className="result">{resultText}</div>
-            <div id="input" className="input-box">
-                <input id="name" className="input" onChange={updateName} autoComplete="off" name="input" type="text"/>
-                <button className="btn" onClick={greet}>Greet</button>
-            </div>
-        </div>
-    )
+  return (
+    <Router>
+      <div className="app-shell">
+        <Sidebar />
+        <main className="app-main">
+          <Routes>
+            <Route path="/" element={<Navigate to="/customers" replace />} />
+            <Route path="/customers" element={<CustomerList />} />
+            <Route path="/customers/:id" element={<CustomerProfile />} />
+            <Route path="/dashboard" element={<Placeholder title="แดชบอร์ด" />} />
+            <Route path="/pawns" element={<Placeholder title="จำนำ" />} />
+            <Route path="/gold" element={<Placeholder title="ทองคำ" />} />
+            <Route path="/sales" element={<Placeholder title="ซื้อ-ขาย" />} />
+            <Route path="/income" element={<Placeholder title="รายรับ-รายจ่าย" />} />
+            <Route path="/settings" element={<Placeholder title="ตั้งค่า" />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
+  )
 }
 
 export default App

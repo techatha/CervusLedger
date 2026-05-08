@@ -2,3 +2,4 @@ build/bin
 node_modules
 frontend/dist
 scripts/data
+.DS_Store

@@ -19,12 +19,32 @@ func main() {
 
 	fmt.Println("Starting CSV import...")
 
+	clearExistingData()
+
 	importCustomers("scripts/data/customers.csv")
 	importPawnRecords("scripts/data/pawn_records.csv")
 	importPawnPayments("scripts/data/pawn_payments.csv")
 	importPrincipalChanges("scripts/data/principal_changes.csv")
 
 	fmt.Println("Import complete!")
+}
+
+func clearExistingData() {
+	fmt.Println("Clearing existing data for imported tables...")
+	tables := []string{
+		"principal_changes",
+		"pawn_payments",
+		"pawn_records",
+		"customers",
+	}
+	for _, table := range tables {
+		_, err := db.DB.Exec(fmt.Sprintf("DELETE FROM %s", table))
+		if err != nil {
+			log.Printf("Failed to clear table %s: %v", table, err)
+		}
+		// Reset auto-increment counter
+		db.DB.Exec("DELETE FROM sqlite_sequence WHERE name=?", table)
+	}
 }
 
 // Convert Thai Buddhist Era date to CE

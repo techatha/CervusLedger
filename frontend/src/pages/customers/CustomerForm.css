@@ -1,0 +1,16 @@
+.cf-modal {
+  width: 640px;
+  max-width: 95vw;
+}
+
+.cf-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-card-success {
+  background: var(--green-bg) !important;
+  color: var(--green) !important;
+  border-color: var(--green) !important;
+}
