@@ -2,24 +2,37 @@ package main
 
 import (
 	"embed"
+	"os"
+	"path/filepath"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
+
+	"CervusLedger/db"
 )
 
 //go:embed all:frontend/dist
 var assets embed.FS
 
 func main() {
-	// Create an instance of the app structure
+	// Set up database path in user's home directory
+	homeDir, _ := os.UserHomeDir()
+	dbPath := filepath.Join(homeDir, "CervusLedger", "data.db")
+
+	// Create directory if it doesn't exist
+	os.MkdirAll(filepath.Dir(dbPath), 0755)
+
+	// Initialize database
+	db.Init(dbPath)
+
+	// Create app instance
 	app := NewApp()
 
-	// Create application with options
 	err := wails.Run(&options.App{
-		Title:  "yourreponame",
-		Width:  1024,
-		Height: 768,
+		Title:  "CervusLedger",
+		Width:  1280,
+		Height: 800,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},
