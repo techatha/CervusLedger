@@ -87,7 +87,7 @@ func createTables() {
 			ticket_number         INTEGER NOT NULL,
 			customer_id           INTEGER NOT NULL,
 			item_type             TEXT NOT NULL,
-			weight_grams          REAL NOT NULL,
+			weight_grams          REAL NOT NULL DEFAULT 0.0,
 			description           TEXT,
 			pawned_date           DATE NOT NULL,
 			principal_amount      REAL NOT NULL,

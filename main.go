@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"os"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 
 	"CervusLedger/db"
+	"CervusLedger/handlers"
 )
 
 //go:embed all:frontend/dist
@@ -28,6 +30,9 @@ func main() {
 
 	// Create app instance
 	app := NewApp()
+	customerHandler := handlers.NewCustomerHandler()
+	pawnHandler := handlers.NewPawnHandler()
+	smartCardHandler := handlers.NewSmartCardHandler()
 
 	err := wails.Run(&options.App{
 		Title:  "CervusLedger",
@@ -37,9 +42,17 @@ func main() {
 			Assets: assets,
 		},
 		BackgroundColour: &options.RGBA{R: 27, G: 38, B: 54, A: 1},
-		OnStartup:        app.startup,
+		OnStartup: func(ctx context.Context) {
+			app.startup(ctx)
+			customerHandler.Startup(ctx)
+			pawnHandler.Startup(ctx)
+			smartCardHandler.Startup(ctx)
+		},
 		Bind: []interface{}{
 			app,
+			customerHandler,
+			pawnHandler,
+			smartCardHandler,
 		},
 	})
 

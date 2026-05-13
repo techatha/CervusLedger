@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import {
-  GetCustomer,
-  GetCustomerPawnRecords,
-} from '../../../wailsjs/go/main/App'
+import { GetCustomer } from '../../../wailsjs/go/handlers/CustomerHandler'
+import { GetCustomerPawnRecords } from '../../../wailsjs/go/handlers/PawnHandler'
 import { fullName, toBE, pawnStatusBadge, formatBaht, formatTicket } from '../../utils/thai'
 import CustomerForm from './CustomerForm'
 import './CustomerProfile.css'
@@ -254,3 +252,4 @@ function StatCard({ label, value, unit, color }) {
     </div>
   )
 }
+

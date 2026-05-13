@@ -121,7 +121,7 @@ func importPawnRecords(path string) {
 		if i == 0 {
 			continue
 		}
-		if len(row) < 11 {
+		if len(row) < 10 {
 			log.Printf("Row %d: not enough columns, skipping", i)
 			continue
 		}
@@ -130,13 +130,16 @@ func importPawnRecords(path string) {
 		customerIDCard := row[1]
 		itemType       := row[2]
 		weightGrams    := row[3]
+		if weightGrams == "" { weightGrams = "0" }
 		description    := row[4]
 		pawnedDate     := thaiToCE(row[5])
 		principal      := row[6]
-		interestAmt    := row[7]
-		interestRate   := row[8]
-		status         := row[9]
-		ticketStatus   := row[10]
+		if principal == "" { principal = "0" }
+		interestAmt    := "0"
+		interestRate   := row[7]
+		if interestRate == "" { interestRate = "0" }
+		status         := row[8]
+		ticketStatus   := row[9]
 
 		// Look up customer by ID card
 		var customerID int
@@ -239,7 +242,9 @@ func importPrincipalChanges(path string) {
 		date          := thaiToCE(row[1])
 		change_type   := row[2]
 		amount        := row[3]
+		if amount == "" { amount = "0" }
 		new_principal := row[4]
+		if new_principal == "" { new_principal = "0" }
 		notes         := row[5]
 
 		var pawnID int

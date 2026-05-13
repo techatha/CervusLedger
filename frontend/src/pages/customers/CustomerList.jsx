@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   GetCustomers,
   DeleteCustomer,
-} from '../../../wailsjs/go/main/App'
+} from '../../../wailsjs/go/handlers/CustomerHandler'
 import { fullName, toBE } from '../../utils/thai'
 import CustomerForm from './CustomerForm'
 import './CustomerList.css'
@@ -108,7 +108,6 @@ export default function CustomerList() {
                 <th>#</th>
                 <th>ชื่อ-นามสกุล</th>
                 <th>เบอร์โทร</th>
-                <th>เลขบัตรประชาชน</th>
                 <th>ที่อยู่</th>
                 <th>วันที่เพิ่ม</th>
                 <th style={{ width: 100 }}></th>
@@ -131,15 +130,6 @@ export default function CustomerList() {
                     <td className="cl-index">{i + 1}</td>
                     <td className="cl-name">{fullName(c)}</td>
                     <td className="cl-phone">{c.phone || '—'}</td>
-                    <td className="cl-idcard">
-                      {c.id_card ? (
-                        <span className="id-card-mask">
-                          {maskIDCard(c.id_card)}
-                        </span>
-                      ) : (
-                        <span className="no-data">—</span>
-                      )}
-                    </td>
                     <td className="cl-address">{shortAddress(c)}</td>
                     <td className="cl-date">{toBE(c.created_at)}</td>
                     <td className="cl-actions" onClick={e => e.stopPropagation()}>

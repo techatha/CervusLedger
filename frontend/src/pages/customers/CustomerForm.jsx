@@ -3,8 +3,10 @@ import {
   GetCustomer,
   CreateCustomer,
   UpdateCustomer,
+} from '../../../wailsjs/go/handlers/CustomerHandler'
+import {
   ReadSmartCard,
-} from '../../../wailsjs/go/main/App'
+} from '../../../wailsjs/go/handlers/SmartCardHandler'
 import { PREFIXES, PROVINCES } from '../../utils/thai'
 import './CustomerForm.css'
 
@@ -229,7 +231,7 @@ export default function CustomerForm({ customerId, onSaved, onClose }) {
                     className="input"
                     value={form.moo}
                     onChange={handleInput}
-                    placeholder="5"
+                    placeholder="8"
                   />
                 </div>
               </div>
