@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import {
-  GetCustomers,
   GetPawnSettings,
   CreatePawn,
-} from '../../../wailsjs/go/main/App'
+} from '../../../wailsjs/go/handlers/PawnHandler'
+import { GetCustomers } from '../../../wailsjs/go/handlers/CustomerHandler'
 import { formatBaht, fullName } from '../../utils/thai'
 import './NewPawnForm.css'
 

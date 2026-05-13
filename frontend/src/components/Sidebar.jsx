@@ -43,8 +43,8 @@ export default function Sidebar() {
       <div className="sidebar-logo">
         <div className="sidebar-logo-icon">◈</div>
         <div className="sidebar-logo-text">
-          <span className="sidebar-logo-main">Cervus</span>
-          <span className="sidebar-logo-sub">Ledger</span>
+          <span className="sidebar-logo-main">ห้างทองแต้ยืนยง</span>
+          <span className="sidebar-logo-sub">Cervus Ledger</span>
         </div>
       </div>
 

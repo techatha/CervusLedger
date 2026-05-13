@@ -1,6 +1,6 @@
 // ─── RecordPaymentModal ───────────────────────────────────────────────────
 import { useState } from 'react'
-import { RecordPayment } from '../../../wailsjs/go/main/App'
+import { RecordPayment } from '../../../wailsjs/go/handlers/PawnHandler'
 import { formatBaht } from '../../utils/thai'
 
 const THAI_MONTHS = [

@@ -2,6 +2,7 @@ import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import CustomerList from './pages/customers/CustomerList'
 import CustomerProfile from './pages/customers/CustomerProfile'
+import PawnList from './pages/pawns/pawnlist'
 import './App.css'
 
 // Placeholder pages for future steps
@@ -31,7 +32,7 @@ function App() {
             <Route path="/customers" element={<CustomerList />} />
             <Route path="/customers/:id" element={<CustomerProfile />} />
             <Route path="/dashboard" element={<Placeholder title="แดชบอร์ด" />} />
-            <Route path="/pawns" element={<Placeholder title="จำนำ" />} />
+            <Route path="/pawns" element={<PawnList title="จำนำ" />} />
             <Route path="/gold" element={<Placeholder title="ทองคำ" />} />
             <Route path="/sales" element={<Placeholder title="ซื้อ-ขาย" />} />
             <Route path="/income" element={<Placeholder title="รายรับ-รายจ่าย" />} />

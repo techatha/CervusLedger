@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"time"
 
 	"CervusLedger/db"
 	"CervusLedger/models"
@@ -84,20 +83,35 @@ func (h *PawnHandler) DeletePayment(paymentID int) error {
 	return err
 }
 
-// ─── helpers ──────────────────────────────────────────────────────────────
+// ─── Status changes ────────────────────────────────────────────────────────
 
-func thaiMonthName(m int) string {
-	names := []string{
-		"", "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
-		"ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
+func (h *PawnHandler) RedeemPawn(id int) error {
+	res, err := db.DB.Exec(`UPDATE pawn_records SET status = 'ถอน' WHERE id = ? AND status = 'active'`, id)
+	if err != nil {
+		return fmt.Errorf("redeem pawn: %w", err)
 	}
-	if m < 1 || m > 12 {
-		return fmt.Sprintf("เดือน%d", m)
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("pawn %d not found or not active", id)
 	}
-	return names[m]
+	return nil
 }
 
-// TodayStr returns today's date as YYYY-MM-DD (CE).
-func TodayStr() string {
-	return time.Now().Format("2006-01-02")
+func (h *PawnHandler) ForfeitPawn(id int) error {
+	res, err := db.DB.Exec(`UPDATE pawn_records SET status = 'ขาด' WHERE id = ? AND status = 'active'`, id)
+	if err != nil {
+		return fmt.Errorf("forfeit pawn: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("pawn %d not found or not active", id)
+	}
+	return nil
 }
+
+// UpdateTicketStatus marks a pawn ticket as lost or damaged.
+func (h *PawnHandler) UpdateTicketStatus(id int, ticketStatus string) error {
+	_, err := db.DB.Exec(`UPDATE pawn_records SET ticket_status = ? WHERE id = ?`, ticketStatus, id)
+	return err
+}
+

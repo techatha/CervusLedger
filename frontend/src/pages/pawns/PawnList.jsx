@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ListPawns } from '../../../wailsjs/go/main/App'
+import { ListPawns } from '../../../wailsjs/go/handlers/PawnHandler'
 import { toBE, formatBaht, formatTicket, pawnStatusBadge } from '../../utils/thai'
 import NewPawnForm from './NewPawnForm'
 import './PawnList.css'

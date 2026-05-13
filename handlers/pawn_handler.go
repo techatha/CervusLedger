@@ -103,36 +103,6 @@ func (h *PawnHandler) GetPawnSettings() (models.PawnSettings, error) {
 	return s, nil
 }
 
-// CalcInterest returns (rate%, amount) for a given principal using shop settings.
-func CalcInterest(principal float64, s models.PawnSettings) (rate, amount float64) {
-	if principal < s.Threshold {
-		rate = s.LowRate
-	} else {
-		rate = s.HighRate
-	}
-	amount = principal * rate / 100
-	if amount < s.MinInterest {
-		amount = s.MinInterest
-	}
-	return
-}
-
-func nextTicketNumber() (int, error) {
-	var raw string
-	err := db.DB.QueryRow(`SELECT value FROM settings WHERE key = 'last_ticket_number'`).Scan(&raw)
-	if err != nil {
-		// key missing — start at 1
-		_, _ = db.DB.Exec(`INSERT OR IGNORE INTO settings(key,value) VALUES('last_ticket_number','0')`)
-		raw = "0"
-	}
-	n, _ := strconv.Atoi(raw)
-	n++
-	if n > 9999 {
-		n = 1
-	}
-	_, err = db.DB.Exec(`UPDATE settings SET value = ? WHERE key = 'last_ticket_number'`, strconv.Itoa(n))
-	return n, err
-}
 
 // ─── Create ────────────────────────────────────────────────────────────────
 
@@ -263,36 +233,68 @@ func (h *PawnHandler) ListPawns(status, search string) ([]models.PawnRecord, err
 	return list, nil
 }
 
-
-
-// ─── Status changes ────────────────────────────────────────────────────────
-
-func (h *PawnHandler) RedeemPawn(id int) error {
-	res, err := db.DB.Exec(`UPDATE pawn_records SET status = 'ถอน' WHERE id = ? AND status = 'active'`, id)
+// AddPrincipalChange logs a reduction or increase and updates the pawn's
+// stored interest_amount to reflect the new principal.
+func (h *PawnHandler) AddPrincipalChange(input models.PrincipalChangeInput) error {
+	tx, err := db.DB.Begin()
 	if err != nil {
-		return fmt.Errorf("redeem pawn: %w", err)
+		return err
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return fmt.Errorf("pawn %d not found or not active", id)
+	defer tx.Rollback()
+
+	// 1. Insert the change record
+	_, err = tx.Exec(`
+		INSERT INTO principal_changes
+		  (pawn_record_id, date, change_type, amount, new_principal, notes)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`,
+		input.PawnRecordID,
+		input.Date,
+		input.ChangeType,
+		input.Amount,
+		input.NewPrincipal,
+		input.Notes,
+	)
+	if err != nil {
+		return fmt.Errorf("insert principal change: %w", err)
 	}
-	return nil
+
+	// 2. Update the pawn's stored interest values so receipts / display stay correct
+	_, err = tx.Exec(`
+		UPDATE pawn_records
+		SET monthly_interest_rate = ?, interest_amount = ?
+		WHERE id = ?
+	`, input.NewInterestRate, input.NewInterestAmount, input.PawnRecordID)
+	if err != nil {
+		return fmt.Errorf("update pawn interest: %w", err)
+	}
+
+	return tx.Commit()
 }
 
-func (h *PawnHandler) ForfeitPawn(id int) error {
-	res, err := db.DB.Exec(`UPDATE pawn_records SET status = 'ขาด' WHERE id = ? AND status = 'active'`, id)
+// GetPrincipalChanges returns the full change log for a pawn, oldest first.
+func (h *PawnHandler) GetPrincipalChanges(pawnRecordID int) ([]models.PrincipalChange, error) {
+	rows, err := db.DB.Query(`
+		SELECT id, pawn_record_id, date, change_type, amount, new_principal, notes
+		FROM principal_changes
+		WHERE pawn_record_id = ?
+		ORDER BY date ASC, id ASC
+	`, pawnRecordID)
 	if err != nil {
-		return fmt.Errorf("forfeit pawn: %w", err)
+		return nil, fmt.Errorf("get principal changes: %w", err)
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return fmt.Errorf("pawn %d not found or not active", id)
-	}
-	return nil
-}
+	defer rows.Close()
 
-// UpdateTicketStatus marks a pawn ticket as lost or damaged.
-func (h *PawnHandler) UpdateTicketStatus(id int, ticketStatus string) error {
-	_, err := db.DB.Exec(`UPDATE pawn_records SET ticket_status = ? WHERE id = ?`, ticketStatus, id)
-	return err
+	var list []models.PrincipalChange
+	for rows.Next() {
+		var c models.PrincipalChange
+		if err := rows.Scan(
+			&c.ID, &c.PawnRecordID, &c.Date, &c.ChangeType,
+			&c.Amount, &c.NewPrincipal, &c.Notes,
+		); err != nil {
+			return nil, fmt.Errorf("scan change: %w", err)
+		}
+		list = append(list, c)
+	}
+	return list, nil
 }

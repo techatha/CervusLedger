@@ -7,7 +7,7 @@ import {
   RedeemPawn,
   ForfeitPawn,
   UpdateTicketStatus,
-} from '../../../wailsjs/go/main/App'
+} from '../../../wailsjs/go/handlers/PawnHandler'
 import { toBE, formatBaht, formatTicket, pawnStatusBadge } from '../../utils/thai'
 import { RecordPaymentModal, PrincipalChangeModal } from './PawnModals'
 import './PawnDetail.css'
