@@ -3,19 +3,20 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { GetCustomer } from '../../../wailsjs/go/handlers/CustomerHandler'
 import { GetCustomerPawnRecords } from '../../../wailsjs/go/handlers/PawnHandler'
 import { fullName, toBE, pawnStatusBadge, formatBaht, formatTicket } from '../../utils/thai'
+import { getPendingMonths } from '../../utils/pawn'
 import CustomerForm from './CustomerForm'
 import './CustomerProfile.css'
 
 export default function CustomerProfile() {
-  const { id }    = useParams()
-  const navigate  = useNavigate()
-  const custId    = parseInt(id, 10)
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const custId = parseInt(id, 10)
 
   const [customer, setCustomer] = useState(null)
-  const [pawns,    setPawns]    = useState([])
-  const [loading,  setLoading]  = useState(true)
-  const [error,    setError]    = useState(null)
-  const [editing,  setEditing]  = useState(false)
+  const [pawns, setPawns] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [editing, setEditing] = useState(false)
 
   const load = () => {
     setLoading(true)
@@ -37,6 +38,7 @@ export default function CustomerProfile() {
   // Pawn stats
   const activePawns = pawns.filter(p => p.status === 'active')
   const totalActive = activePawns.reduce((s, p) => s + (p.current_principal || p.initial_principal || 0), 0)
+  const overdueCount = activePawns.filter(p => getPendingMonths(p).length > 0).length
 
   if (loading) return (
     <div className="page-view">
@@ -60,7 +62,7 @@ export default function CustomerProfile() {
       <div className="page-header">
         <div className="cp-title-row">
           <button className="btn btn-ghost btn-sm cp-back" onClick={() => navigate('/customers')}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
             รายชื่อลูกค้า
           </button>
           <div>
@@ -69,13 +71,13 @@ export default function CustomerProfile() {
           </div>
         </div>
         <button className="btn btn-ghost" onClick={() => setEditing(true)}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
           แก้ไขข้อมูล
         </button>
       </div>
 
       {/* 1. Stats Row (Moved to Top) */}
-      <div className="cp-stat-grid" style={{ marginBottom: '24px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+      <div className="cp-stat-grid" style={{ marginBottom: '24px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
         <StatCard
           label="จำนำที่ยังอยู่"
           value={activePawns.length}
@@ -83,12 +85,18 @@ export default function CustomerProfile() {
           color="green"
         />
         <StatCard
+          label="ค้างจ่ายดอกเบี้ย"
+          value={overdueCount}
+          unit="รายการ"
+          color="red"
+        />
+        <StatCard
           label="ยอดรวมปัจจุบัน"
           value={formatBaht(totalActive)}
           color="gold"
         />
         <StatCard
-          label="รายการทั้งหมด"
+          label="รายการจำนำทั้งหมด"
           value={pawns.length}
           unit="รายการ"
           color="muted"
@@ -104,14 +112,14 @@ export default function CustomerProfile() {
               <span className="card-title">ข้อมูลส่วนตัว</span>
             </div>
             <div className="cp-fields">
-              <InfoRow label="คำนำหน้า"     value={customer.prefix} />
-              <InfoRow label="ชื่อจริง"      value={customer.firstname} />
-              <InfoRow label="นามสกุล"       value={customer.lastname} />
-              <InfoRow label="เบอร์โทร"      value={customer.phone} mono />
+              <InfoRow label="คำนำหน้า" value={customer.prefix} />
+              <InfoRow label="ชื่อจริง" value={customer.firstname} />
+              <InfoRow label="นามสกุล" value={customer.lastname} />
+              <InfoRow label="เบอร์โทร" value={customer.phone} mono />
               <InfoRow
                 label="เลขบัตรประชาชน"
                 value={customer.id_card || null}
-                render={v => <span className="cp-id-card">{v}</span>}
+                render={v => <MaskedIdCard idCard={v} />}
               />
               <InfoRow label="วันที่เพิ่ม" value={toBE(customer.created_at)} />
             </div>
@@ -123,13 +131,31 @@ export default function CustomerProfile() {
               <span className="card-title">ที่อยู่</span>
             </div>
             <div className="cp-fields">
-              <InfoRow label="บ้านเลขที่"    value={customer.address_no} />
-              <InfoRow label="หมู่"          value={customer.moo} />
-              <InfoRow label="ที่อยู่เพิ่ม"  value={customer.address_line} />
-              <InfoRow label="ถนน"           value={customer.road} />
-              <InfoRow label="ตำบล/แขวง"    value={customer.tambon} />
-              <InfoRow label="อำเภอ/เขต"    value={customer.amphoe} />
-              <InfoRow label="จังหวัด"       value={customer.province} />
+              {/* Combined House No. and Moo */}
+              <InfoRow
+                label="บ้านเลขที่"
+                value={
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', width: '100%' }}>
+
+                    {/* Left Half (50%): House Number */}
+                    <div>
+                      {customer.address_no || <span className="cp-empty">—</span>}
+                    </div>
+                    
+                    {/* Right Half (50%): Moo Label & Value */}
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      <span className="cp-info-label" style={{ minWidth: 'auto', padding: 0 }}>หมู่</span>
+                      <span>{customer.moo || <span className="cp-empty">—</span>}</span>
+                    </div>
+
+                  </div>
+                } 
+              />
+              <InfoRow label="ที่อยู่เพิ่ม" value={customer.address_line} />
+              <InfoRow label="ถนน" value={customer.road} />
+              <InfoRow label="ตำบล/แขวง" value={customer.tambon} />
+              <InfoRow label="อำเภอ/เขต" value={customer.amphoe} />
+              <InfoRow label="จังหวัด" value={customer.province} />
             </div>
           </div>
         </div>
@@ -190,7 +216,17 @@ export default function CustomerProfile() {
                             </span>
                           </td>
                           <td>
-                            <span className={`badge ${cls}`}>{label}</span>
+                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+                              <span className={`badge ${cls}`}>{label}</span>
+                              {(() => {
+                                const pending = getPendingMonths(p)
+                                return pending.length > 0 ? (
+                                  <span className="badge badge-red" style={{ fontSize: 11, padding: '1px 6px' }}>
+                                    ค้าง {pending.length} เดือน
+                                  </span>
+                                ) : null
+                              })()}
+                            </div>
                           </td>
                         </tr>
                       )
@@ -232,9 +268,10 @@ function InfoRow({ label, value, mono, render }) {
 
 function StatCard({ label, value, unit, color }) {
   const colorMap = {
-    green: { bg: 'var(--green-bg)',  text: 'var(--green)'  },
-    gold:  { bg: 'var(--gold-dim)',  text: 'var(--gold-light)' },
-    muted: { bg: 'var(--bg-card)',   text: 'var(--text-muted)' },
+    green: { bg: 'var(--green-bg)', text: 'var(--green)' },
+    red: { bg: 'var(--red-bg)', text: 'var(--red)' },
+    gold: { bg: 'var(--bg--card)', text: 'var(--gold-light)' },
+    muted: { bg: 'var(--bg-card)', text: 'var(--text-muted)' },
   }
   const c = colorMap[color] || colorMap.muted
   return (
@@ -245,6 +282,25 @@ function StatCard({ label, value, unit, color }) {
       </div>
       <div className="cp-stat-label">{label}</div>
     </div>
+  )
+}
+
+function MaskedIdCard({ idCard }) {
+  const [revealed, setRevealed] = useState(false)
+  
+  // Create the masked version (e.g., "1xxxxxxxxxxx9")
+  const masked = idCard.length > 2 
+    ? `${idCard.slice(0, 1)}${'x'.repeat(idCard.length - 2)}${idCard.slice(-1)}`
+    : 'xxx'
+
+  return (
+    <span 
+      className={`cp-id-card ${!revealed ? 'cp-id-masked' : ''}`}
+      onClick={() => setRevealed(!revealed)}
+      title={revealed ? "คลิกเพื่อซ่อน" : "คลิกเพื่อดู"}
+    >
+      {revealed ? idCard : masked}
+    </span>
   )
 }
 

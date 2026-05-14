@@ -128,6 +128,8 @@ export namespace models {
 	    status: string;
 	    ticket_status: string;
 	    created_at: string;
+	    last_paid_month?: number;
+	    last_paid_year?: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new PawnRecord(source);
@@ -150,6 +152,8 @@ export namespace models {
 	        this.status = source["status"];
 	        this.ticket_status = source["ticket_status"];
 	        this.created_at = source["created_at"];
+	        this.last_paid_month = source["last_paid_month"];
+	        this.last_paid_year = source["last_paid_year"];
 	    }
 	}
 	export class PawnSettings {

@@ -110,22 +110,9 @@ export default function PawnDetail() {
 
         {/* Action buttons */}
         {isActive && (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn btn-ghost" onClick={() => setModal('principal')}>
-              เปลี่ยนต้นเงิน
-            </button>
-            <button className="btn btn-ghost" onClick={() => setModal('payment')}>
-              <IconCash /> บันทึกจ่ายดอก
-            </button>
-            <button className="btn btn-ghost" onClick={() => setModal('redeem')}
-              style={{ color: 'var(--blue)', borderColor: 'var(--blue)' }}>
-              ถอน
-            </button>
-            <button className="btn btn-ghost" onClick={() => setModal('forfeit')}
-              style={{ color: 'var(--red)', borderColor: 'var(--red)' }}>
-              ขาด
-            </button>
-          </div>
+          <button className="btn btn-ghost" onClick={() => setModal('payment')}>
+            <IconCash /> บันทึกจ่ายดอก
+          </button>
         )}
       </div>
 
@@ -151,13 +138,28 @@ export default function PawnDetail() {
           <div className="card">
             <div className="card-header"><span className="card-title">การเงิน</span></div>
             <div className="pd-info-rows">
-              <PdRow label="ต้นเงินเริ่มต้น" value={formatBaht(pawn.initial_principal)} />
+
+              {/* 1. Initial Principal: Turns gray if the value has changed */}
+              <PdRow
+                label="เงินต้นเริ่มต้น"
+                value={
+                  <span style={{
+                    color: current !== pawn.initial_principal ? 'var(--text-muted)' : 'inherit',
+                    textDecoration: current !== pawn.initial_principal ? 'line-through' : 'none' /* Optional: adds a strikethrough line to make it clear it's an old value */
+                  }}>
+                    {formatBaht(pawn.initial_principal)}
+                  </span>
+                }
+              />
+
+              {/* 2. Current Principal: Normal bold text (removed the gold color) */}
               {current !== pawn.initial_principal && (
                 <PdRow
-                  label="ต้นเงินปัจจุบัน"
-                  value={<strong style={{ color: 'var(--gold)' }}>{formatBaht(current)}</strong>}
+                  label="เงินต้นปัจจุบัน"
+                  value={<strong>{formatBaht(current)}</strong>}
                 />
               )}
+
               <PdRow label="ดอกเบี้ย/เดือน" value={
                 <span>
                   {formatBaht(pawn.interest_amount)}
@@ -202,6 +204,20 @@ export default function PawnDetail() {
               )}
             </div>
           </div>
+          <button className="btn btn-ghost" onClick={() => setModal('principal')}>
+            เปลี่ยนเงินต้น
+          </button>
+
+          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+            <button className="btn btn-ghost" onClick={() => setModal('redeem')}
+              style={{ flex: 1, color: 'var(--blue)', borderColor: 'var(--blue)' }}>
+              ไถ่ของ
+            </button>
+            <button className="btn btn-danger-ghost" onClick={() => setModal('forfeit')}
+              style={{ flex: 1 }}>
+              ขาด
+            </button>
+          </div>
         </div>
 
         <div className="pd-right">
@@ -212,27 +228,28 @@ export default function PawnDetail() {
             </div>
             <div className="table-wrap">
               <table className="table">
+                {/* Table Header */}
                 <thead>
                   <tr>
                     <th width="40"></th>
                     <th>งวดเดือน</th>
                     <th>วันที่จ่าย</th>
-                    <th>หมายเหตุ</th>
+                    <th className="col-250">หมายเหตุ</th> {/* <-- Add class here */}
                   </tr>
                 </thead>
+
+                {/* Table Body */}
                 <tbody>
-                  {payments.length === 0 ? (
-                    <tr><td colSpan={4} className="text-muted" style={{ textAlign: 'center', padding: 20 }}>ยังไม่มีประวัติการจ่าย</td></tr>
-                  ) : (
-                    payments.map(p => (
-                      <tr key={p.id}>
-                        <td><IconCheckCircle /></td>
-                        <td style={{ fontWeight: 500 }}>{thaiMonthShort(p.month)} {p.year}</td>
-                        <td>{toBE(p.paid_date)}</td>
-                        <td className="text-muted">{p.notes || '—'}</td>
-                      </tr>
-                    ))
-                  )}
+                  {payments.map(p => (
+                    <tr key={p.id}>
+                      <td><IconCheckCircle /></td>
+                      <td style={{ fontWeight: 500 }}>{thaiMonthShort(p.month)} {p.year}</td>
+                      <td>{toBE(p.paid_date)}</td>
+                      <td className="truncate-cell" style={{ color: 'var(--text-muted)', fontSize: 13 }} title={p.notes}>
+                        {p.notes || '—'}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -267,48 +284,52 @@ export default function PawnDetail() {
               </div>
             </div>
           )}
-        </div>
-
-        {/* Principal change log */}
-        {changes.length > 0 && (
-          <div className="card">
-            <div className="card-header">
-              <span className="card-title">บันทึกเปลี่ยนแปลงต้นเงิน</span>
-            </div>
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>วันที่</th>
-                    <th>ประเภท</th>
-                    <th style={{ textAlign: 'right' }}>จำนวน</th>
-                    <th style={{ textAlign: 'right' }}>ต้นเงินใหม่</th>
-                    <th>หมายเหตุ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {changes.map(c => (
-                    <tr key={c.id} style={{ cursor: 'default' }}>
-                      <td style={{ whiteSpace: 'nowrap' }}>{toBE(c.date)}</td>
-                      <td>
-                        <span className={`badge ${c.change_type === 'reduction' ? 'badge-green' : 'badge-amber'}`}>
-                          {c.change_type === 'reduction' ? 'ลดต้น' : 'เพิ่มต้น'}
-                        </span>
-                      </td>
-                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                        {c.change_type === 'reduction' ? '−' : '+'}{formatBaht(c.amount)}
-                      </td>
-                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
-                        {formatBaht(c.new_principal)}
-                      </td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: 13 }}>{c.notes || '—'}</td>
+          {/* Principal change log */}
+          {changes.length > 0 && (
+            <div className="card">
+              <div className="card-header">
+                <span className="card-title">บันทึกเปลี่ยนแปลงเงินต้น</span>
+              </div>
+              <div className="table-wrap">
+                <table className="table">
+                  {/* Table Header */}
+                  <thead>
+                    <tr>
+                      <th>วันที่</th>
+                      <th>ประเภท</th>
+                      <th style={{ textAlign: 'right' }}>จำนวน</th>
+                      <th style={{ textAlign: 'right' }}>เงินต้นใหม่</th>
+                      <th className="th-notes">หมายเหตุ</th> {/* <-- Add class here */}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+
+                  {/* Table Body */}
+                  <tbody>
+                    {changes.map(c => (
+                      <tr key={c.id} style={{ cursor: 'default' }}>
+                        <td style={{ whiteSpace: 'nowrap' }}>{toBE(c.date)}</td>
+                        <td>
+                          <span className={`badge ${c.change_type === 'reduction' ? 'badge-green' : 'badge-amber'}`}>
+                            {c.change_type === 'reduction' ? 'ลดต้น' : 'เพิ่มต้น'}
+                          </span>
+                        </td>
+                        <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                          {c.change_type === 'reduction' ? '−' : '+'}{formatBaht(c.amount)}
+                        </td>
+                        <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
+                          {formatBaht(c.new_principal)}
+                        </td>
+                        <td className="td-notes" title={c.notes}> {/* <-- Add class and title here */}
+                          {c.notes || '—'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Modals */}

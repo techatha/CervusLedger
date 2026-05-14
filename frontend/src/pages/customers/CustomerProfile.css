@@ -151,3 +151,28 @@
   color: var(--text-muted);
   margin-left: 4px;
 }
+
+.cp-id-card {
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  background: var(--bg-base);
+  padding: 2px 6px;
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+  color: var(--text-primary);
+  transition: all var(--transition); /* Add smooth transition */
+}
+
+/* ─── New Masked State ─── */
+.cp-id-masked {
+  background: var(--bg-base);
+  cursor: pointer;
+  color: var(--text-muted); /* Make masked text gray */
+  user-select: none;        /* Prevent text highlighting/selection */
+  -webkit-user-select: none;
+}
+
+.cp-id-masked:hover {
+  background: var(--bg-hover); /* Visual hint that it is clickable */
+  color: var(--text-primary);
+}

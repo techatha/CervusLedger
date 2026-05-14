@@ -33,7 +33,13 @@ func (h *PawnHandler) GetCustomerPawnRecords(id int) ([]models.PawnRecord, error
 				 WHERE pc.pawn_record_id = pr.id
 				 ORDER BY pc.date DESC, pc.id DESC LIMIT 1),
 				pr.principal_amount
-			) AS current_principal
+			) AS current_principal,
+			(SELECT pp.month FROM pawn_payments pp
+			 WHERE pp.pawn_record_id = pr.id
+			 ORDER BY pp.year DESC, pp.month DESC LIMIT 1) AS last_paid_month,
+			(SELECT pp.year FROM pawn_payments pp
+			 WHERE pp.pawn_record_id = pr.id
+			 ORDER BY pp.year DESC, pp.month DESC LIMIT 1) AS last_paid_year
 		FROM pawn_records pr
 		WHERE pr.customer_id = ?
 		ORDER BY pr.pawned_date DESC, pr.id DESC
@@ -52,7 +58,7 @@ func (h *PawnHandler) GetCustomerPawnRecords(id int) ([]models.PawnRecord, error
 			&r.PawnedDate, &r.InitialPrincipal,
 			&r.MonthlyInterestRate, &r.InterestAmount,
 			&r.Status, &r.TicketStatus, &r.CreatedAt,
-			&r.CurrentPrincipal,
+			&r.CurrentPrincipal, &r.LastPaidMonth, &r.LastPaidYear,
 		); err != nil {
 			return nil, fmt.Errorf("scan: %w", err)
 		}
@@ -187,7 +193,13 @@ func (h *PawnHandler) ListPawns(status, search string) ([]models.PawnRecord, err
 				pr.principal_amount
 			) AS current_principal,
 			pr.monthly_interest_rate, pr.interest_amount,
-			pr.status, pr.ticket_status, pr.created_at
+			pr.status, pr.ticket_status, pr.created_at,
+			(SELECT pp.month FROM pawn_payments pp
+			 WHERE pp.pawn_record_id = pr.id
+			 ORDER BY pp.year DESC, pp.month DESC LIMIT 1) AS last_paid_month,
+			(SELECT pp.year FROM pawn_payments pp
+			 WHERE pp.pawn_record_id = pr.id
+			 ORDER BY pp.year DESC, pp.month DESC LIMIT 1) AS last_paid_year
 		FROM pawn_records pr
 		LEFT JOIN customers c ON c.id = pr.customer_id
 		WHERE 1=1
@@ -225,7 +237,7 @@ func (h *PawnHandler) ListPawns(status, search string) ([]models.PawnRecord, err
 			&item.Description, &item.PawnedDate, &item.InitialPrincipal,
 			&item.CurrentPrincipal, &item.MonthlyInterestRate,
 			&item.InterestAmount, &item.Status, &item.TicketStatus,
-			&item.CreatedAt,
+			&item.CreatedAt, &item.LastPaidMonth, &item.LastPaidYear,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan pawn list: %w", err)

@@ -136,3 +136,17 @@
 .pd-status-actions .dot.yellow { background-color: #f59e0b; }
 .pd-status-actions .dot.orange { background-color: #ea580c; }
 .pd-status-actions .dot.green { background-color: #22c55e; }
+
+/* ─── Table Utilities ────────────────────────────────────────────── */
+.th-notes {
+  width: 250px;
+}
+
+.td-notes {
+  max-width: 250px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-muted);
+  font-size: 13px;
+}

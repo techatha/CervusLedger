@@ -1,8 +1,12 @@
 /**
  * Compute pending (unpaid) interest months for a pawn.
  *
- * @param {Object} pawn - A pawn record object (must have `pawned_date` and `status`)
- * @param {Array}  payments - Array of payment objects (each with `month` 1-12 and `year` in CE)
+ * Supports two usage modes:
+ * 1. Full payments array (e.g., PawnDetail):  getPendingMonths(pawn, payments)
+ * 2. Pawn with last_paid_month/year (e.g., PawnList):  getPendingMonths(pawn)
+ *
+ * @param {Object} pawn - A pawn record (must have `pawned_date`, `status`, optionally `last_paid_month`/`last_paid_year`)
+ * @param {Array}  [payments] - Array of payment objects (each with `month` 1-12 and `year` in CE)
  * @returns {Array<{month: number, year: number}>} Pending months (month 1-12, year CE)
  */
 export function getPendingMonths(pawn, payments = []) {
@@ -20,17 +24,18 @@ export function getPendingMonths(pawn, payments = []) {
   let latestMonth = pawnDate.getMonth()       // 0-indexed (0-11)
   let latestYear  = pawnDate.getFullYear()    // CE year
 
-  // 2. Get the latest year/month from payments (handles unsorted data)
+  // 2. Determine the latest paid month/year
+  //    Priority: full payments array > pawn.last_paid_month/year > pawn date
   if (payments && payments.length > 0) {
-    // Sort descending (highest year first, then highest month)
     const sorted = [...payments].sort((a, b) => {
       if (b.year !== a.year) return b.year - a.year
       return b.month - a.month
     })
-
-    const latestPayment = sorted[0]
-    latestMonth = latestPayment.month - 1   // Convert 1-12 to 0-11 for JS Date
-    latestYear  = latestPayment.year        // DB is CE, so we use it directly
+    latestMonth = sorted[0].month - 1   // Convert 1-12 to 0-11
+    latestYear  = sorted[0].year
+  } else if (pawn.last_paid_month != null && pawn.last_paid_year != null) {
+    latestMonth = pawn.last_paid_month - 1  // Convert 1-12 to 0-11
+    latestYear  = pawn.last_paid_year
   }
 
   const pending = []

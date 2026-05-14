@@ -29,6 +29,8 @@ type PawnRecord struct {
 	Status              string  `json:"status"`
 	TicketStatus        string  `json:"ticket_status"`
 	CreatedAt           string  `json:"created_at"`
+	LastPaidMonth       *int    `json:"last_paid_month,omitempty"` // Latest payment month (1-12), nil if none
+	LastPaidYear        *int    `json:"last_paid_year,omitempty"`  // Latest payment year (CE), nil if none
 }
 
 // PawnPayment maps to pawn_payments table.

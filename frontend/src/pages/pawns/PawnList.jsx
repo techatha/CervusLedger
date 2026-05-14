@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ListPawns } from '../../../wailsjs/go/handlers/PawnHandler'
 import { toBE, formatBaht, formatTicket, pawnStatusBadge } from '../../utils/thai'
+import { getPendingMonths } from '../../utils/pawn'
 import NewPawnForm from './NewPawnForm'
 import './PawnList.css'
 
@@ -116,7 +117,7 @@ export default function PawnList() {
                 <th>วันจำนำ</th>
                 <th style={{ textAlign: 'right' }}>ต้นเงินปัจจุบัน</th>
                 <th style={{ textAlign: 'right' }}>ดอกเบี้ย/เดือน</th>
-                <th>สถานะ</th>
+                <th className="col-120">สถานะ</th>
               </tr>
             </thead>
             <tbody>
@@ -161,7 +162,19 @@ export default function PawnList() {
                       <span className="pl-interest">{formatBaht(p.interest_amount)}</span>
                       <span className="pl-rate">{p.monthly_interest_rate}%</span>
                     </td>
-                    <td><span className={`badge ${cls}`}>{label}</span></td>
+                    <td>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
+                        <span className={`badge ${cls}`}>{label}</span>
+                        {(() => {
+                          const pending = getPendingMonths(p)
+                          return pending.length > 0 ? (
+                            <span className="badge badge-red" style={{ fontSize: 11, padding: '1px 6px' }}>
+                              ค้าง {pending.length} เดือน
+                            </span>
+                          ) : null
+                        })()}
+                      </div>
+                    </td>
                   </tr>
                 )
               })}
