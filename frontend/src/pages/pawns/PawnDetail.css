@@ -117,3 +117,22 @@
   border-radius: var(--radius-sm);
   color: var(--blue);
 }
+
+/* ─── Ticket Status Actions ──────────────────────────────────────── */
+.pd-status-actions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px; /* Adds back the left/right padding inside the card */
+}
+
+/* Optional: Adds a tiny colored dot to the buttons to make them look like actions */
+.pd-status-actions .dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+.pd-status-actions .dot.yellow { background-color: #f59e0b; }
+.pd-status-actions .dot.orange { background-color: #ea580c; }
+.pd-status-actions .dot.green { background-color: #22c55e; }

@@ -143,6 +143,7 @@ func (h *PawnHandler) GetPawn(id int) (models.PawnRecord, error) {
 	err := db.DB.QueryRow(`
 		SELECT
 			pr.id, pr.ticket_number, pr.customer_id,
+			(c.prefix || ' ' || c.firstname || ' ' || c.lastname) AS customer_name,
 			pr.item_type, pr.weight_grams, pr.description,
 			pr.pawned_date, pr.principal_amount AS initial_principal,
 			pr.monthly_interest_rate, pr.interest_amount,
@@ -154,10 +155,11 @@ func (h *PawnHandler) GetPawn(id int) (models.PawnRecord, error) {
 				pr.principal_amount
 			) AS current_principal
 		FROM pawn_records pr
+		LEFT JOIN customers c ON c.id = pr.customer_id
 		WHERE pr.id = ?
 	`, id).Scan(
 		&r.ID, &r.TicketNumber, &r.CustomerID,
-		&r.ItemType, &r.WeightGrams, &r.Description,
+		&r.CustomerName, &r.ItemType, &r.WeightGrams, &r.Description,
 		&r.PawnedDate, &r.InitialPrincipal,
 		&r.MonthlyInterestRate, &r.InterestAmount,
 		&r.Status, &r.TicketStatus, &r.CreatedAt,

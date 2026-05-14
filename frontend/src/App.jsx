@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar'
 import CustomerList from './pages/customers/CustomerList'
 import CustomerProfile from './pages/customers/CustomerProfile'
 import PawnList from './pages/pawns/pawnlist'
+import PawnDetail from './pages/pawns/PawnDetail' 
 import './App.css'
 
 // Placeholder pages for future steps
@@ -33,6 +34,7 @@ function App() {
             <Route path="/customers/:id" element={<CustomerProfile />} />
             <Route path="/dashboard" element={<Placeholder title="แดชบอร์ด" />} />
             <Route path="/pawns" element={<PawnList title="จำนำ" />} />
+            <Route path="/pawns/:id" element={<PawnDetail title="จำนำ" />} />
             <Route path="/gold" element={<Placeholder title="ทองคำ" />} />
             <Route path="/sales" element={<Placeholder title="ซื้อ-ขาย" />} />
             <Route path="/income" element={<Placeholder title="รายรับ-รายจ่าย" />} />

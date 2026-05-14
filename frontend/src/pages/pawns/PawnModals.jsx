@@ -60,7 +60,7 @@ export function RecordPaymentModal({ pawn, customerName, onSaved, onClose }) {
           {/* Info strip */}
           <div className="pm-info-strip">
             <div className="pm-info-row">
-              <span>ตั๋ว</span>
+              <span>#</span>
               <strong>{String(pawn.ticket_number).padStart(4,'0')}</strong>
             </div>
             <div className="pm-info-row">
@@ -129,7 +129,7 @@ export function RecordPaymentModal({ pawn, customerName, onSaved, onClose }) {
 
 // ─── PrincipalChangeModal ─────────────────────────────────────────────────
 import { useEffect } from 'react'
-import { AddPrincipalChange, GetPawnSettings } from '../../../wailsjs/go/main/App'
+import { AddPrincipalChange, GetPawnSettings } from '../../../wailsjs/go/handlers/PawnHandler'
 
 export function PrincipalChangeModal({ pawn, onSaved, onClose }) {
   const [settings,   setSettings]   = useState(null)

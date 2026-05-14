@@ -74,11 +74,32 @@ export default function CustomerProfile() {
         </button>
       </div>
 
+      {/* 1. Stats Row (Moved to Top) */}
+      <div className="cp-stat-grid" style={{ marginBottom: '24px', display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+        <StatCard
+          label="จำนำที่ยังอยู่"
+          value={activePawns.length}
+          unit="รายการ"
+          color="green"
+        />
+        <StatCard
+          label="ยอดรวมปัจจุบัน"
+          value={formatBaht(totalActive)}
+          color="gold"
+        />
+        <StatCard
+          label="รายการทั้งหมด"
+          value={pawns.length}
+          unit="รายการ"
+          color="muted"
+        />
+      </div>
+
       <div className="cp-layout">
-        {/* ── Left: Customer Info ── */}
-        <div className="cp-left">
-          {/* Personal */}
-          <div className="card cp-info-card">
+        {/* ── Top Section: Side-by-Side Info ── */}
+        <div className="cp-info-container" style={{ display: 'flex', gap: '20px', marginBottom: '24px' }}>
+          {/* Personal Info */}
+          <div className="card cp-info-card" style={{ flex: 1 }}>
             <div className="card-header">
               <span className="card-title">ข้อมูลส่วนตัว</span>
             </div>
@@ -90,16 +111,14 @@ export default function CustomerProfile() {
               <InfoRow
                 label="เลขบัตรประชาชน"
                 value={customer.id_card || null}
-                render={v => (
-                  <span className="cp-id-card">{v}</span>
-                )}
+                render={v => <span className="cp-id-card">{v}</span>}
               />
               <InfoRow label="วันที่เพิ่ม" value={toBE(customer.created_at)} />
             </div>
           </div>
 
-          {/* Address */}
-          <div className="card cp-info-card">
+          {/* Address Info */}
+          <div className="card cp-info-card" style={{ flex: 1 }}>
             <div className="card-header">
               <span className="card-title">ที่อยู่</span>
             </div>
@@ -113,35 +132,13 @@ export default function CustomerProfile() {
               <InfoRow label="จังหวัด"       value={customer.province} />
             </div>
           </div>
-
-          {/* Stats */}
-          <div className="cp-stat-grid">
-            <StatCard
-              label="จำนำที่ยังอยู่"
-              value={activePawns.length}
-              unit="รายการ"
-              color="green"
-            />
-            <StatCard
-              label="ยอดรวมปัจจุบัน"
-              value={formatBaht(totalActive)}
-              color="gold"
-            />
-            <StatCard
-              label="รายการทั้งหมด"
-              value={pawns.length}
-              unit="รายการ"
-              color="muted"
-            />
-          </div>
         </div>
 
-        {/* ── Right: Pawn History ── */}
-        <div className="cp-right">
+        {/* ── Bottom Section: History Table ── */}
+        <div className="cp-history-section">
           <div className="card">
             <div className="card-header">
               <span className="card-title">ประวัติจำนำ</span>
-              {/* Future: add new pawn from here */}
             </div>
             <div className="table-wrap">
               <table className="table">
@@ -166,7 +163,7 @@ export default function CustomerProfile() {
                       const { label, cls } = pawnStatusBadge(p.status)
                       const principal = p.current_principal ?? p.initial_principal
                       return (
-                        <tr key={p.id} className="cp-pawn-row">
+                        <tr key={p.id} className="cp-pawn-row" onClick={() => navigate(`/pawns/${p.id}`)}>
                           <td>
                             <span className="cp-ticket">{formatTicket(p.ticket_number)}</span>
                             {p.ticket_status !== 'active' && (
@@ -178,9 +175,7 @@ export default function CustomerProfile() {
                           <td style={{ whiteSpace: 'nowrap' }}>{toBE(p.pawned_date)}</td>
                           <td>
                             <div className="cp-item-type">{p.item_type}</div>
-                            {p.description && (
-                              <div className="cp-description">{p.description}</div>
-                            )}
+                            {p.description && <div className="cp-description">{p.description}</div>}
                           </td>
                           <td style={{ whiteSpace: 'nowrap' }}>
                             {p.weight_grams ? `${p.weight_grams} ก.` : '—'}
@@ -191,7 +186,7 @@ export default function CustomerProfile() {
                           <td style={{ whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
                             {formatBaht(p.interest_amount)}
                             <span className="cp-rate">
-                              ({(p.monthly_interest_rate * 100).toFixed(1)}%)
+                              ({p.monthly_interest_rate}%)
                             </span>
                           </td>
                           <td>

@@ -13,17 +13,17 @@ import { RecordPaymentModal, PrincipalChangeModal } from './PawnModals'
 import './PawnDetail.css'
 
 export default function PawnDetail() {
-  const { id }   = useParams()
+  const { id } = useParams()
   const navigate = useNavigate()
-  const pawnId   = parseInt(id, 10)
+  const pawnId = parseInt(id, 10)
 
-  const [pawn,     setPawn]     = useState(null)
+  const [pawn, setPawn] = useState(null)
   const [payments, setPayments] = useState([])
-  const [changes,  setChanges]  = useState([])
-  const [loading,  setLoading]  = useState(true)
-  const [error,    setError]    = useState(null)
+  const [changes, setChanges] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
-  const [modal,    setModal]    = useState(null) // 'payment' | 'principal' | 'redeem' | 'forfeit'
+  const [modal, setModal] = useState(null) // 'payment' | 'principal' | 'redeem' | 'forfeit'
 
   const load = async () => {
     setLoading(true)
@@ -70,13 +70,52 @@ export default function PawnDetail() {
   }
 
   if (loading) return <div className="page-view"><div className="empty-state"><div className="empty-state-text">กำลังโหลด...</div></div></div>
-  if (error)   return <div className="page-view"><div className="alert alert-error">{error}</div></div>
-  if (!pawn)   return null
+  if (error) return <div className="page-view"><div className="alert alert-error">{error}</div></div>
+  if (!pawn) return null
 
   const { label: statusLabel, cls: statusCls } = pawnStatusBadge(pawn.status)
-  const isActive  = pawn.status === 'active'
-  const current   = pawn.current_principal ?? pawn.initial_principal
-  const beYear    = d => { if (!d) return '—'; const p = new Date(d); return toBE(d) }
+  const isActive = pawn.status === 'active'
+  const current = pawn.current_principal ?? pawn.initial_principal
+  const beYear = d => { if (!d) return '—'; const p = new Date(d); return toBE(d) }
+
+  // Compute pending (unpaid) months between pawn date and now
+  const getPendingMonths = () => {
+    if (!pawn || pawn.status !== 'active') return []
+
+    const today = new Date()
+    const pawnDate = new Date(pawn.pawned_date)
+    const dueDay = pawnDate.getDate()
+
+    // Find latest paid month/year
+    // Assuming payments is sorted by date; find the most recent
+    let lastPaid = { month: pawnDate.getMonth() + 1, year: pawnDate.getFullYear() }
+    if (payments.length > 0) {
+      const sorted = [...payments].sort((a, b) => b.year - a.year || b.month - a.month)
+      lastPaid = { month: sorted[0].month, year: sorted[0].year }
+    }
+
+    const pending = []
+    let checkDate = new Date(lastPaid.year, lastPaid.month, 1) // Start from month after last paid
+    const currentLimit = new Date(today.getFullYear(), today.getMonth(), dueDay)
+
+    // Only show if today is on or after the due day of the current month
+    if (today < currentLimit) {
+      // If we haven't reached the "due day" of this month, 
+      // we only look up to the previous month
+      currentLimit.setMonth(currentLimit.getMonth() - 1)
+    }
+
+    while (checkDate <= currentLimit) {
+      pending.push({
+        month: checkDate.getMonth() + 1,
+        year: checkDate.getFullYear()
+      })
+      checkDate.setMonth(checkDate.getMonth() + 1)
+    }
+    return pending
+  }
+
+  const pendingMonths = getPendingMonths()
 
   return (
     <div className="page-view">
@@ -84,13 +123,13 @@ export default function PawnDetail() {
       <div className="page-header">
         <div className="pd-title-row">
           <button className="btn btn-ghost btn-sm pd-back" onClick={() => navigate('/pawns')}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
             รายการจำนำ
           </button>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <div className="page-title">
-                ตั๋ว {formatTicket(pawn.ticket_number)}
+                # {formatTicket(pawn.ticket_number)} {pawn.customer_name}
               </div>
               <span className={`badge ${statusCls}`}>{statusLabel}</span>
               {pawn.ticket_status !== 'active' && (
@@ -132,7 +171,7 @@ export default function PawnDetail() {
           <div className="card">
             <div className="card-header"><span className="card-title">ข้อมูลจำนำ</span></div>
             <div className="pd-info-rows">
-              <PdRow label="วันที่จำนำ"   value={toBE(pawn.pawned_date)} />
+              <PdRow label="วันที่จำนำ" value={toBE(pawn.pawned_date)} />
               <PdRow label="ประเภทรายการ" value={pawn.item_type} />
               {pawn.weight_grams > 0 && (
                 <PdRow label="น้ำหนัก" value={`${pawn.weight_grams} กรัม`} />
@@ -164,89 +203,97 @@ export default function PawnDetail() {
             </div>
           </div>
 
+          {/* 1. Updated Ticket Status Section */}
           <div className="card">
-            <div className="card-header">
+            <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span className="card-title">สถานะตั๋ว</span>
+              {/* Show the current status on the right side of the header */}
+              <span className={`badge ${pawn.ticket_status === 'active' ? 'badge-green' : 'badge-amber'}`}>
+                {pawn.ticket_status === 'active' ? 'ปกติ'
+                  : pawn.ticket_status === 'lost' ? '⚠ ทำหาย'
+                    : '⚠ ชำรุด'
+                }
+              </span>
+            </div>
+
+            <div className="pd-info-rows">
               {isActive && pawn.ticket_status === 'active' && (
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <button className="btn btn-ghost btn-xs" onClick={() => handleTicketStatus('lost')}>ทำหาย</button>
-                  <button className="btn btn-ghost btn-xs" onClick={() => handleTicketStatus('damaged')}>ชำรุด</button>
+                <div className="pd-status-actions">
+                  <button className="btn btn-ghost btn-sm" onClick={() => handleTicketStatus('lost')}>
+                    <span className="dot yellow"></span> แจ้งทำหาย
+                  </button>
+                  <button className="btn btn-ghost btn-sm" onClick={() => handleTicketStatus('damaged')}>
+                    <span className="dot orange"></span> แจ้งชำรุด
+                  </button>
                 </div>
               )}
               {isActive && pawn.ticket_status !== 'active' && (
-                <button className="btn btn-ghost btn-xs" onClick={() => handleTicketStatus('active')}>คืนค่าปกติ</button>
+                <div className="pd-status-actions">
+                  <button className="btn btn-ghost btn-sm" onClick={() => handleTicketStatus('active')}>
+                  <span className="dot green"></span>คืนค่าปกติ
+                  </button>
+                </div>
               )}
-            </div>
-            <div className="pd-info-rows">
-              <PdRow label="สถานะตั๋ว" value={
-                pawn.ticket_status === 'active' ? 'ปกติ'
-                : pawn.ticket_status === 'lost' ? '⚠ ทำหาย'
-                : '⚠ ชำรุด'
-              } />
             </div>
           </div>
         </div>
 
-        {/* ── Right: History ── */}
         <div className="pd-right">
-          {/* Payment history */}
-          <div className="card pd-history-card">
+          {/* 2. Payment History Table with Icon */}
+          <div className="card">
             <div className="card-header">
               <span className="card-title">ประวัติการจ่ายดอกเบี้ย</span>
-              <span className="pd-history-count">{payments.length} ครั้ง</span>
             </div>
-            {payments.length === 0 ? (
-              <div className="empty-state" style={{ padding: '32px 20px' }}>
-                <div className="empty-state-text">ยังไม่มีการจ่ายดอกเบี้ย</div>
-              </div>
-            ) : (
-              <div className="pd-payment-grid">
-                {payments.map(p => (
-                  <div key={p.id} className="pd-payment-chip">
-                    <div className="pd-payment-month">
-                      {thaiMonthShort(p.month)} {p.year + 543}
-                    </div>
-                    <div className="pd-payment-date">{toBE(p.paid_date)}</div>
-                    {p.notes && <div className="pd-payment-note">{p.notes}</div>}
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th width="40"></th>
+                    <th>งวดเดือน</th>
+                    <th>วันที่จ่าย</th>
+                    <th>หมายเหตุ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {payments.length === 0 ? (
+                    <tr><td colSpan={4} className="text-muted" style={{ textAlign: 'center', padding: 20 }}>ยังไม่มีประวัติการจ่าย</td></tr>
+                  ) : (
+                    payments.map(p => (
+                      <tr key={p.id}>
+                        <td><IconCheckCircle /></td>
+                        <td style={{ fontWeight: 500 }}>{thaiMonthShort(p.month)} {p.year}</td>
+                        <td>{toBE(p.paid_date)}</td>
+                        <td className="text-muted">{p.notes || '—'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          {/* Principal change log */}
-          {changes.length > 0 && (
-            <div className="card">
+          {/* 3. Pending Payments Table */}
+          {pendingMonths.length > 0 && (
+            <div className="card" style={{ marginTop: 20, borderLeft: '4px solid var(--red)' }}>
               <div className="card-header">
-                <span className="card-title">บันทึกเปลี่ยนแปลงต้นเงิน</span>
+                <span className="card-title" style={{ color: 'var(--red)' }}>ค้างชำระดอกเบี้ย</span>
+                <span className="badge badge-red">{pendingMonths.length} เดือน</span>
               </div>
               <div className="table-wrap">
                 <table className="table">
                   <thead>
                     <tr>
-                      <th>วันที่</th>
-                      <th>ประเภท</th>
-                      <th style={{ textAlign: 'right' }}>จำนวน</th>
-                      <th style={{ textAlign: 'right' }}>ต้นเงินใหม่</th>
-                      <th>หมายเหตุ</th>
+                      <th width="40"></th>
+                      <th>งวดเดือน</th>
+                      <th>สถานะ</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {changes.map(c => (
-                      <tr key={c.id} style={{ cursor: 'default' }}>
-                        <td style={{ whiteSpace: 'nowrap' }}>{toBE(c.date)}</td>
-                        <td>
-                          <span className={`badge ${c.change_type === 'reduction' ? 'badge-green' : 'badge-amber'}`}>
-                            {c.change_type === 'reduction' ? 'ลดต้น' : 'เพิ่มต้น'}
-                          </span>
-                        </td>
-                        <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                          {c.change_type === 'reduction' ? '−' : '+'}{formatBaht(c.amount)}
-                        </td>
-                        <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
-                          {formatBaht(c.new_principal)}
-                        </td>
-                        <td style={{ color: 'var(--text-muted)', fontSize: 13 }}>{c.notes || '—'}</td>
+                    {pendingMonths.map((m, idx) => (
+                      <tr key={idx}>
+                        <td><div className="icon-pending-dot" /></td>
+                        <td>{thaiMonthShort(m.month)} {m.year + 543}</td>
+                        <td style={{ color: 'var(--red)' }}>เกินกำหนดชำระ</td>
                       </tr>
                     ))}
                   </tbody>
@@ -255,6 +302,47 @@ export default function PawnDetail() {
             </div>
           )}
         </div>
+
+        {/* Principal change log */}
+        {changes.length > 0 && (
+          <div className="card">
+            <div className="card-header">
+              <span className="card-title">บันทึกเปลี่ยนแปลงต้นเงิน</span>
+            </div>
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>วันที่</th>
+                    <th>ประเภท</th>
+                    <th style={{ textAlign: 'right' }}>จำนวน</th>
+                    <th style={{ textAlign: 'right' }}>ต้นเงินใหม่</th>
+                    <th>หมายเหตุ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {changes.map(c => (
+                    <tr key={c.id} style={{ cursor: 'default' }}>
+                      <td style={{ whiteSpace: 'nowrap' }}>{toBE(c.date)}</td>
+                      <td>
+                        <span className={`badge ${c.change_type === 'reduction' ? 'badge-green' : 'badge-amber'}`}>
+                          {c.change_type === 'reduction' ? 'ลดต้น' : 'เพิ่มต้น'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                        {c.change_type === 'reduction' ? '−' : '+'}{formatBaht(c.amount)}
+                      </td>
+                      <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 500 }}>
+                        {formatBaht(c.new_principal)}
+                      </td>
+                      <td style={{ color: 'var(--text-muted)', fontSize: 13 }}>{c.notes || '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modals */}
@@ -275,9 +363,9 @@ export default function PawnDetail() {
       )}
       {modal === 'redeem' && (
         <ConfirmModal
-          title="ยืนยันการถอน"
+          title="ยืนยันการไถ่"
           body={`ตั๋ว ${formatTicket(pawn.ticket_number)} — ลูกค้ามารับทองคืนและชำระหนี้ครบแล้ว?`}
-          confirmLabel="ถอน"
+          confirmLabel="ไถ่"
           confirmStyle={{ background: 'var(--blue)', color: '#fff', border: 'none' }}
           onConfirm={handleRedeem}
           onClose={() => setModal(null)}
@@ -327,10 +415,24 @@ function ConfirmModal({ title, body, confirmLabel, confirmStyle, onConfirm, onCl
   )
 }
 
-function IconCash() {
-  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2"/><path d="M6 12h.01M18 12h.01"/></svg>
+function IconCheckCircle() {
+  return (
+    <div style={{
+      width: 20, height: 20, borderRadius: '50%',
+      backgroundColor: '#22c55e', display: 'flex',
+      alignItems: 'center', justifyContent: 'center'
+    }}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+    </div>
+  )
 }
 
-const SHORT_MONTHS = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']
+function IconCash() {
+  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="12" cy="12" r="2" /><path d="M6 12h.01M18 12h.01" /></svg>
+}
+
+const SHORT_MONTHS = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
 const thaiMonthShort = m => SHORT_MONTHS[m] || m
 
