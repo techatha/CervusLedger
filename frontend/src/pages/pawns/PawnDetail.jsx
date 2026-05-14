@@ -9,6 +9,7 @@ import {
   UpdateTicketStatus,
 } from '../../../wailsjs/go/handlers/PawnHandler'
 import { toBE, formatBaht, formatTicket, pawnStatusBadge } from '../../utils/thai'
+import { getPendingMonths, thaiMonthShort } from '../../utils/pawn'
 import { RecordPaymentModal, PrincipalChangeModal } from './PawnModals'
 import './PawnDetail.css'
 
@@ -76,46 +77,8 @@ export default function PawnDetail() {
   const { label: statusLabel, cls: statusCls } = pawnStatusBadge(pawn.status)
   const isActive = pawn.status === 'active'
   const current = pawn.current_principal ?? pawn.initial_principal
-  const beYear = d => { if (!d) return '—'; const p = new Date(d); return toBE(d) }
 
-  // Compute pending (unpaid) months between pawn date and now
-  const getPendingMonths = () => {
-    if (!pawn || pawn.status !== 'active') return []
-
-    const today = new Date()
-    const pawnDate = new Date(pawn.pawned_date)
-    const dueDay = pawnDate.getDate()
-
-    // Find latest paid month/year
-    // Assuming payments is sorted by date; find the most recent
-    let lastPaid = { month: pawnDate.getMonth() + 1, year: pawnDate.getFullYear() }
-    if (payments.length > 0) {
-      const sorted = [...payments].sort((a, b) => b.year - a.year || b.month - a.month)
-      lastPaid = { month: sorted[0].month, year: sorted[0].year }
-    }
-
-    const pending = []
-    let checkDate = new Date(lastPaid.year, lastPaid.month, 1) // Start from month after last paid
-    const currentLimit = new Date(today.getFullYear(), today.getMonth(), dueDay)
-
-    // Only show if today is on or after the due day of the current month
-    if (today < currentLimit) {
-      // If we haven't reached the "due day" of this month, 
-      // we only look up to the previous month
-      currentLimit.setMonth(currentLimit.getMonth() - 1)
-    }
-
-    while (checkDate <= currentLimit) {
-      pending.push({
-        month: checkDate.getMonth() + 1,
-        year: checkDate.getFullYear()
-      })
-      checkDate.setMonth(checkDate.getMonth() + 1)
-    }
-    return pending
-  }
-
-  const pendingMonths = getPendingMonths()
+  const pendingMonths = getPendingMonths(pawn, payments)
 
   return (
     <div className="page-view">
@@ -136,6 +99,9 @@ export default function PawnDetail() {
                 <span className="badge badge-amber">
                   {pawn.ticket_status === 'lost' ? 'ตั๋วทำหาย' : 'ตั๋วชำรุด'}
                 </span>
+              )}
+              {pendingMonths.length > 1 && (
+                <span className="badge badge-red">ค้างจ่าย {pendingMonths.length} เดือน</span>
               )}
             </div>
             <div className="page-meta">{pawn.customer_name_display || ''}</div>
@@ -230,7 +196,7 @@ export default function PawnDetail() {
               {isActive && pawn.ticket_status !== 'active' && (
                 <div className="pd-status-actions">
                   <button className="btn btn-ghost btn-sm" onClick={() => handleTicketStatus('active')}>
-                  <span className="dot green"></span>คืนค่าปกติ
+                    <span className="dot green"></span>คืนค่าปกติ
                   </button>
                 </div>
               )}
@@ -277,7 +243,7 @@ export default function PawnDetail() {
             <div className="card" style={{ marginTop: 20, borderLeft: '4px solid var(--red)' }}>
               <div className="card-header">
                 <span className="card-title" style={{ color: 'var(--red)' }}>ค้างชำระดอกเบี้ย</span>
-                <span className="badge badge-red">{pendingMonths.length} เดือน</span>
+                <span className="badge badge-red">ค้างจ่าย {pendingMonths.length} เดือน</span>
               </div>
               <div className="table-wrap">
                 <table className="table">
@@ -291,7 +257,7 @@ export default function PawnDetail() {
                   <tbody>
                     {pendingMonths.map((m, idx) => (
                       <tr key={idx}>
-                        <td><div className="icon-pending-dot" /></td>
+                        <td><IconXCircle /></td>
                         <td>{thaiMonthShort(m.month)} {m.year + 543}</td>
                         <td style={{ color: 'var(--red)' }}>เกินกำหนดชำระ</td>
                       </tr>
@@ -429,10 +395,23 @@ function IconCheckCircle() {
   )
 }
 
+function IconXCircle() {
+  return (
+    <div style={{
+      width: 20, height: 20, borderRadius: '50%',
+      backgroundColor: '#ea0c0cff', display: 'flex',
+      alignItems: 'center', justifyContent: 'center'
+    }}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18" />
+        <line x1="6" y1="6" x2="18" y2="18" />
+      </svg>
+    </div>
+  )
+}
+
 function IconCash() {
   return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="12" cy="12" r="2" /><path d="M6 12h.01M18 12h.01" /></svg>
 }
 
-const SHORT_MONTHS = ['', 'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
-const thaiMonthShort = m => SHORT_MONTHS[m] || m
 

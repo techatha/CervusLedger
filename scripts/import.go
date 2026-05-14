@@ -171,52 +171,58 @@ func importPawnRecords(path string) {
 }
 
 func importPawnPayments(path string) {
-	file, err := os.Open(path)
-	if err != nil {
-		log.Printf("Skipping pawn payments: %v", err)
-		return
-	}
-	defer file.Close()
+    file, err := os.Open(path)
+    if err != nil {
+        log.Printf("Skipping pawn payments: %v", err)
+        return
+    }
+    defer file.Close()
 
-	records, _ := csv.NewReader(file).ReadAll()
-	count := 0
+    records, _ := csv.NewReader(file).ReadAll()
+    count := 0
 
-	for i, row := range records {
-		if i == 0 {
-			continue
-		}
-		if len(row) < 5 {
-			continue
-		}
+    for i, row := range records {
+        if i == 0 {
+            continue
+        }
+        if len(row) < 5 {
+            continue
+        }
 
-		ticketNumber := row[0]
-		month        := row[1]
-		year         := row[2]
-		paidDate     := thaiToCE(row[3])
-		notes        := row[4]
+        ticketNumber := row[0]
+        month        := row[1]
+        year         := row[2]
+        
+        // Convert standalone Year from BE to CE
+        if yInt, err := strconv.Atoi(year); err == nil {
+            year = strconv.Itoa(yInt - 543)
+        }
 
-		// Look up pawn record by ticket number
-		var pawnID int
-		err := db.DB.QueryRow(
-			`SELECT id FROM pawn_records WHERE ticket_number = ?`, ticketNumber,
-		).Scan(&pawnID)
-		if err != nil {
-			log.Printf("Row %d: pawn record not found for ticket %s", i, ticketNumber)
-			continue
-		}
+        paidDate     := thaiToCE(row[3])
+        notes        := row[4]
 
-		_, err = db.DB.Exec(`
-			INSERT INTO pawn_payments (pawn_record_id, month, year, paid_date, notes)
-			VALUES (?, ?, ?, ?, ?)`,
-			pawnID, month, year, paidDate, notes,
-		)
-		if err != nil {
-			log.Printf("Row %d payment error: %v", i, err)
-			continue
-		}
-		count++
-	}
-	fmt.Printf("Pawn payments imported: %d\n", count)
+        // Look up pawn record by ticket number
+        var pawnID int
+        err = db.DB.QueryRow(
+            `SELECT id FROM pawn_records WHERE ticket_number = ?`, ticketNumber,
+        ).Scan(&pawnID)
+        if err != nil {
+            log.Printf("Row %d: pawn record not found for ticket %s", i, ticketNumber)
+            continue
+        }
+
+        _, err = db.DB.Exec(`
+            INSERT INTO pawn_payments (pawn_record_id, month, year, paid_date, notes)
+            VALUES (?, ?, ?, ?, ?)`,
+            pawnID, month, year, paidDate, notes,
+        )
+        if err != nil {
+            log.Printf("Row %d payment error: %v", i, err)
+            continue
+        }
+        count++
+    }
+    fmt.Printf("Pawn payments imported: %d\n", count)
 }
 
 func importPrincipalChanges(path string) {
