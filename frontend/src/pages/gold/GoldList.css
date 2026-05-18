@@ -1,0 +1,77 @@
+/* ─── Summary ─────────────────────────────────────────────── */
+.gl-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.gl-stat {
+  border-radius: var(--radius);
+  padding: 16px 18px;
+}
+.gl-stat-value {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+.gl-stat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.gl-stat-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Table cells ─────────────────────────────────────────── */
+.gl-index { width: 40px; color: var(--text-muted); font-size: 13px; }
+
+.gl-type  { font-weight: 500; }
+
+.gl-weight {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 15px;
+  padding-right: 8px !important;
+}
+
+.gl-desc {
+  color: var(--text-secondary);
+  font-size: 13px;
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gl-date {
+  color: var(--text-muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.gl-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+tr:hover .gl-actions { opacity: 1; }
+
+/* Sold rows are dimmed */
+.gl-row-sold td { opacity: 0.5; }
+
+/* Gold purity badge */
+.badge-gold {
+  background: var(--gold-dim);
+  color: var(--gold);
+  border: 1px solid rgba(200, 150, 60, 0.3);
+}

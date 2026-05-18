@@ -38,6 +38,52 @@ export namespace models {
 	        this.created_at = source["created_at"];
 	    }
 	}
+	export class GoldItem {
+	    id: number;
+	    type: string;
+	    weight_baht: number;
+	    purity: string;
+	    description: string;
+	    status: string;
+	    created_at: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new GoldItem(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.type = source["type"];
+	        this.weight_baht = source["weight_baht"];
+	        this.purity = source["purity"];
+	        this.description = source["description"];
+	        this.status = source["status"];
+	        this.created_at = source["created_at"];
+	    }
+	}
+	export class GoldItemInput {
+	    id: number;
+	    type: string;
+	    weight_baht: number;
+	    purity: string;
+	    description: string;
+	    status: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new GoldItemInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.type = source["type"];
+	        this.weight_baht = source["weight_baht"];
+	        this.purity = source["purity"];
+	        this.description = source["description"];
+	        this.status = source["status"];
+	    }
+	}
 	export class PawnInput {
 	    customer_id: number;
 	    item_type: string;

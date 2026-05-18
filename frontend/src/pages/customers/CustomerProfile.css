@@ -30,8 +30,6 @@
   gap: 16px;
 }
 
-.cp-info-card {}
-
 .cp-fields {
   padding: 4px 0;
 }
@@ -117,9 +115,6 @@
   color: var(--text-muted);
   margin-top: 4px;
 }
-
-/* ─── Right panel - pawn history ─────────────────────────────────────── */
-.cp-right {}
 
 .cp-pawn-row td { vertical-align: top; }
 

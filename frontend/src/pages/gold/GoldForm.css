@@ -1,0 +1,28 @@
+.gf-type-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.gf-type-chip {
+  padding: 5px 12px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.gf-type-chip:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: var(--gold-dim);
+}
+.gf-type-chip-active {
+  border-color: var(--gold) !important;
+  background: var(--gold-dim) !important;
+  color: var(--gold) !important;
+  font-weight: 500;
+}
