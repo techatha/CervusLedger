@@ -312,3 +312,9 @@ func (h *PawnHandler) GetPrincipalChanges(pawnRecordID int) ([]models.PrincipalC
 	}
 	return list, nil
 }
+
+// UpdatePawnDescription updates only the description note of a pawn record
+func (h *PawnHandler) UpdatePawnDescription(id int, description string) error {
+	_, err := db.DB.Exec(`UPDATE pawn_records SET description = ? WHERE id = ?`, description, id)
+	return err
+}

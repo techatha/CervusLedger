@@ -58,10 +58,10 @@ export function RecordPaymentModal({ pawn, customerName, onSaved, onClose }) {
           {error && <div className="alert alert-error">{error}</div>}
 
           {/* Info strip */}
-          <div className="pm-info-strip">
+          <div className="pm-info-strip ">
             <div className="pm-info-row">
-              <span>#</span>
-              <strong>{String(pawn.ticket_number).padStart(4,'0')}</strong>
+              <span>หมายเลขตั๋ว</span>
+              <strong># {String(pawn.ticket_number).padStart(4,'0')}</strong>
             </div>
             <div className="pm-info-row">
               <span>ดอกเบี้ย</span>
@@ -263,39 +263,6 @@ export function PrincipalChangeModal({ pawn, onSaved, onClose }) {
     </div>
   )
 }
-
-// ─── Shared styles (add to PawnDetail.css) ────────────────────────────────
-
-/*
-.pm-info-strip {
-  background: var(--bg-hover);
-  border-radius: var(--radius-sm);
-  padding: 12px 14px;
-  display: flex;
-  gap: 24px;
-}
-.pm-info-row {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 13px;
-  color: var(--text-muted);
-}
-.pm-info-row strong { font-size: 15px; color: var(--text-primary); }
-
-.pm-auto-note {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12.5px;
-  color: var(--text-muted);
-  margin-top: 12px;
-  padding: 8px 12px;
-  background: var(--blue-bg);
-  border-radius: var(--radius-sm);
-  color: var(--blue);
-}
-*/
 
 function IconInfo() {
   return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>

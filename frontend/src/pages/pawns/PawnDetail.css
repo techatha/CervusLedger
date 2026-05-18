@@ -86,6 +86,7 @@
 }
 
 /* ─── Shared modal sub-styles ────────────────────────────────────── */
+/* ─── Shared modal sub-styles ────────────────────────────────────── */
 .pm-info-strip {
   background: var(--bg-hover);
   border-radius: var(--radius-sm);
@@ -93,13 +94,16 @@
   display: flex;
   gap: 24px;
 }
+
 .pm-info-row {
+  flex: 1; /* <-- THIS IS THE MAGIC FIX: It forces them to split 50/50 */
   display: flex;
   flex-direction: column;
   gap: 2px;
   font-size: 13px;
   color: var(--text-muted);
 }
+
 .pm-info-row strong {
   font-size: 15px;
   color: var(--text-primary);

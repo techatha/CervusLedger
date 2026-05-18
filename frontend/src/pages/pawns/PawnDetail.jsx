@@ -7,6 +7,7 @@ import {
   RedeemPawn,
   ForfeitPawn,
   UpdateTicketStatus,
+  UpdatePawnDescription,
 } from '../../../wailsjs/go/handlers/PawnHandler'
 import { toBE, formatBaht, formatTicket, pawnStatusBadge } from '../../utils/thai'
 import { getPendingMonths, thaiMonthShort } from '../../utils/pawn'
@@ -23,8 +24,11 @@ export default function PawnDetail() {
   const [changes, setChanges] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [editingDesc, setEditingDesc] = useState(false)
+  const [editDescValue, setEditDescValue] = useState('')
 
   const [modal, setModal] = useState(null) // 'payment' | 'principal' | 'redeem' | 'forfeit'
+  const [selectedPending, setSelectedPending] = useState([])
 
   const load = async () => {
     setLoading(true)
@@ -70,6 +74,16 @@ export default function PawnDetail() {
     } catch (e) { setError(String(e)) }
   }
 
+  const handleSaveDescription = async () => {
+    try {
+      await UpdatePawnDescription(pawnId, editDescValue)
+      setEditingDesc(false)
+      load() // Reload to show the new text
+    } catch (e) {
+      setError('ไม่สามารถบันทึกรายละเอียดได้: ' + e)
+    }
+  }
+
   if (loading) return <div className="page-view"><div className="empty-state"><div className="empty-state-text">กำลังโหลด...</div></div></div>
   if (error) return <div className="page-view"><div className="alert alert-error">{error}</div></div>
   if (!pawn) return null
@@ -107,12 +121,13 @@ export default function PawnDetail() {
             <div className="page-meta">{pawn.customer_name_display || ''}</div>
           </div>
         </div>
-
         {/* Action buttons */}
         {isActive && (
-          <button className="btn btn-ghost" onClick={() => setModal('payment')}>
-            <IconCash /> บันทึกจ่ายดอก
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn btn-ghost" onClick={() => setModal('payment')}>
+              <IconCash /> จ่ายดอกเบี้ยล่วงหน้า
+            </button>
+          </div>
         )}
       </div>
 
@@ -129,9 +144,68 @@ export default function PawnDetail() {
               {pawn.weight_grams > 0 && (
                 <PdRow label="น้ำหนัก" value={`${pawn.weight_grams} กรัม`} />
               )}
-              {pawn.description && (
-                <PdRow label="รายละเอียด" value={pawn.description} />
-              )}
+              {/* Inline Editable Description Row */}
+              {/* Full-width Editable Description Row */}
+              <div className="pd-row" style={{ display: 'block' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: editingDesc ? 8 : 4 }}>
+                  <span className="pd-row-label">รายละเอียด</span>
+
+                  {/* View Mode: Edit Button on Top Right */}
+                  {!editingDesc && isActive && (
+                    <button
+                      className="btn btn-ghost btn-xs"
+                      onClick={() => {
+                        setEditDescValue(pawn.description || '')
+                        setEditingDesc(true)
+                      }}
+                    >
+                      แก้ไข
+                    </button>
+                  )}
+                </div>
+
+                {editingDesc ? (
+                  // Editing Mode: Textarea below with buttons right-aligned
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <textarea
+                      className="input"
+                      style={{ padding: '8px 12px', fontSize: 13, width: '100%', minHeight: '60px', resize: 'vertical' }}
+                      value={editDescValue}
+                      onChange={e => setEditDescValue(e.target.value)}
+                      autoFocus
+                    />
+                    <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        style={{ padding: '4px 10px' }}
+                        onClick={() => setEditingDesc(false)}
+                      >
+                        ยกเลิก
+                      </button>
+                      <button
+                        className="btn btn-primary btn-sm"
+                        style={{ padding: '4px 10px' }}
+                        onClick={handleSaveDescription}
+                      >
+                        บันทึก
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // Viewing Mode: Text takes full width below the label
+                  <div style={{
+                    fontSize: 14,
+                    color: 'var(--text-primary)',
+                    lineHeight: 1.6,                  /* Taller line height for easier reading */
+                    marginTop: 10,                    /* Space between the label and the text */
+                    padding: '12px 14px',             /* Inside white space (top/bottom, left/right) */
+                    background: 'var(--bg-base)',     /* Optional: Gives it a very subtle background box */
+                    borderRadius: 'var(--radius-sm)'  /* Optional: Soft rounded corners */
+                  }}>
+                    {pawn.description || <span className="text-muted">—</span>}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -269,16 +343,79 @@ export default function PawnDetail() {
                       <th width="40"></th>
                       <th>งวดเดือน</th>
                       <th>สถานะ</th>
+                      <th style={{ textAlign: 'right' }}>ยอดค้าง</th>
+                      {/* Checkbox Column Header */}
+                      <th style={{ textAlign: 'center', width: 60 }}>
+                        <input
+                          type="checkbox"
+                          style={{ cursor: 'pointer' }}
+                          checked={pendingMonths.length > 0 && selectedPending.length === pendingMonths.length}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedPending(pendingMonths.map((_, i) => i)) // Select all
+                            } else {
+                              setSelectedPending([]) // Deselect all
+                            }
+                          }}
+                        />
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {pendingMonths.map((m, idx) => (
-                      <tr key={idx}>
-                        <td><IconXCircle /></td>
-                        <td>{thaiMonthShort(m.month)} {m.year + 543}</td>
-                        <td style={{ color: 'var(--red)' }}>เกินกำหนดชำระ</td>
+                    {pendingMonths.map((m, idx) => {
+                      const isSelected = selectedPending.includes(idx)
+                      return (
+                        <tr
+                          key={idx}
+                          // Highlight the row if it is checked
+                          style={{ background: isSelected ? 'var(--red-bg)' : 'transparent' }}
+                        >
+                          <td><IconXCircle /></td>
+                          <td>{thaiMonthShort(m.month)} {m.year + 543}</td>
+                          <td style={{ color: 'var(--red)' }}>เกินกำหนดชำระ</td>
+                          <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
+                            {formatBaht(pawn.interest_amount)}
+                          </td>
+                          <td style={{ textAlign: 'center' }}>
+                            <input
+                              type="checkbox"
+                              style={{ cursor: 'pointer' }}
+                              checked={isSelected}
+                              onChange={() => {
+                                setSelectedPending(prev =>
+                                  prev.includes(idx)
+                                    ? prev.filter(i => i !== idx) // Remove if exists
+                                    : [...prev, idx]              // Add if doesn't exist
+                                )
+                              }}
+                            />
+                          </td>
+                        </tr>
+                      )
+                    })}
+
+                    {/* NEW: Distinguishable Summary Row */}
+                    {selectedPending.length > 0 && (
+                      <tr style={{ background: 'var(--bg-card)', borderTop: '2px solid rgba(212, 92, 92, 0.3)' }}>
+                        <td colSpan={3} style={{ textAlign: 'right', fontWeight: 600, fontSize: 13, color: 'var(--text-secondary)' }}>
+                          รวมยอดที่เลือก ({selectedPending.length} เดือน):
+                        </td>
+                        <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--red)', fontVariantNumeric: 'tabular-nums' }}>
+                          {formatBaht(selectedPending.length * pawn.interest_amount)}
+                        </td>
+                        <td style={{ textAlign: 'center', padding: '8px' }}>
+                          <button
+                            className="btn btn-sm btn-gold-ghost"
+                            style={{ width: '100%' }} /* Kept width inline since it controls layout here */
+                            onClick={() => {
+                              alert(`พาไปหน้าชำระเงินสำหรับ ${selectedPending.length} เดือน (รวม ${formatBaht(selectedPending.length * pawn.interest_amount)})`)
+                            }}
+                          >
+                            ชำระเงิน
+                          </button>
+                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>

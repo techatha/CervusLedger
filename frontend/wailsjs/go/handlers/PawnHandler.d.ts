@@ -29,4 +29,6 @@ export function RedeemPawn(arg1:number):Promise<void>;
 
 export function Startup(arg1:context.Context):Promise<void>;
 
+export function UpdatePawnDescription(arg1:number,arg2:string):Promise<void>;
+
 export function UpdateTicketStatus(arg1:number,arg2:string):Promise<void>;

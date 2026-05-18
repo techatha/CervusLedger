@@ -221,7 +221,7 @@ export default function CustomerForm({ customerId, onSaved, onClose }) {
                     className="input"
                     value={form.address_no}
                     onChange={handleInput}
-                    placeholder="123/4"
+                    placeholder="ตัวอย่าง: 888/8"
                   />
                 </div>
                 <div className="form-group">
@@ -231,7 +231,7 @@ export default function CustomerForm({ customerId, onSaved, onClose }) {
                     className="input"
                     value={form.moo}
                     onChange={handleInput}
-                    placeholder="8"
+                    placeholder="ตัวอย่าง: 8"
                   />
                 </div>
               </div>

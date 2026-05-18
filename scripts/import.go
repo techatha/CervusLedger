@@ -135,11 +135,14 @@ func importPawnRecords(path string) {
 		pawnedDate     := thaiToCE(row[5])
 		principal      := row[6]
 		if principal == "" { principal = "0" }
-		interestAmt    := "0"
 		interestRate   := row[7]
 		if interestRate == "" { interestRate = "0" }
 		status         := row[8]
 		ticketStatus   := row[9]
+
+		principalF, _ := strconv.ParseFloat(principal, 64)
+		rateF, _      := strconv.ParseFloat(interestRate, 64)
+		interestAmt   := principalF * rateF / 100
 
 		// Look up customer by ID card
 		var customerID int

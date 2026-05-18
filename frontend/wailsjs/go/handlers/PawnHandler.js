@@ -54,6 +54,10 @@ export function Startup(arg1) {
   return window['go']['handlers']['PawnHandler']['Startup'](arg1);
 }
 
+export function UpdatePawnDescription(arg1, arg2) {
+  return window['go']['handlers']['PawnHandler']['UpdatePawnDescription'](arg1, arg2);
+}
+
 export function UpdateTicketStatus(arg1, arg2) {
   return window['go']['handlers']['PawnHandler']['UpdateTicketStatus'](arg1, arg2);
 }

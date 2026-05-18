@@ -4,13 +4,21 @@
 .cl-idcard { font-variant-numeric: tabular-nums; font-size: 13px; }
 .cl-address{ color: var(--text-secondary); font-size: 13px; max-width: 200px; }
 .cl-date   { color: var(--text-muted); font-size: 13px; white-space: nowrap; }
-.cl-actions{
-  display: flex;
-  gap: 4px;
+.cl-actions {
+  text-align: right; /* Align buttons to the right */
   opacity: 0;
   transition: opacity 0.13s;
+  white-space: nowrap; /* Keeps buttons on one line without breaking the table cell */
 }
-tr:hover .cl-actions { opacity: 1; }
+
+/* If you want the gap back, target the buttons specifically */
+.cl-actions button {
+  margin-left: 4px;
+}
+
+tr:hover .cl-actions { 
+  opacity: 1; 
+}
 
 .id-card-mask {
   font-family: 'Courier New', monospace;

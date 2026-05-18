@@ -159,6 +159,18 @@ body {
   border-color: var(--red);
 }
 
+.btn-gold-ghost {
+  background: var(--gold-dim);
+  color: var(--gold);
+  border: 1px solid var(--gold);
+}
+
+.btn-gold-ghost:hover:not(:disabled) {
+  background: var(--gold);
+  color: var(--white);
+  border-color: var(--gold);
+}
+
 .btn-sm { padding: 5px 11px; font-size: 13px; }
 .btn-xs { padding: 3px 8px; font-size: 12px; }
 
@@ -189,7 +201,8 @@ body {
 
 .input, select.input {
   width: 100%;
-  padding: 9px 12px;
+  height: 40px; /* <-- 1. ADD THIS: Forces all boxes to be exactly the same height */
+  padding: 8px 12px; /* <-- Adjusted slightly to center the text nicely in the 40px box */
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -210,6 +223,12 @@ body {
 }
 select.input { cursor: pointer; }
 select.input option { background: var(--bg-card); }
+
+textarea.input {
+  height: auto;
+  min-height: 60px;
+  padding: 10px 12px;
+}
 
 /* ─── Card ────────────────────────────────────────────────────────── */
 .card {
