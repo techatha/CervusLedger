@@ -22,7 +22,14 @@ func Init(dbPath string) {
 	}
 
 	createTables()
+	migrateSchema()
 	log.Println("Database initialized successfully")
+}
+
+func migrateSchema() {
+	// Add new columns for ornament gold prices. We ignore the error because if they already exist, it will just fail harmlessly.
+	DB.Exec(`ALTER TABLE gold_prices ADD COLUMN om_buy_price REAL DEFAULT 0`)
+	DB.Exec(`ALTER TABLE gold_prices ADD COLUMN om_sell_price REAL DEFAULT 0`)
 }
 
 func createTables() {
@@ -61,8 +68,10 @@ func createTables() {
 		`CREATE TABLE IF NOT EXISTS gold_prices (
 			id                  INTEGER PRIMARY KEY AUTOINCREMENT,
 			date                DATE NOT NULL UNIQUE,
-			buy_price_per_baht  REAL NOT NULL,
-			sell_price_per_baht REAL NOT NULL
+			buy_price_per_baht  REAL DEFAULT 0,
+			sell_price_per_baht REAL DEFAULT 0,
+			om_buy_price        REAL DEFAULT 0,
+			om_sell_price       REAL DEFAULT 0
 		)`,
 
 		// Buy/sell transactions
