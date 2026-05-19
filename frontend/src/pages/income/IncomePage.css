@@ -1,0 +1,103 @@
+/* ─── Summary cards ───────────────────────────────────────── */
+.ip-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1.2fr;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.ip-stat {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border-radius: var(--radius-lg);
+}
+.ip-stat-large { padding: 18px 22px; }
+
+.ip-stat-icon {
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+.ip-stat-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 3px;
+}
+
+.ip-stat-value {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+.ip-stat-large .ip-stat-value { font-size: 26px; }
+
+/* ─── Date controls ───────────────────────────────────────── */
+.ip-date-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.ip-quick-btns { display: flex; gap: 6px; }
+
+.ip-date-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ip-date-input {
+  width: 150px !important;
+  font-size: 13.5px !important;
+}
+
+.ip-date-sep {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* ─── Filter row ──────────────────────────────────────────── */
+.ip-filter-row {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+/* ─── Table cells ─────────────────────────────────────────── */
+.ip-date     { white-space: nowrap; color: var(--text-muted); font-size: 13px; }
+.ip-category { font-weight: 500; }
+.ip-notes    { color: var(--text-muted); font-size: 12.5px; max-width: 220px; }
+
+.ip-amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  font-size: 14px;
+}
+.ip-income  { color: var(--green); }
+.ip-expense { color: var(--red); }
+
+.ip-del {
+  opacity: 0;
+  transition: opacity var(--transition);
+}
+tr:hover .ip-del { opacity: 1; }
+
+/* ─── Table footer ────────────────────────────────────────── */
+.ip-table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-top: 1px solid var(--divider);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.ip-footer-net { font-size: 14px; }

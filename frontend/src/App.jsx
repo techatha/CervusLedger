@@ -1,10 +1,12 @@
 import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
-import Sidebar from './components/Sidebar'
+import Sidebar         from './components/Sidebar'
 import CustomerList    from './pages/customers/CustomerList'
 import CustomerProfile from './pages/customers/CustomerProfile'
 import PawnList        from './pages/pawns/PawnList'
 import PawnDetail      from './pages/pawns/PawnDetail'
 import GoldList        from './pages/gold/GoldList'
+import SalesList       from './pages/sales/SalesList'
+import IncomePage      from './pages/income/IncomePage'
 import './App.css'
 
 const Placeholder = ({ title }) => (
@@ -35,9 +37,9 @@ function App() {
             <Route path="/pawns"         element={<PawnList />} />
             <Route path="/pawns/:id"     element={<PawnDetail />} />
             <Route path="/gold"          element={<GoldList />} />
+            <Route path="/sales"         element={<SalesList />} />
+            <Route path="/income"        element={<IncomePage />} />
             <Route path="/dashboard"     element={<Placeholder title="แดชบอร์ด" />} />
-            <Route path="/sales"         element={<Placeholder title="ซื้อ-ขาย" />} />
-            <Route path="/income"        element={<Placeholder title="รายรับ-รายจ่าย" />} />
             <Route path="/settings"      element={<Placeholder title="ตั้งค่า" />} />
           </Routes>
         </main>

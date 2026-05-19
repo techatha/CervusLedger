@@ -1,0 +1,123 @@
+/* ─── Gold Price Bar ──────────────────────────────────────── */
+.sl-price-bar {
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+.sl-price-bar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 14px 20px;
+}
+
+.sl-price-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+}
+
+.sl-price-date {
+  font-weight: 400;
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.sl-price-values {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.sl-price-item {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.sl-price-type {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.sl-price-type.sell { color: var(--green); }
+.sl-price-type.buy  { color: var(--amber); }
+
+.sl-price-num {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.sl-price-unit {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.sl-price-divider {
+  width: 1px;
+  height: 32px;
+  background: var(--border);
+}
+
+/* ─── Price edit mode ─────────────────────────────────────── */
+.sl-price-edit {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sl-price-edit-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sl-price-input {
+  width: 120px !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  text-align: right;
+}
+
+/* ─── Today summary strip ─────────────────────────────────── */
+.sl-today-summary {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 20px;
+  background: var(--bg-hover);
+  border-top: 1px solid var(--divider);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.sl-today-sell { color: var(--green);  font-weight: 600; }
+.sl-today-buy  { color: var(--amber);  font-weight: 600; }
+
+/* ─── Table cells ─────────────────────────────────────────── */
+.sl-date     { white-space: nowrap; color: var(--text-muted); font-size: 13px; }
+.sl-customer { font-weight: 500; }
+.sl-item     { color: var(--text-secondary); font-size: 13.5px; }
+.sl-notes    { color: var(--text-muted); font-size: 12.5px; max-width: 160px; }
+
+.sl-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-size: 13.5px;
+}
+
+.sl-total   { font-weight: 600; font-size: 14px; }
+.sl-income  { color: var(--green); }
+.sl-expense { color: var(--amber); }

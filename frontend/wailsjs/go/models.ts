@@ -84,6 +84,108 @@ export namespace models {
 	        this.status = source["status"];
 	    }
 	}
+	export class GoldPrice {
+	    id: number;
+	    date: string;
+	    buy_price_per_baht: number;
+	    sell_price_per_baht: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new GoldPrice(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.date = source["date"];
+	        this.buy_price_per_baht = source["buy_price_per_baht"];
+	        this.sell_price_per_baht = source["sell_price_per_baht"];
+	    }
+	}
+	export class IncomeExpense {
+	    id: number;
+	    type: string;
+	    category: string;
+	    amount: number;
+	    notes: string;
+	    source: string;
+	    date: string;
+	    created_at: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new IncomeExpense(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.type = source["type"];
+	        this.category = source["category"];
+	        this.amount = source["amount"];
+	        this.notes = source["notes"];
+	        this.source = source["source"];
+	        this.date = source["date"];
+	        this.created_at = source["created_at"];
+	    }
+	}
+	export class IncomeExpenseFilter {
+	    type: string;
+	    source: string;
+	    start_date: string;
+	    end_date: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new IncomeExpenseFilter(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.type = source["type"];
+	        this.source = source["source"];
+	        this.start_date = source["start_date"];
+	        this.end_date = source["end_date"];
+	    }
+	}
+	export class IncomeExpenseInput {
+	    type: string;
+	    category: string;
+	    amount: number;
+	    notes: string;
+	    date: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new IncomeExpenseInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.type = source["type"];
+	        this.category = source["category"];
+	        this.amount = source["amount"];
+	        this.notes = source["notes"];
+	        this.date = source["date"];
+	    }
+	}
+	export class IncomeExpenseSummary {
+	    total_income: number;
+	    total_expense: number;
+	    net: number;
+	    start_date: string;
+	    end_date: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new IncomeExpenseSummary(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.total_income = source["total_income"];
+	        this.total_expense = source["total_expense"];
+	        this.net = source["net"];
+	        this.start_date = source["start_date"];
+	        this.end_date = source["end_date"];
+	    }
+	}
 	export class PawnInput {
 	    customer_id: number;
 	    item_type: string;
@@ -270,6 +372,93 @@ export namespace models {
 	        this.new_interest_rate = source["new_interest_rate"];
 	        this.new_interest_amount = source["new_interest_amount"];
 	        this.notes = source["notes"];
+	    }
+	}
+	export class Sale {
+	    id: number;
+	    customer_id: number;
+	    customer_name: string;
+	    gold_item_id: number;
+	    gold_item_type: string;
+	    type: string;
+	    weight_baht: number;
+	    gold_price_id: number;
+	    price_per_baht: number;
+	    total_amount: number;
+	    notes: string;
+	    date: string;
+	    created_at: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new Sale(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.customer_id = source["customer_id"];
+	        this.customer_name = source["customer_name"];
+	        this.gold_item_id = source["gold_item_id"];
+	        this.gold_item_type = source["gold_item_type"];
+	        this.type = source["type"];
+	        this.weight_baht = source["weight_baht"];
+	        this.gold_price_id = source["gold_price_id"];
+	        this.price_per_baht = source["price_per_baht"];
+	        this.total_amount = source["total_amount"];
+	        this.notes = source["notes"];
+	        this.date = source["date"];
+	        this.created_at = source["created_at"];
+	    }
+	}
+	export class SaleInput {
+	    type: string;
+	    customer_id: number;
+	    gold_item_id: number;
+	    weight_baht: number;
+	    gold_price_id: number;
+	    price_per_baht: number;
+	    total_amount: number;
+	    notes: string;
+	    date: string;
+	    item_type: string;
+	    purity: string;
+	    description: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new SaleInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.type = source["type"];
+	        this.customer_id = source["customer_id"];
+	        this.gold_item_id = source["gold_item_id"];
+	        this.weight_baht = source["weight_baht"];
+	        this.gold_price_id = source["gold_price_id"];
+	        this.price_per_baht = source["price_per_baht"];
+	        this.total_amount = source["total_amount"];
+	        this.notes = source["notes"];
+	        this.date = source["date"];
+	        this.item_type = source["item_type"];
+	        this.purity = source["purity"];
+	        this.description = source["description"];
+	    }
+	}
+
+}
+
+export namespace sql {
+	
+	export class DB {
+	
+	
+	    static createFrom(source: any = {}) {
+	        return new DB(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	
 	    }
 	}
 

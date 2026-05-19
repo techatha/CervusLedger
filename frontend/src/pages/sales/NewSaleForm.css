@@ -1,0 +1,106 @@
+.nsf-modal { width: 560px; max-width: 95vw; }
+
+/* ─── Tab header ──────────────────────────────────────────── */
+.nsf-tab-header {
+  display: flex;
+  border-bottom: 1px solid var(--divider);
+}
+
+.nsf-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 14px;
+  border: none;
+  background: transparent;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.nsf-tab:hover { color: var(--text-secondary); background: var(--bg-hover); }
+
+.nsf-tab-active         { color: var(--text-primary); }
+.nsf-tab-sell.nsf-tab-active { border-bottom-color: var(--green); color: var(--green); }
+.nsf-tab-buy.nsf-tab-active  { border-bottom-color: var(--amber); color: var(--amber); }
+
+/* ─── Dropdowns ───────────────────────────────────────────── */
+.nsf-dropdown {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0; right: 0;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  z-index: 50;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.nsf-drop-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  gap: 1px 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--divider);
+  transition: background var(--transition);
+}
+.nsf-drop-item:last-child { border-bottom: none; }
+.nsf-drop-item:hover      { background: var(--bg-hover); }
+
+.nsf-drop-main   { display: flex; align-items: center; gap: 7px; grid-column: 1; }
+.nsf-drop-name   { font-size: 14px; font-weight: 500; }
+.nsf-drop-weight { font-size: 13px; font-weight: 600; color: var(--gold); grid-column: 2; grid-row: 1; align-self: center; }
+.nsf-drop-desc   { font-size: 12px; color: var(--text-muted); grid-column: 1 / -1; }
+
+.nsf-selected-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 5px;
+  font-size: 12.5px;
+  color: var(--green);
+}
+
+.nsf-weight-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: var(--gold-dim);
+  border-radius: 99px;
+  font-size: 13px;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+
+/* ─── Total preview ───────────────────────────────────────── */
+.nsf-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  margin-top: 4px;
+}
+.nsf-total-sell { background: var(--green-bg); border: 1px solid rgba(61,154,104,0.2); }
+.nsf-total-buy  { background: var(--amber-bg); border: 1px solid rgba(184,120,48,0.2); }
+
+.nsf-total-label  { font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.nsf-total-amount {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.nsf-total-sell .nsf-total-amount { color: var(--green); }
+.nsf-total-buy  .nsf-total-amount { color: var(--amber); }

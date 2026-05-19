@@ -33,7 +33,9 @@ func main() {
 	customerHandler := handlers.NewCustomerHandler()
 	pawnHandler := handlers.NewPawnHandler()
 	smartCardHandler := handlers.NewSmartCardHandler()
-	goldItemHandler := handlers.NewGoldHandler()
+	goldItemHandler := handlers.NewGoldItemHandler()
+	saleHandler := handlers.NewSaleHandler()
+	goldPriceHandler := handlers.NewGoldPriceHandler()
 
 	err := wails.Run(&options.App{
 		Title:  "CervusLedger",
@@ -49,6 +51,8 @@ func main() {
 			pawnHandler.Startup(ctx)
 			smartCardHandler.Startup(ctx)
 			goldItemHandler.Startup(ctx)
+			saleHandler.Startup(ctx)
+			goldPriceHandler.Startup(ctx)
 		},
 		Bind: []interface{}{
 			app,
@@ -56,6 +60,8 @@ func main() {
 			pawnHandler,
 			smartCardHandler,
 			goldItemHandler,
+			saleHandler,
+			goldPriceHandler,
 		},
 	})
 

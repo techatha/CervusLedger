@@ -12,7 +12,7 @@ type GoldItemHandler struct {
 	ctx context.Context
 }
 
-func NewGoldHandler() *GoldItemHandler {
+func NewGoldItemHandler() *GoldItemHandler {
 	return &GoldItemHandler{}
 }
 
