@@ -142,7 +142,8 @@ func createTables() {
 			('interest_rate_high',   '0.02'),
 			('interest_threshold',   '10000'),
 			('min_interest_amount',  '20'),
-			('last_ticket_number',   '0')
+			('last_ticket_number',   '0'),
+			('promptpay_number',     '')
 		`,
 	}
 

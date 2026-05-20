@@ -1,5 +1,6 @@
 // ─── RecordPaymentModal ───────────────────────────────────────────────────
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { RecordPayment } from '../../../wailsjs/go/handlers/PawnHandler'
 import { formatBaht } from '../../utils/thai'
 
@@ -12,6 +13,7 @@ const today = () => new Date().toISOString().slice(0, 10)
 const nowCE  = new Date()
 
 export function RecordPaymentModal({ pawn, customerName, onSaved, onClose }) {
+  const navigate = useNavigate()
   const [form, setForm] = useState({
     month:     nowCE.getMonth() + 1,
     year:      nowCE.getFullYear(),
@@ -23,26 +25,32 @@ export function RecordPaymentModal({ pawn, customerName, onSaved, onClose }) {
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
-  const handleSave = async () => {
-    setSaving(true)
-    setError(null)
-    try {
-      await RecordPayment({
-        pawn_record_id:  pawn.id,
-        month:           parseInt(form.month),
-        year:            parseInt(form.year),
-        paid_date:       form.paid_date,
-        notes:           form.notes,
-        interest_amount: pawn.interest_amount,
-        customer_name:   customerName,
-        ticket_number:   pawn.ticket_number,
-      })
-      onSaved()
-    } catch (e) {
-      setError(String(e))
-    } finally {
-      setSaving(false)
+  const handleSave = () => {
+    const monthVal = parseInt(form.month)
+    const yearVal = parseInt(form.year)
+    const ticketNo = String(pawn.ticket_number).padStart(4, '0')
+    const monthLabel = THAI_MONTHS[monthVal]
+
+    const itemToAdd = {
+      type: 'pawn_interest',
+      label: `ดอกเบี้ยตั๋ว #${ticketNo} — งวด ${monthLabel} ${yearVal + 543}`,
+      weight_baht: 0,
+      price_per_baht: 0,
+      total_amount: pawn.interest_amount,
+      
+      // fields for RecordPayment API
+      pawn_record_id:  pawn.id,
+      month:           monthVal,
+      year:            yearVal,
+      paid_date:       form.paid_date,
+      notes:           form.notes,
+      interest_amount: pawn.interest_amount,
+      customer_name:   customerName || '',
+      ticket_number:   pawn.ticket_number,
     }
+
+    onClose()
+    navigate('/sales', { state: { addItems: [itemToAdd] } })
   }
 
   const beYear = parseInt(form.year) + 543
@@ -119,7 +127,7 @@ export function RecordPaymentModal({ pawn, customerName, onSaved, onClose }) {
         <div className="modal-footer">
           <button className="btn btn-ghost" onClick={onClose} disabled={saving}>ยกเลิก</button>
           <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+            บันทึกและชำระเงิน
           </button>
         </div>
       </div>

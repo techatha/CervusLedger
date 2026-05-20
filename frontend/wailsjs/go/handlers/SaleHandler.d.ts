@@ -16,6 +16,8 @@ export function ExportToXlsx(arg1:string,arg2:string,arg3:string):Promise<void>;
 
 export function GetIncomeExpenseSummary(arg1:sql.DB,arg2:string,arg3:string):Promise<models.IncomeExpenseSummary>;
 
+export function GetSetting(arg1:string):Promise<string>;
+
 export function ListIncomeExpense(arg1:sql.DB,arg2:models.IncomeExpenseFilter):Promise<Array<models.IncomeExpense>>;
 
 export function Startup(arg1:context.Context):Promise<void>;

@@ -32,7 +32,7 @@ const BLANK_BUY = {
 
 const PURITIES = ['96.5%', '99.9%', '99.99%', '90%', 'อื่นๆ']
 
-export default function NewSaleForm({ defaultType, todayPrice, onSaved, onClose }) {
+export default function NewSaleForm({ defaultType, todayPrice, onSaved, onClose, onAdd }) {
   const [tab,    setTab]    = useState(defaultType || 'sell') // 'sell' | 'buy'
   const [saving, setSaving] = useState(false)
   const [error,  setError]  = useState(null)
@@ -161,36 +161,44 @@ export default function NewSaleForm({ defaultType, todayPrice, onSaved, onClose 
     setSaving(true)
     try {
       const priceID = todayPrice?.id || 0
-      if (tab === 'sell') {
-        await CreateSale({
-          type:          'sell',
-          customer_id:   sell.customer_id,
-          gold_item_id:  sell.gold_item_id,
-          weight_baht:   sell.gold_item_weight,
-          gold_price_id: priceID,
-          price_per_baht: parseFloat(sell.price_per_baht),
-          total_amount:  sellTotal,
-          notes:         sell.notes,
-          date:          sell.date,
-          item_type: '', purity: '', description: '',
+      const payload = tab === 'sell' ? {
+        type:          'sell',
+        customer_id:   sell.customer_id,
+        gold_item_id:  sell.gold_item_id,
+        weight_baht:   sell.gold_item_weight,
+        gold_price_id: priceID,
+        price_per_baht: parseFloat(sell.price_per_baht),
+        total_amount:  sellTotal,
+        notes:         sell.notes,
+        date:          sell.date,
+        item_type: '', purity: '', description: '',
+      } : {
+        type:          'buy',
+        customer_id:   buy.customer_id,
+        gold_item_id:  0,
+        weight_baht:   parseFloat(buy.weight_baht),
+        gold_price_id: priceID,
+        price_per_baht: parseFloat(buy.price_per_baht),
+        total_amount:  buyTotal,
+        notes:         buy.notes,
+        date:          buy.date,
+        item_type:     buy.item_type,
+        purity:        buy.purity,
+        description:   buy.description,
+      }
+
+      if (onAdd) {
+        const label = tab === 'sell'
+          ? sell.gold_item_label
+          : `${buy.item_type} ${buy.purity}${buy.description ? ` (${buy.description})` : ''}`
+        onAdd({
+          ...payload,
+          label
         })
       } else {
-        await CreateSale({
-          type:          'buy',
-          customer_id:   buy.customer_id,
-          gold_item_id:  0,
-          weight_baht:   parseFloat(buy.weight_baht),
-          gold_price_id: priceID,
-          price_per_baht: parseFloat(buy.price_per_baht),
-          total_amount:  buyTotal,
-          notes:         buy.notes,
-          date:          buy.date,
-          item_type:     buy.item_type,
-          purity:        buy.purity,
-          description:   buy.description,
-        })
+        await CreateSale(payload)
+        onSaved()
       }
-      onSaved()
     } catch (e) {
       setError('บันทึกไม่สำเร็จ: ' + e)
     } finally {

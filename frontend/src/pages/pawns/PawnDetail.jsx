@@ -84,6 +84,30 @@ export default function PawnDetail() {
     }
   }
 
+  const handlePayPendingInterest = () => {
+    const itemsToAdd = selectedPending.map(idx => {
+      const m = pendingMonths[idx]
+      return {
+        type: 'pawn_interest',
+        label: `ดอกเบี้ยตั๋ว #${formatTicket(pawn.ticket_number)} — งวด ${thaiMonthShort(m.month)} ${m.year + 543}`,
+        weight_baht: 0,
+        price_per_baht: 0,
+        total_amount: pawn.interest_amount,
+        
+        pawn_record_id: pawn.id,
+        month: m.month,
+        year: m.year,
+        paid_date: new Date().toISOString().slice(0, 10),
+        notes: `ชำระดอกเบี้ยตั๋ว #${formatTicket(pawn.ticket_number)}`,
+        interest_amount: pawn.interest_amount,
+        customer_name: pawn.customer_name_display || pawn.customer_name || '',
+        ticket_number: pawn.ticket_number
+      }
+    })
+
+    navigate('/sales', { state: { addItems: itemsToAdd } })
+  }
+
   if (loading) return <div className="page-view"><div className="empty-state"><div className="empty-state-text">กำลังโหลด...</div></div></div>
   if (error) return <div className="page-view"><div className="alert alert-error">{error}</div></div>
   if (!pawn) return null
@@ -407,9 +431,7 @@ export default function PawnDetail() {
                           <button
                             className="btn btn-sm btn-gold-ghost"
                             style={{ width: '100%' }} /* Kept width inline since it controls layout here */
-                            onClick={() => {
-                              alert(`พาไปหน้าชำระเงินสำหรับ ${selectedPending.length} เดือน (รวม ${formatBaht(selectedPending.length * pawn.interest_amount)})`)
-                            }}
+                            onClick={handlePayPendingInterest}
                           >
                             ชำระเงิน
                           </button>

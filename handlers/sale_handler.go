@@ -85,3 +85,12 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 	// Just return an empty sale since the sales table is gone
 	return models.Sale{}, nil
 }
+
+func (h *SaleHandler) GetSetting(key string) (string, error) {
+	var val string
+	err := db.DB.QueryRow(`SELECT value FROM settings WHERE key = ?`, key).Scan(&val)
+	if err != nil {
+		return "", err
+	}
+	return val, nil
+}

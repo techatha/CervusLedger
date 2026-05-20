@@ -26,6 +26,10 @@ export function GetIncomeExpenseSummary(arg1, arg2, arg3) {
   return window['go']['handlers']['SaleHandler']['GetIncomeExpenseSummary'](arg1, arg2, arg3);
 }
 
+export function GetSetting(arg1) {
+  return window['go']['handlers']['SaleHandler']['GetSetting'](arg1);
+}
+
 export function ListIncomeExpense(arg1, arg2) {
   return window['go']['handlers']['SaleHandler']['ListIncomeExpense'](arg1, arg2);
 }
