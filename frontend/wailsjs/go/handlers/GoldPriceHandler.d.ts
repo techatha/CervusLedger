@@ -4,6 +4,8 @@ import {models} from '../models';
 import {time} from '../models';
 import {context} from '../models';
 
+export function ForceScrapePrice():Promise<models.GoldPrice>;
+
 export function GetPriceHistory(arg1:number):Promise<Array<models.GoldPrice>>;
 
 export function GetTodayPrice():Promise<models.GoldPrice>;

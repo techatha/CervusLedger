@@ -15,11 +15,13 @@ func main() {
 	homeDir, _ := os.UserHomeDir()
 	dbPath := homeDir + "/CervusLedger/data.db"
 	os.MkdirAll(homeDir+"/CervusLedger", 0755)
+
+	fmt.Println("Wiping out existing database to re-initialize from scratch...")
+	os.Remove(dbPath) // Delete the entire DB to ensure a clean slate and fresh schema
+
 	db.Init(dbPath)
 
 	fmt.Println("Starting CSV import...")
-
-	clearExistingData()
 
 	importCustomers("scripts/data/customers.csv")
 	importPawnRecords("scripts/data/pawn_records.csv")
@@ -27,24 +29,6 @@ func main() {
 	importPrincipalChanges("scripts/data/principal_changes.csv")
 
 	fmt.Println("Import complete!")
-}
-
-func clearExistingData() {
-	fmt.Println("Clearing existing data for imported tables...")
-	tables := []string{
-		"principal_changes",
-		"pawn_payments",
-		"pawn_records",
-		"customers",
-	}
-	for _, table := range tables {
-		_, err := db.DB.Exec(fmt.Sprintf("DELETE FROM %s", table))
-		if err != nil {
-			log.Printf("Failed to clear table %s: %v", table, err)
-		}
-		// Reset auto-increment counter
-		db.DB.Exec("DELETE FROM sqlite_sequence WHERE name=?", table)
-	}
 }
 
 // Convert Thai Buddhist Era date to CE

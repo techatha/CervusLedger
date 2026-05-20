@@ -4,11 +4,89 @@ import (
 	"CervusLedger/db"
 	"database/sql"
 	"fmt"
+	"regexp"
 	"strconv"
 	"time"
 
 	"CervusLedger/models"
 )
+
+var timeRegex = regexp.MustCompile(`\d{2}:\d{2}`)
+
+func parseTimeToMinutes(tStr string) int {
+	match := timeRegex.FindString(tStr)
+	if match == "" {
+		return 0
+	}
+	var h, m int
+	fmt.Sscanf(match, "%d:%d", &h, &m)
+	return h*60 + m
+}
+
+func (h *GoldPriceHandler) isPriceNewer(date string, newUpdateTime string) bool {
+	var currentLatestTime string
+	err := db.DB.QueryRow(`
+		SELECT update_time FROM gold_prices
+		WHERE date = ?
+		ORDER BY id DESC LIMIT 1
+	`, date).Scan(&currentLatestTime)
+	if err == sql.ErrNoRows {
+		return true // DB is empty for today, so any incoming price is newer!
+	}
+	if err != nil {
+		return true
+	}
+
+	newMins := parseTimeToMinutes(newUpdateTime)
+	currentMins := parseTimeToMinutes(currentLatestTime)
+	return newMins > currentMins
+}
+
+func (h *GoldPriceHandler) savePriceIfNewer(date, updateTime string, barBuy, barSell, omBuy, omSell float64) (models.GoldPrice, error) {
+	if !h.isPriceNewer(date, updateTime) {
+		// Stale data. Fetch the latest from DB to return
+		var gp models.GoldPrice
+		err := db.DB.QueryRow(`
+			SELECT id, date, update_time, buy_price_per_baht, sell_price_per_baht, om_buy_price, om_sell_price
+			FROM gold_prices WHERE date = ?
+			ORDER BY id DESC LIMIT 1
+		`, date).Scan(&gp.ID, &gp.Date, &gp.UpdateTime, &gp.BuyPricePerBaht, &gp.SellPricePerBaht, &gp.OmBuyPrice, &gp.OmSellPrice)
+		if err == nil {
+			return gp, nil
+		}
+	}
+
+	res, err := db.DB.Exec(`
+		INSERT INTO gold_prices (date, update_time, buy_price_per_baht, sell_price_per_baht, om_buy_price, om_sell_price)
+		VALUES (?, ?, ?, ?, ?, ?)
+		ON CONFLICT(update_time) DO NOTHING
+	`, date, updateTime, barBuy, barSell, omBuy, omSell)
+	if err != nil {
+		return models.GoldPrice{}, err
+	}
+	id, _ := res.LastInsertId()
+
+	if id == 0 {
+		var gp models.GoldPrice
+		err = db.DB.QueryRow(`
+			SELECT id, date, update_time, buy_price_per_baht, sell_price_per_baht, om_buy_price, om_sell_price
+			FROM gold_prices WHERE date = ? AND update_time = ?
+		`, date, updateTime).Scan(&gp.ID, &gp.Date, &gp.UpdateTime, &gp.BuyPricePerBaht, &gp.SellPricePerBaht, &gp.OmBuyPrice, &gp.OmSellPrice)
+		if err == nil {
+			return gp, nil
+		}
+	}
+
+	return models.GoldPrice{
+		ID:               int(id),
+		Date:             date,
+		UpdateTime:       updateTime,
+		BuyPricePerBaht:  barBuy,
+		SellPricePerBaht: barSell,
+		OmBuyPrice:       omBuy,
+		OmSellPrice:      omSell,
+	}, nil
+}
 
 // GetTodayPrice returns today's gold_prices row.
 // If none exists, it reads buy/sell from settings and inserts a row.
@@ -31,32 +109,16 @@ func (h *GoldPriceHandler) GetTodayPrice() (models.GoldPrice, error) {
 		return gp, fmt.Errorf("query today price: %w", err)
 	}
 
-	// 2. Cache miss -> Primary Strategy: Fetch from the clean JSON API
-	barBuy, barSell, omBuy, omSell, updateTime, err := h.fetchPricesFromAPI()
+	// 2. Cache miss -> Primary Strategy: Scraper
+	barBuy, barSell, omBuy, omSell, updateTime, err := h.scrapeGoldTradersWebsite()
 	if err != nil {
-		// API Failed? -> Secondary Strategy: Native local scraper execution
-		barBuy, barSell, omBuy, omSell, updateTime, err = h.scrapeGoldTradersWebsite()
+		// Scraper Failed? -> Secondary Strategy: Fetch from the JSON API
+		barBuy, barSell, omBuy, omSell, updateTime, err = h.fetchPricesFromAPI()
 	}
 
 	// 3. If either API or Scraper succeeded, write back to local cache
 	if err == nil && barBuy > 0 && barSell > 0 {
-		res, insertErr := db.DB.Exec(`
-            INSERT INTO gold_prices (date, update_time, buy_price_per_baht, sell_price_per_baht, om_buy_price, om_sell_price)
-            VALUES (?, ?, ?, ?, ?, ?)
-            ON CONFLICT(update_time) DO NOTHING
-        `, today, updateTime, barBuy, barSell, omBuy, omSell)
-		if insertErr == nil {
-			id, _ := res.LastInsertId()
-			return models.GoldPrice{
-				ID:               int(id),
-				Date:             today,
-				UpdateTime:       updateTime,
-				BuyPricePerBaht:  barBuy,
-				SellPricePerBaht: barSell,
-				OmBuyPrice:       omBuy,
-				OmSellPrice:      omSell,
-			}, nil
-		}
+		return h.savePriceIfNewer(today, updateTime, barBuy, barSell, omBuy, omSell)
 	}
 
 	// 4. TOTAL FAILSAFE: Internet completely down? Fetch the last known historical price
@@ -84,21 +146,28 @@ func (h *GoldPriceHandler) GetTodayPrice() (models.GoldPrice, error) {
         OmSellPrice:      0.0,
     }, nil
 }
-// fetchAndSaveLatest reaches out to the API (or scraper) and saves to the DB unconditionally.
+
+// ForceScrapePrice triggers an immediate scrape of the website and returns it
+func (h *GoldPriceHandler) ForceScrapePrice() (models.GoldPrice, error) {
+	today := time.Now().Format("2006-01-02")
+	barBuy, barSell, omBuy, omSell, updateTime, err := h.scrapeGoldTradersWebsite()
+	if err != nil {
+		return models.GoldPrice{}, fmt.Errorf("force scrape failed: %w", err)
+	}
+	return h.savePriceIfNewer(today, updateTime, barBuy, barSell, omBuy, omSell)
+}
+
+// fetchAndSaveLatest reaches out to the API (or scraper) and saves to the DB unconditionally if newer.
 func (h *GoldPriceHandler) fetchAndSaveLatest() {
 	today := time.Now().Format("2006-01-02")
 	
-	barBuy, barSell, omBuy, omSell, updateTime, err := h.fetchPricesFromAPI()
+	barBuy, barSell, omBuy, omSell, updateTime, err := h.scrapeGoldTradersWebsite()
 	if err != nil {
-		barBuy, barSell, omBuy, omSell, updateTime, err = h.scrapeGoldTradersWebsite()
+		barBuy, barSell, omBuy, omSell, updateTime, err = h.fetchPricesFromAPI()
 	}
 
 	if err == nil && barBuy > 0 && barSell > 0 {
-		db.DB.Exec(`
-			INSERT INTO gold_prices (date, update_time, buy_price_per_baht, sell_price_per_baht, om_buy_price, om_sell_price)
-			VALUES (?, ?, ?, ?, ?, ?)
-			ON CONFLICT(update_time) DO NOTHING
-		`, today, updateTime, barBuy, barSell, omBuy, omSell)
+		_, _ = h.savePriceIfNewer(today, updateTime, barBuy, barSell, omBuy, omSell)
 	}
 }
 

@@ -56,7 +56,7 @@ func main() {
 			goldPriceHandler.Startup(ctx)
 			
 			// Start background polling worker
-			go goldPriceHandler.StartPolling(10 * time.Minute)
+			go goldPriceHandler.StartPolling(2 * time.Minute)
 		},
 		Bind: []interface{}{
 			app,

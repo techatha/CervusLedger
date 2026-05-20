@@ -1,123 +1,95 @@
-/* ─── Gold Price Bar ──────────────────────────────────────── */
-.sl-price-bar {
+/* ─── Premium Live Market Ticker Layout ─── */
+.market-price-container {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   margin-bottom: 20px;
   overflow: hidden;
 }
 
-.sl-price-bar-inner {
+.market-price-header {
   display: flex;
-  align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
   padding: 14px 20px;
+  background: var(--bg-hover);
 }
 
-.sl-price-label {
+.market-price-title-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.price-refresh-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.2s;
+}
+
+.price-refresh-btn:hover {
+  color: var(--text-primary);
+}
+
+.price-refresh-btn.spinning svg {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+.market-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  padding: 16px 20px;
+}
+
+.market-col {
+  background: var(--bg-hover);
+  padding: 14px 20px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.market-col-header {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  white-space: nowrap;
-}
-
-.sl-price-date {
-  font-weight: 400;
-  font-size: 12px;
-  letter-spacing: 0;
-  text-transform: none;
-}
-
-.sl-price-values {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.sl-price-item {
-  display: flex;
-  align-items: baseline;
-  gap: 7px;
-}
-
-.sl-price-type {
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.sl-price-type.sell { color: var(--green); }
-.sl-price-type.buy  { color: var(--amber); }
-
-.sl-price-num {
-  font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-primary);
-  font-variant-numeric: tabular-nums;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--border);
 }
 
-.sl-price-unit {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.sl-price-divider {
-  width: 1px;
-  height: 32px;
-  background: var(--border);
-}
-
-/* ─── Price edit mode ─────────────────────────────────────── */
-.sl-price-edit {
+.price-row {
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 12px;
+  padding: 4px 0;
 }
 
-.sl-price-edit-field {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.sl-price-input {
-  width: 120px !important;
-  font-size: 15px !important;
-  font-weight: 600 !important;
-  text-align: right;
-}
-
-/* ─── Today summary strip ─────────────────────────────────── */
-.sl-today-summary {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px 20px;
-  background: var(--bg-hover);
-  border-top: 1px solid var(--divider);
+.price-lbl {
+  color: var(--text-secondary);
   font-size: 13px;
-  color: var(--text-muted);
 }
 
-.sl-today-sell { color: var(--green);  font-weight: 600; }
-.sl-today-buy  { color: var(--amber);  font-weight: 600; }
-
-/* ─── Table cells ─────────────────────────────────────────── */
-.sl-date     { white-space: nowrap; color: var(--text-muted); font-size: 13px; }
-.sl-customer { font-weight: 500; }
-.sl-item     { color: var(--text-secondary); font-size: 13.5px; }
-.sl-notes    { color: var(--text-muted); font-size: 12.5px; max-width: 160px; }
-
-.sl-num {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  font-size: 13.5px;
+.price-val {
+  font-family: var(--font-display, monospace);
+  font-size: 20px;
+  font-weight: 700;
 }
 
-.sl-total   { font-weight: 600; font-size: 14px; }
-.sl-income  { color: var(--green); }
-.sl-expense { color: var(--amber); }
+/* Inherit your existing red/green variables for Buy/Sell text */
+.sell-color { color: var(--red); }
+.buy-color  { color: var(--green); }

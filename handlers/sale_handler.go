@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"CervusLedger/db"
@@ -60,32 +59,11 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 			return models.Sale{}, fmt.Errorf("create gold item from buy: %w", err)
 		}
 		id, _ := res.LastInsertId()
-		goldItemID = int(id)
+		goldItemID = int(id) // Not strictly needed anymore if not inserting into sales, but kept for logic
 
 	default:
 		return models.Sale{}, fmt.Errorf("ประเภทไม่ถูกต้อง: %s", input.Type)
 	}
-
-	// Nullable customer_id
-	var custID interface{} = nil
-	if input.CustomerID != 0 {
-		custID = input.CustomerID
-	}
-
-	// Insert sale row
-	saleRes, err := tx.Exec(`
-		INSERT INTO sales
-		  (customer_id, gold_item_id, type, weight_baht,
-		   gold_price_id, total_amount, notes, created_at)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-	`,
-		custID, goldItemID, input.Type, input.WeightBaht,
-		input.GoldPriceID, input.TotalAmount, input.Notes, input.Date,
-	)
-	if err != nil {
-		return models.Sale{}, fmt.Errorf("insert sale: %w", err)
-	}
-	saleID, _ := saleRes.LastInsertId()
 
 	// Auto-log income / expense
 	incType, incCat := "income", "ขายทอง"
@@ -104,94 +82,6 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 		return models.Sale{}, err
 	}
 
-	return h.GetSale(int(saleID))
-}
-
-// GetSale returns a single sale with joined customer name and gold item type.
-func (h *SaleHandler) GetSale(id int) (models.Sale, error) {
-	var s models.Sale
-	var custID sql.NullInt64
-	var custName, itemType sql.NullString
-
-	err := db.DB.QueryRow(`
-		SELECT
-			s.id,
-			s.customer_id,
-			COALESCE(c.prefix || ' ' || c.firstname || ' ' || c.lastname, '') AS customer_name,
-			s.gold_item_id,
-			COALESCE(g.type, '') AS gold_item_type,
-			s.type, s.weight_baht, s.gold_price_id, s.total_amount, s.notes,
-			DATE(s.created_at) AS date, s.created_at
-		FROM sales s
-		LEFT JOIN customers c ON c.id = s.customer_id
-		LEFT JOIN gold_items g ON g.id = s.gold_item_id
-		WHERE s.id = ?
-	`, id).Scan(
-		&s.ID, &custID, &custName,
-		&s.GoldItemID, &itemType,
-		&s.Type, &s.WeightBaht, &s.GoldPriceID, &s.TotalAmount, &s.Notes,
-		&s.Date, &s.CreatedAt,
-	)
-	if err != nil {
-		return s, fmt.Errorf("get sale %d: %w", id, err)
-	}
-	if custID.Valid {
-		s.CustomerID = int(custID.Int64)
-	}
-	s.CustomerName = custName.String
-	s.GoldItemType = itemType.String
-	return s, nil
-}
-
-// ListSales returns all sales, optionally filtered by type ("buy"/"sell"/"").
-func (h *SaleHandler) ListSales(saleType string) ([]models.Sale, error) {
-	query := `
-		SELECT
-			s.id,
-			s.customer_id,
-			COALESCE(c.prefix || ' ' || c.firstname || ' ' || c.lastname, '') AS customer_name,
-			COALESCE(s.gold_item_id, 0),
-			COALESCE(g.type, '') AS gold_item_type,
-			s.type, s.weight_baht, s.gold_price_id, s.total_amount, s.notes,
-			DATE(s.created_at) AS date, s.created_at
-		FROM sales s
-		LEFT JOIN customers c ON c.id = s.customer_id
-		LEFT JOIN gold_items g ON g.id = s.gold_item_id
-		WHERE 1=1
-	`
-	args := []interface{}{}
-	if saleType != "" {
-		query += ` AND s.type = ?`
-		args = append(args, saleType)
-	}
-	query += ` ORDER BY s.created_at DESC`
-
-	rows, err := db.DB.Query(query, args...)
-	if err != nil {
-		return nil, fmt.Errorf("list sales: %w", err)
-	}
-	defer rows.Close()
-
-	var list []models.Sale
-	for rows.Next() {
-		var s models.Sale
-		var custID sql.NullInt64
-		var custName, itemType sql.NullString
-
-		if err := rows.Scan(
-			&s.ID, &custID, &custName,
-			&s.GoldItemID, &itemType,
-			&s.Type, &s.WeightBaht, &s.GoldPriceID, &s.TotalAmount, &s.Notes,
-			&s.Date, &s.CreatedAt,
-		); err != nil {
-			return nil, fmt.Errorf("scan sale: %w", err)
-		}
-		if custID.Valid {
-			s.CustomerID = int(custID.Int64)
-		}
-		s.CustomerName = custName.String
-		s.GoldItemType = itemType.String
-		list = append(list, s)
-	}
-	return list, nil
+	// Just return an empty sale since the sales table is gone
+	return models.Sale{}, nil
 }

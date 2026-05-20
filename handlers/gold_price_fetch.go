@@ -110,7 +110,15 @@ func (h *GoldPriceHandler) scrapeGoldTradersWebsite() (barBuy, barSell, omBuy, o
 	omBuy, _ = strconv.ParseFloat(cleanOmBuy, 64)
 	omSell, _ = strconv.ParseFloat(cleanOmSell, 64)
 
-	updateTime = doc.Find("#DetailPlace_uc_goldprices1_lblAsTime").Text()
+	// Clean updateTime to exclude date: "20/05/2569 เวลา 17:00 น. (ครั้งที่ 34)" -> "เวลา 17:00 น. (ครั้งที่ 34)"
+	rawTime := doc.Find("#DetailPlace_uc_goldprices1_lblAsTime").Text()
+	rawTime = strings.TrimSpace(rawTime)
+	parts := strings.Fields(rawTime)
+	if len(parts) > 1 {
+		updateTime = strings.Join(parts[1:], " ")
+	} else {
+		updateTime = rawTime
+	}
 
 	if barBuy == 0 || barSell == 0 || omBuy == 0 || omSell == 0 {
 		return 0, 0, 0, 0, "", fmt.Errorf("scraper extracted unexpected empty text fields")

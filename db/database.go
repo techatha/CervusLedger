@@ -70,21 +70,7 @@ func createTables() {
 			om_sell_price       REAL DEFAULT 0
 		)`,
 
-		// Buy/sell transactions
-		`CREATE TABLE IF NOT EXISTS sales (
-			id            INTEGER PRIMARY KEY AUTOINCREMENT,
-			customer_id   INTEGER,
-			gold_item_id  INTEGER,
-			type          TEXT NOT NULL,
-			weight_baht   REAL NOT NULL,
-			gold_price_id INTEGER,
-			total_amount  REAL NOT NULL,
-			notes         TEXT,
-			created_at    DATETIME DEFAULT CURRENT_TIMESTAMP,
-			FOREIGN KEY (customer_id)   REFERENCES customers(id),
-			FOREIGN KEY (gold_item_id)  REFERENCES gold_items(id),
-			FOREIGN KEY (gold_price_id) REFERENCES gold_prices(id)
-		)`,
+
 
 		// Pawn records (grams for weight)
 		`CREATE TABLE IF NOT EXISTS pawn_records (

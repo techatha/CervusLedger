@@ -26,16 +26,8 @@ export function GetIncomeExpenseSummary(arg1, arg2, arg3) {
   return window['go']['handlers']['SaleHandler']['GetIncomeExpenseSummary'](arg1, arg2, arg3);
 }
 
-export function GetSale(arg1) {
-  return window['go']['handlers']['SaleHandler']['GetSale'](arg1);
-}
-
 export function ListIncomeExpense(arg1, arg2) {
   return window['go']['handlers']['SaleHandler']['ListIncomeExpense'](arg1, arg2);
-}
-
-export function ListSales(arg1) {
-  return window['go']['handlers']['SaleHandler']['ListSales'](arg1);
 }
 
 export function Startup(arg1) {
