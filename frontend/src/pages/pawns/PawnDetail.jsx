@@ -12,6 +12,8 @@ import {
 import { toBE, formatBaht, formatTicket, pawnStatusBadge } from '../../utils/thai'
 import { getPendingMonths, thaiMonthShort } from '../../utils/pawn'
 import { RecordPaymentModal, PrincipalChangeModal } from './PawnModals'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCartArrowDown } from '@fortawesome/free-solid-svg-icons'
 import './PawnDetail.css'
 
 export default function PawnDetail() {
@@ -89,7 +91,7 @@ export default function PawnDetail() {
       const m = pendingMonths[idx]
       return {
         type: 'pawn_interest',
-        label: `ดอกเบี้ยตั๋ว #${formatTicket(pawn.ticket_number)} — งวด ${thaiMonthShort(m.month)} ${m.year + 543}`,
+        label: `ชำระดอกเบี้ยตั๋ว #${formatTicket(pawn.ticket_number)}`,
         weight_baht: 0,
         price_per_baht: 0,
         total_amount: pawn.interest_amount,
@@ -98,7 +100,7 @@ export default function PawnDetail() {
         month: m.month,
         year: m.year,
         paid_date: new Date().toISOString().slice(0, 10),
-        notes: `ชำระดอกเบี้ยตั๋ว #${formatTicket(pawn.ticket_number)}`,
+        notes: `งวด ${thaiMonthShort(m.month)} ${m.year + 543}`,
         interest_amount: pawn.interest_amount,
         customer_name: pawn.customer_name_display || pawn.customer_name || '',
         ticket_number: pawn.ticket_number
@@ -418,29 +420,27 @@ export default function PawnDetail() {
                       )
                     })}
 
-                    {/* NEW: Distinguishable Summary Row */}
-                    {selectedPending.length > 0 && (
-                      <tr style={{ background: 'var(--bg-card)', borderTop: '2px solid rgba(212, 92, 92, 0.3)' }}>
-                        <td colSpan={3} style={{ textAlign: 'right', fontWeight: 600, fontSize: 13, color: 'var(--text-secondary)' }}>
-                          รวมยอดที่เลือก ({selectedPending.length} เดือน):
-                        </td>
-                        <td style={{ textAlign: 'right', fontWeight: 700, color: 'var(--red)', fontVariantNumeric: 'tabular-nums' }}>
-                          {formatBaht(selectedPending.length * pawn.interest_amount)}
-                        </td>
-                        <td style={{ textAlign: 'center', padding: '8px' }}>
-                          <button
-                            className="btn btn-sm btn-gold-ghost"
-                            style={{ width: '100%' }} /* Kept width inline since it controls layout here */
-                            onClick={handlePayPendingInterest}
-                          >
-                            ชำระเงิน
-                          </button>
-                        </td>
-                      </tr>
-                    )}
                   </tbody>
                 </table>
               </div>
+              {selectedPending.length > 0 && (
+                <div className="pawn-detail-footer">
+                  <div className="pawn-detail-total-row">
+                    <span className="total-label">รวมยอดที่เลือก ({selectedPending.length} งวด):</span>
+                    <span className="total-val">
+                      {formatBaht(selectedPending.length * pawn.interest_amount)}
+                    </span>
+                  </div>
+                  <div className="pawn-detail-actions">
+                    <button
+                      className="btn btn-primary"
+                      onClick={handlePayPendingInterest}
+                    >
+                      <FontAwesomeIcon icon={faCartArrowDown} /> ชำระเงิน
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           {/* Principal change log */}

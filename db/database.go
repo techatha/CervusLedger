@@ -143,7 +143,8 @@ func createTables() {
 			('interest_threshold',   '10000'),
 			('min_interest_amount',  '20'),
 			('last_ticket_number',   '0'),
-			('promptpay_number',     '')
+			('promptpay_number',     ''),
+			('promptpay_name',       '')
 		`,
 	}
 

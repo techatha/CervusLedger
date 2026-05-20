@@ -174,3 +174,30 @@
 .qr-hint {
   font-size: 12px;
 }
+
+.sales-cart-add-wrapper {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.btn-add-item {
+  border-color: var(--gold) !important;
+  color: var(--gold) !important;
+}
+
+.btn-add-item:hover {
+  background: rgba(212, 175, 55, 0.1) !important;
+}
+
+.btn-discount-item {
+  border-color: var(--text-muted) !important;
+  color: var(--text-muted) !important;
+}
+
+.btn-discount-item:hover {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--text-primary) !important;
+}

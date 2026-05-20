@@ -2,6 +2,8 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RecordPayment } from '../../../wailsjs/go/handlers/PawnHandler'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCartArrowDown } from '@fortawesome/free-solid-svg-icons'
 import { formatBaht } from '../../utils/thai'
 
 const THAI_MONTHS = [
@@ -127,7 +129,7 @@ export function RecordPaymentModal({ pawn, customerName, onSaved, onClose }) {
         <div className="modal-footer">
           <button className="btn btn-ghost" onClick={onClose} disabled={saving}>ยกเลิก</button>
           <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-            บันทึกและชำระเงิน
+          <FontAwesomeIcon icon={faCartArrowDown} /> ชำระเงิน
           </button>
         </div>
       </div>

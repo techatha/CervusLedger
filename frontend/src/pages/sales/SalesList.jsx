@@ -3,11 +3,13 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import NewSaleForm from './NewSaleForm'
 import './SalesList.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faQrcode, faFileCirclePlus } from '@fortawesome/free-solid-svg-icons'
+import { faQrcode, faFileCirclePlus, faTag } from '@fortawesome/free-solid-svg-icons'
 import { faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import GoldPriceDashboard from '../../components/GoldPriceDashboard'
 import { CreateSale, GetSetting } from '../../../wailsjs/go/handlers/SaleHandler.js'
 import { RecordPayment } from '../../../wailsjs/go/handlers/PawnHandler.js'
+import generatePayload from 'promptpay-qr'
+import { QRCodeCanvas } from 'qrcode.react'
 
 export default function SalesList() {
   const location = useLocation()
@@ -17,9 +19,11 @@ export default function SalesList() {
   const [price, setPrice] = useState(null)
   const [cartItems, setCartItems] = useState([])
   const [qrAmount, setQrAmount] = useState(0)
+  const [showQr, setShowQr] = useState(false)
   const [savingCart, setSavingCart] = useState(false)
   const [error, setError] = useState(null)
   const [promptpayNumber, setPromptpayNumber] = useState(import.meta.env.VITE_DEFAULT_PROMPTPAY_NUMBER || '')
+  const [promptpayName, setPromptpayName] = useState(import.meta.env.VITE_DEFAULT_PROMPTPAY_NAME || '')
 
   const priceDashboardRef = useRef()
   const processedStateRef = useRef(null)
@@ -32,8 +36,15 @@ export default function SalesList() {
       .catch(err => {
         console.error('Failed to load promptpay_number settings:', err)
       })
+    GetSetting('promptpay_name')
+      .then(val => {
+        if (val) setPromptpayName(val)
+      })
+      .catch(err => {
+        console.error('Failed to load promptpay_name settings:', err)
+      })
   }, [])
-  
+
 
   useEffect(() => {
     if (location.state?.addItems && location.state !== processedStateRef.current) {
@@ -54,7 +65,8 @@ export default function SalesList() {
   }
 
   const handleGenerateQR = () => {
-    setQrAmount(cartTotal)
+    setQrAmount(mainTotalAmount)
+    setShowQr(true)
   }
 
   const handleSaveAllSales = async () => {
@@ -81,6 +93,7 @@ export default function SalesList() {
       }
       setCartItems([])
       setQrAmount(0)
+      setShowQr(false)
       priceDashboardRef.current?.refresh()
       alert('บันทึกรายการขายสำเร็จเรียบร้อยแล้ว')
     } catch (e) {
@@ -90,7 +103,15 @@ export default function SalesList() {
     }
   }
 
-  const cartTotal = cartItems.reduce((sum, item) => sum + item.total_amount, 0)
+  // Example modification inside the main transaction table calculator
+  const mainTotalAmount = cartItems.reduce((acc, item) => {
+    if (item.type === 'sell' || item.type === 'pawn_interest') {
+      return acc + item.total_amount;
+    } else if (item.type === 'buy' || item.type === 'discount') {
+      return acc - item.total_amount; // Subtracts buybacks and active discounts from total customer payment due
+    }
+    return acc;
+  }, 0);
 
   return (
     <div className="page-view">
@@ -113,7 +134,7 @@ export default function SalesList() {
           {/* Sales Cart Card */}
           <div className="sales-cart-container">
             <div className="sales-cart-header">
-              <span className="sales-cart-title">รายการขายในตะกร้า</span>
+              <span className="sales-cart-title">รายการขาย</span>
               <span className="badge badge-gold" style={{ fontSize: '11px', fontWeight: 'bold' }}>
                 {cartItems.length} รายการ
               </span>
@@ -123,17 +144,14 @@ export default function SalesList() {
                 <div className="empty-cart-state">
                   <div className="empty-cart-icon">🛒</div>
                   <div style={{ fontWeight: 'bold' }}>ยังไม่มีรายการขาย</div>
-                  <button className="btn btn-primary" onClick={() => setShowForm('sell')}>
-                  <FontAwesomeIcon icon={faFileCirclePlus} /> เพิ่มรายการ
-                  </button>
                 </div>
               ) : (
                 <table className="sales-cart-table">
                   <thead>
                     <tr>
                       <th style={{ width: '80px' }}>ประเภท</th>
-                      <th>รายละเอียด</th>
-                      <th style={{ textAlign: 'right', width: '120px' }}>น้ำหนัก (บาท)</th>
+                      <th className="col-200">รายละเอียด</th>
+                      <th style={{ textAlign: 'right', width: '120px' }}>น้ำหนัก</th>
                       <th style={{ textAlign: 'right', width: '120px' }}>ราคา/บาท</th>
                       <th style={{ textAlign: 'right', width: '140px' }}>ยอดรวม</th>
                       <th style={{ width: '40px', textAlign: 'center' }}></th>
@@ -144,27 +162,46 @@ export default function SalesList() {
                       <tr key={idx}>
                         <td>
                           <span className={`badge ${item.type === 'sell' ? 'badge-green' :
-                              item.type === 'buy' ? 'badge-amber' : 'badge-blue'
+                            item.type === 'buy' ? 'badge-amber' :
+                              item.type === 'discount' ? 'badge-red' : 'badge-purple'
                             }`} style={{ fontSize: '11px' }}>
                             {item.type === 'sell' ? 'ขาย' :
-                              item.type === 'buy' ? 'รับซื้อ' : 'ดอกเบี้ย'}
+                              item.type === 'buy' ? 'รับซื้อ' :
+                                item.type === 'discount' ? 'ส่วนลด' : 'ดอกเบี้ย'}
                           </span>
                         </td>
-                        <td style={{ fontWeight: '500' }}>{item.label}</td>
+
+                        {/* ── Label & Sub-Notes Column ── */}
+                        <td>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>
+                              {item.label}
+                            </span>
+
+                            {/* Render the small gray note if notes exists in data */}
+                            {item.notes && (
+                              <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '400' }}>
+                                {item.notes}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
                         <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}>
-                          {item.type === 'pawn_interest' ? '—' : item.weight_baht.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                          {item.type === 'pawn_interest' || item.type === 'discount' ? '—' : item.weight_baht.toLocaleString('th-TH', { minimumFractionDigits: 1, maximumFractionDigits: 4 }) + ' กรัม'}
                         </td>
                         <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                          {item.type === 'pawn_interest' ? '—' : item.price_per_baht.toLocaleString('th-TH')}
+                          {item.type === 'pawn_interest' || item.type === 'discount' ? '—' : item.price_per_baht.toLocaleString('th-TH')}
                         </td>
                         <td style={{
                           textAlign: 'right',
                           fontVariantNumeric: 'tabular-nums',
                           fontWeight: 'bold',
                           color: item.type === 'sell' ? 'var(--green)' :
-                            item.type === 'buy' ? 'var(--red)' : 'var(--blue)'
+                            item.type === 'buy' ? 'var(--red)' :
+                              item.type === 'discount' ? 'var(--red)' : 'var(--blue)'
                         }}>
-                          {item.total_amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                          {item.type === 'discount' ? '-' : ''} {item.total_amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
                         </td>
                         <td style={{ textAlign: 'center' }}>
                           <button
@@ -181,18 +218,31 @@ export default function SalesList() {
                   </tbody>
                 </table>
               )}
+              <div className="sales-cart-add-wrapper">
+                <button
+                  className="btn btn-ghost btn-add-item"
+                  onClick={() => setShowForm('sell')}>
+                  <FontAwesomeIcon icon={faFileCirclePlus} /> เพิ่มรายการ
+                </button>
+                <button
+                  className="btn btn-ghost btn-discount-item"
+                  onClick={() => setShowForm('discount')}
+                >
+                  <FontAwesomeIcon icon={faTag} /> เพิ่มส่วนลด
+                </button>
+              </div>
             </div>
             {cartItems.length > 0 && (
               <div className="sales-cart-footer">
                 <div className="sales-cart-total-row">
                   <span className="total-label">ยอดรวมสุทธิ:</span>
                   <span className="total-val">
-                    {cartTotal.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท
+                    {mainTotalAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท
                   </span>
                 </div>
                 <div className="sales-cart-actions">
-                  <button className="btn btn-ghost" onClick={() => { setCartItems([]); setQrAmount(0); }} disabled={savingCart}>
-                    ล้างตะกร้า
+                  <button className="btn btn-ghost" onClick={() => { setCartItems([]); setQrAmount(0); setShowQr(false); }} disabled={savingCart}>
+                    <FontAwesomeIcon icon={faTrashCan} /> ล้างตะกร้า
                   </button>
                   <button
                     className="btn btn-ghost"
@@ -200,10 +250,7 @@ export default function SalesList() {
                     onClick={handleGenerateQR}
                     disabled={savingCart}
                   >
-                    สร้าง QR Code
-                  </button>
-                  <button className="btn btn-primary" onClick={handleSaveAllSales} disabled={savingCart}>
-                    {savingCart ? 'กำลังบันทึก...' : 'ยืนยันและบันทึกรายการ'}
+                    <FontAwesomeIcon icon={faQrcode} /> สร้าง QR Code
                   </button>
                 </div>
               </div>
@@ -220,22 +267,37 @@ export default function SalesList() {
             <span className="qr-title-text">รับชำระเงิน (PromptPay)</span>
           </div>
           <div className="qr-body">
-            {qrAmount > 0 ? (
+            {showQr ? (
               <div className="qr-active-box" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', width: '100%' }}>
-                {promptpayNumber ? (
+                {qrAmount <= 0 ? (
+                  <div className="alert alert-warning" style={{ textAlign: 'center', fontSize: '13px', margin: '0 10px', padding: '16px', lineHeight: '1.5', width: '90%', borderRadius: '8px' }}>
+                    ยอดชำระเป็นศูนย์หรือติดลบ ไม่สามารถสร้าง QR Code ได้
+                  </div>
+                ) : promptpayNumber ? (
                   <>
-                    <img
-                      src={`https://promptpay.io/${promptpayNumber}/${qrAmount}.png`}
-                      alt="PromptPay QR Code"
-                      style={{ width: '190px', height: '190px', border: '6px solid #fff', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)' }}
-                    />
-                    <div style={{ textAlign: 'center' }}>
+                    {/* ─── OFFLINE LOCAL QR CODE ─── */}
+                    <div style={{ background: '#fff', padding: '12px', borderRadius: '12px', display: 'inline-block' }}>
+                      <QRCodeCanvas
+                        value={generatePayload(promptpayNumber, { amount: qrAmount })}
+                        size={180}
+                        bgColor={"#ffffff"}
+                        fgColor={"#000000"}
+                        level={"M"}
+                      />
+                    </div>
+
+                    <div style={{ textAlign: 'center', width: '100%' }}>
                       <span className="qr-amount-text" style={{ fontSize: '16px', fontWeight: 'bold', color: 'var(--text-primary)', display: 'block', marginBottom: '2px' }}>
                         ยอดชำระ: {qrAmount.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท
                       </span>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                      <span style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
                         Scan QR Code เพื่อโอนเงิน
                       </span>
+                      {promptpayName && (
+                        <span style={{ fontSize: '12px', fontWeight: '500', color: 'var(--text-secondary)', display: 'block', marginTop: '2px' }}>
+                          ชื่อบัญชี: {promptpayName}
+                        </span>
+                      )}
                     </div>
                   </>
                 ) : (
@@ -243,14 +305,17 @@ export default function SalesList() {
                     ไม่พบข้อมูลหมายเลขพร้อมเพย์ในระบบ กรุณาตรวจสอบไฟล์ .env หรือการตั้งค่า
                   </div>
                 )}
-                <button className="btn btn-ghost btn-sm" onClick={() => setQrAmount(0)} style={{ fontSize: '11px', padding: '4px 10px', marginTop: '4px' }}>
+                <button className="btn btn-ghost btn-sm" onClick={() => { setQrAmount(0); setShowQr(false); }} style={{ fontSize: '11px', padding: '4px 10px', marginTop: '4px' }}>
                   ปิด QR Code
+                </button>
+                <button className="btn btn-primary" onClick={handleSaveAllSales} disabled={savingCart}>
+                  {savingCart ? 'กำลังบันทึกรายการ...' : 'ยืนยันจ่ายเงินสำเร็จ'}
                 </button>
               </div>
             ) : (
               <div className="qr-placeholder-box">
                 <FontAwesomeIcon icon={faQrcode} size="3x" />
-                <span className="qr-hint">สร้างคิวอาร์โค้ดตอนทำรายการ</span>
+                <span className="qr-hint">คิวอาร์โค้ดจะแสดงขึ้นเมื่อกดปุ่ม สร้าง QR Code</span>
               </div>
             )}
           </div>

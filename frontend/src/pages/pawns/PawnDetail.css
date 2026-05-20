@@ -154,3 +154,38 @@
   color: var(--text-muted);
   font-size: 13px;
 }
+
+/* ─── Pawn Detail Footer ─── */
+.pawn-detail-footer {
+  border-top: 1px solid var(--border);
+  padding: 16px 20px;
+  background: var(--bg-hover);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.pawn-detail-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pawn-detail-total-row .total-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.pawn-detail-total-row .total-val {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--red);
+  font-family: var(--font-display, monospace);
+}
+
+.pawn-detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
