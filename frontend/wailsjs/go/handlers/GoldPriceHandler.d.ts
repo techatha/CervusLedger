@@ -8,5 +8,3 @@ export function GetPriceHistory(arg1:number):Promise<Array<models.GoldPrice>>;
 export function GetTodayPrice():Promise<models.GoldPrice>;
 
 export function Startup(arg1:context.Context):Promise<void>;
-
-export function UpsertTodayPrice(arg1:number,arg2:number):Promise<void>;

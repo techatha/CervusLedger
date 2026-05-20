@@ -5,6 +5,7 @@ import (
 	"embed"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -53,6 +54,9 @@ func main() {
 			goldItemHandler.Startup(ctx)
 			saleHandler.Startup(ctx)
 			goldPriceHandler.Startup(ctx)
+			
+			// Start background polling worker
+			go goldPriceHandler.StartPolling(10 * time.Minute)
 		},
 		Bind: []interface{}{
 			app,

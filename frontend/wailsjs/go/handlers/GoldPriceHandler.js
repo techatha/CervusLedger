@@ -13,7 +13,3 @@ export function GetTodayPrice() {
 export function Startup(arg1) {
   return window['go']['handlers']['GoldPriceHandler']['Startup'](arg1);
 }
-
-export function UpsertTodayPrice(arg1, arg2) {
-  return window['go']['handlers']['GoldPriceHandler']['UpsertTodayPrice'](arg1, arg2);
-}

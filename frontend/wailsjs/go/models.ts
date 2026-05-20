@@ -87,8 +87,11 @@ export namespace models {
 	export class GoldPrice {
 	    id: number;
 	    date: string;
+	    update_time: string;
 	    buy_price_per_baht: number;
 	    sell_price_per_baht: number;
+	    om_buy_price: number;
+	    om_sell_price: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new GoldPrice(source);
@@ -98,8 +101,11 @@ export namespace models {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
 	        this.date = source["date"];
+	        this.update_time = source["update_time"];
 	        this.buy_price_per_baht = source["buy_price_per_baht"];
 	        this.sell_price_per_baht = source["sell_price_per_baht"];
+	        this.om_buy_price = source["om_buy_price"];
+	        this.om_sell_price = source["om_sell_price"];
 	    }
 	}
 	export class IncomeExpense {

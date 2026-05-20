@@ -4,6 +4,7 @@ package models
 type GoldPrice struct {
 	ID               int     `json:"id"`
 	Date             string  `json:"date"`
+	UpdateTime       string  `json:"update_time"`
 	BuyPricePerBaht  float64 `json:"buy_price_per_baht"`
 	SellPricePerBaht float64 `json:"sell_price_per_baht"`
 	OmBuyPrice       float64 `json:"om_buy_price"`

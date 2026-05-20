@@ -28,8 +28,9 @@ func (h *GoldPriceHandler) Startup(ctx context.Context) {
 type ChnwtGoldResponse struct {
 	Status   string `json:"status"`
 	Response struct {
-		Price struct {
-              Gold struct {
+		UpdateTime string `json:"update_time"`
+		Price      struct {
+			Gold struct {
 				Buy  string `json:"buy"`
 				Sell string `json:"sell"`
 			} `json:"gold"`
@@ -42,18 +43,18 @@ type ChnwtGoldResponse struct {
 }
 
 // fetchPricesFromAPI pulls from the clean api.chnwt.dev wrapper
-func (h *GoldPriceHandler) fetchPricesFromAPI() (barBuy float64, barSell float64, omBuy float64, omSell float64, err error) {
+func (h *GoldPriceHandler) fetchPricesFromAPI() (barBuy, barSell, omBuy, omSell float64, updateTime string, err error) {
 	client := &http.Client{Timeout: 4 * time.Second}
 
 	resp, err := client.Get("https://api.chnwt.dev/thai-gold-api/latest")
 	if err != nil {
-		return 0, 0, 0, 0, err
+		return 0, 0, 0, 0, "", err
 	}
 	defer resp.Body.Close()
 
 	var data ChnwtGoldResponse
 	if err := json.NewDecoder(resp.Body).Decode(&data); err != nil {
-		return 0, 0, 0, 0, err
+		return 0, 0, 0, 0, "", err
 	}
 
 	// Remove comma separators (e.g., "70,050.00" -> "70050.00")
@@ -68,29 +69,29 @@ func (h *GoldPriceHandler) fetchPricesFromAPI() (barBuy float64, barSell float64
 	omSell, _ = strconv.ParseFloat(cleanOmSell, 64)
 
 	if barBuy == 0 || barSell == 0 || omBuy == 0 || omSell == 0 {
-		return 0, 0, 0, 0, fmt.Errorf("invalid or zero values parsed from json api")
+		return 0, 0, 0, 0, "", fmt.Errorf("invalid or zero values parsed from json api")
 	}
-	return barBuy, barSell, omBuy, omSell, nil
+	return barBuy, barSell, omBuy, omSell, data.Response.UpdateTime, nil
 }
 
 // scrapeGoldTradersWebsite parses the raw HTML directly from the official source
-func (h *GoldPriceHandler) scrapeGoldTradersWebsite() (barBuy float64, barSell float64, omBuy float64, omSell float64, err error) {
+func (h *GoldPriceHandler) scrapeGoldTradersWebsite() (barBuy, barSell, omBuy, omSell float64, updateTime string, err error) {
 	client := &http.Client{Timeout: 5 * time.Second}
 
 	resp, err := client.Get("https://classic.goldtraders.or.th/")
 	if err != nil {
-		return 0, 0, 0, 0, fmt.Errorf("scraper connection failure: %w", err)
+		return 0, 0, 0, 0, "", fmt.Errorf("scraper connection failure: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return 0, 0, 0, 0, fmt.Errorf("scraper received HTTP error status: %d", resp.StatusCode)
+		return 0, 0, 0, 0, "", fmt.Errorf("scraper received HTTP error status: %d", resp.StatusCode)
 	}
 
 	// Load HTML DOM document
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		return 0, 0, 0, 0, fmt.Errorf("failed parsing gold html structure: %w", err)
+		return 0, 0, 0, 0, "", fmt.Errorf("failed parsing gold html structure: %w", err)
 	}
 
 	// Locate elements via official DOM IDs matching goldtraders.or.th elements
@@ -109,8 +110,10 @@ func (h *GoldPriceHandler) scrapeGoldTradersWebsite() (barBuy float64, barSell f
 	omBuy, _ = strconv.ParseFloat(cleanOmBuy, 64)
 	omSell, _ = strconv.ParseFloat(cleanOmSell, 64)
 
+	updateTime = doc.Find("#DetailPlace_uc_goldprices1_lblAsTime").Text()
+
 	if barBuy == 0 || barSell == 0 || omBuy == 0 || omSell == 0 {
-		return 0, 0, 0, 0, fmt.Errorf("scraper extracted unexpected empty text fields")
+		return 0, 0, 0, 0, "", fmt.Errorf("scraper extracted unexpected empty text fields")
 	}
-	return barBuy, barSell, omBuy, omSell, nil
+	return barBuy, barSell, omBuy, omSell, updateTime, nil
 }

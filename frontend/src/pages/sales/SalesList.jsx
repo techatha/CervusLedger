@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { ListSales, } from '../../../wailsjs/go/handlers/SaleHandler.js'
-// import { GetTodayPrice, UpsertTodayPrice } from '../../../wailsjs/go/handlers/GoldPriceHandler.js'
+import { GetTodayPrice } from '../../../wailsjs/go/handlers/GoldPriceHandler.js'
 import { toBE, formatBaht } from '../../utils/thai'
 import NewSaleForm from './NewSaleForm'
 import './SalesList.css'
@@ -20,9 +20,6 @@ export default function SalesList() {
 
   // Gold price state
   const [price,      setPrice]      = useState(null)
-  const [editPrice,  setEditPrice]  = useState(false)
-  const [priceForm,  setPriceForm]  = useState({ buy: '', sell: '' })
-  const [savingPrice,setSavingPrice]= useState(false)
 
   const loadSales = useCallback(async (t) => {
     setLoading(true)
@@ -41,7 +38,6 @@ export default function SalesList() {
     try {
       const p = await GetTodayPrice()
       setPrice(p)
-      setPriceForm({ buy: String(p.buy_price_per_baht), sell: String(p.sell_price_per_baht) })
     } catch {}
   }, [])
 
@@ -55,21 +51,7 @@ export default function SalesList() {
     loadSales(t)
   }
 
-  const handleSavePrice = async () => {
-    const buy  = parseFloat(priceForm.buy)
-    const sell = parseFloat(priceForm.sell)
-    if (!buy || !sell || buy <= 0 || sell <= 0) return
-    setSavingPrice(true)
-    try {
-      await UpsertTodayPrice(buy, sell)
-      await loadPrice()
-      setEditPrice(false)
-    } catch (e) {
-      setError('บันทึกราคาไม่สำเร็จ: ' + e)
-    } finally {
-      setSavingPrice(false)
-    }
-  }
+
 
   // Summary
   const todaySales = sales.filter(s => s.date === new Date().toISOString().slice(0,10))
@@ -102,62 +84,33 @@ export default function SalesList() {
           <div className="sl-price-label">
             <IconGold />
             ราคาทองวันนี้
-            {price && <span className="sl-price-date">{toBE(price.date)}</span>}
+            {price && <span className="sl-price-date text-xs ml-2 opacity-80">{price.update_time}</span>}
           </div>
 
-          {!editPrice ? (
-            <div className="sl-price-values">
+          <div className="flex flex-col gap-2 w-full max-w-sm">
+            <div className="sl-price-values justify-between">
+              <span className="text-xs font-bold opacity-70 w-16">ทองแท่ง:</span>
               <div className="sl-price-item">
                 <span className="sl-price-type sell">ขาย</span>
-                <span className="sl-price-num">
-                  {price ? price.sell_price_per_baht.toLocaleString('th-TH') : '—'}
-                </span>
-                <span className="sl-price-unit">บาท/บาท</span>
+                <span className="sl-price-num">{price ? price.sell_price_per_baht.toLocaleString('th-TH') : '—'}</span>
               </div>
-              <div className="sl-price-divider" />
               <div className="sl-price-item">
                 <span className="sl-price-type buy">รับซื้อ</span>
-                <span className="sl-price-num">
-                  {price ? price.buy_price_per_baht.toLocaleString('th-TH') : '—'}
-                </span>
-                <span className="sl-price-unit">บาท/บาท</span>
+                <span className="sl-price-num">{price ? price.buy_price_per_baht.toLocaleString('th-TH') : '—'}</span>
               </div>
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => setEditPrice(true)}
-              >
-                <IconEdit /> แก้ไขราคา
-              </button>
             </div>
-          ) : (
-            <div className="sl-price-edit">
-              <div className="sl-price-edit-field">
+            <div className="sl-price-values justify-between">
+              <span className="text-xs font-bold opacity-70 w-16">รูปพรรณ:</span>
+              <div className="sl-price-item">
                 <span className="sl-price-type sell">ขาย</span>
-                <input
-                  className="input sl-price-input"
-                  type="number"
-                  value={priceForm.sell}
-                  onChange={e => setPriceForm(p=>({...p, sell: e.target.value}))}
-                  autoFocus
-                />
+                <span className="sl-price-num">{price ? price.om_sell_price.toLocaleString('th-TH') : '—'}</span>
               </div>
-              <div className="sl-price-edit-field">
+              <div className="sl-price-item">
                 <span className="sl-price-type buy">รับซื้อ</span>
-                <input
-                  className="input sl-price-input"
-                  type="number"
-                  value={priceForm.buy}
-                  onChange={e => setPriceForm(p=>({...p, buy: e.target.value}))}
-                />
+                <span className="sl-price-num">{price ? price.om_buy_price.toLocaleString('th-TH') : '—'}</span>
               </div>
-              <button className="btn btn-primary btn-sm" onClick={handleSavePrice} disabled={savingPrice}>
-                {savingPrice ? '...' : 'บันทึก'}
-              </button>
-              <button className="btn btn-ghost btn-sm" onClick={() => setEditPrice(false)}>
-                ยกเลิก
-              </button>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Today summary */}

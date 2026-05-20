@@ -19,9 +19,10 @@ func (h *GoldPriceHandler) GetTodayPrice() (models.GoldPrice, error) {
 	// 1. Check if we already fetched/saved today's price in our DB
 	var gp models.GoldPrice
 	err := db.DB.QueryRow(`
-        SELECT id, date, buy_price_per_baht, sell_price_per_baht, om_buy_price, om_sell_price
+        SELECT id, date, update_time, buy_price_per_baht, sell_price_per_baht, om_buy_price, om_sell_price
         FROM gold_prices WHERE date = ?
-    `, today).Scan(&gp.ID, &gp.Date, &gp.BuyPricePerBaht, &gp.SellPricePerBaht, &gp.OmBuyPrice, &gp.OmSellPrice)
+        ORDER BY id DESC LIMIT 1
+    `, today).Scan(&gp.ID, &gp.Date, &gp.UpdateTime, &gp.BuyPricePerBaht, &gp.SellPricePerBaht, &gp.OmBuyPrice, &gp.OmSellPrice)
 
 	if err == nil {
 		return gp, nil // Cache hit!
@@ -31,23 +32,25 @@ func (h *GoldPriceHandler) GetTodayPrice() (models.GoldPrice, error) {
 	}
 
 	// 2. Cache miss -> Primary Strategy: Fetch from the clean JSON API
-	barBuy, barSell, omBuy, omSell, err := h.fetchPricesFromAPI()
+	barBuy, barSell, omBuy, omSell, updateTime, err := h.fetchPricesFromAPI()
 	if err != nil {
 		// API Failed? -> Secondary Strategy: Native local scraper execution
-		barBuy, barSell, omBuy, omSell, err = h.scrapeGoldTradersWebsite()
+		barBuy, barSell, omBuy, omSell, updateTime, err = h.scrapeGoldTradersWebsite()
 	}
 
 	// 3. If either API or Scraper succeeded, write back to local cache
 	if err == nil && barBuy > 0 && barSell > 0 {
 		res, insertErr := db.DB.Exec(`
-            INSERT INTO gold_prices (date, buy_price_per_baht, sell_price_per_baht, om_buy_price, om_sell_price)
-            VALUES (?, ?, ?, ?, ?)
-        `, today, barBuy, barSell, omBuy, omSell)
+            INSERT INTO gold_prices (date, update_time, buy_price_per_baht, sell_price_per_baht, om_buy_price, om_sell_price)
+            VALUES (?, ?, ?, ?, ?, ?)
+            ON CONFLICT(update_time) DO NOTHING
+        `, today, updateTime, barBuy, barSell, omBuy, omSell)
 		if insertErr == nil {
 			id, _ := res.LastInsertId()
 			return models.GoldPrice{
 				ID:               int(id),
 				Date:             today,
+				UpdateTime:       updateTime,
 				BuyPricePerBaht:  barBuy,
 				SellPricePerBaht: barSell,
 				OmBuyPrice:       omBuy,
@@ -59,11 +62,11 @@ func (h *GoldPriceHandler) GetTodayPrice() (models.GoldPrice, error) {
 	// 4. TOTAL FAILSAFE: Internet completely down? Fetch the last known historical price
 	var latestGp models.GoldPrice
 	err = db.DB.QueryRow(`
-        SELECT id, date, buy_price_per_baht, sell_price_per_baht, om_buy_price, om_sell_price
+        SELECT id, date, update_time, buy_price_per_baht, sell_price_per_baht, om_buy_price, om_sell_price
         FROM gold_prices
-        ORDER BY date DESC
+        ORDER BY id DESC
         LIMIT 1
-    `).Scan(&latestGp.ID, &latestGp.Date, &latestGp.BuyPricePerBaht, &latestGp.SellPricePerBaht, &latestGp.OmBuyPrice, &latestGp.OmSellPrice)
+    `).Scan(&latestGp.ID, &latestGp.Date, &latestGp.UpdateTime, &latestGp.BuyPricePerBaht, &latestGp.SellPricePerBaht, &latestGp.OmBuyPrice, &latestGp.OmSellPrice)
 
 	if err == nil {
 		return latestGp, nil
@@ -74,35 +77,47 @@ func (h *GoldPriceHandler) GetTodayPrice() (models.GoldPrice, error) {
     return models.GoldPrice{
         ID:               0,
         Date:             today,
+        UpdateTime:       "MANUAL",
         BuyPricePerBaht:  0.0,
         SellPricePerBaht: 0.0,
         OmBuyPrice:       0.0,
         OmSellPrice:      0.0,
     }, nil
 }
-
-// UpsertTodayPrice sets (or updates) today's buy and sell prices.
-// Also syncs the settings table so the app defaults stay current.
-func (h *GoldPriceHandler) UpsertTodayPrice(buy, sell, omBuy, omSell float64) error {
+// fetchAndSaveLatest reaches out to the API (or scraper) and saves to the DB unconditionally.
+func (h *GoldPriceHandler) fetchAndSaveLatest() {
 	today := time.Now().Format("2006-01-02")
-
-	_, err := db.DB.Exec(`
-		INSERT INTO gold_prices (date, buy_price_per_baht, sell_price_per_baht, om_buy_price, om_sell_price)
-		VALUES (?, ?, ?, ?, ?)
-		ON CONFLICT(date) DO UPDATE SET
-		  buy_price_per_baht  = excluded.buy_price_per_baht,
-		  sell_price_per_baht = excluded.sell_price_per_baht,
-		  om_buy_price        = excluded.om_buy_price,
-		  om_sell_price       = excluded.om_sell_price
-	`, today, buy, sell, omBuy, omSell)
+	
+	barBuy, barSell, omBuy, omSell, updateTime, err := h.fetchPricesFromAPI()
 	if err != nil {
-		return fmt.Errorf("upsert gold price: %w", err)
+		barBuy, barSell, omBuy, omSell, updateTime, err = h.scrapeGoldTradersWebsite()
 	}
 
-	// Keep settings in sync
-	// db.DB.Exec(`UPDATE settings SET value = ? WHERE key = 'buy_price_per_baht'`, strconv.FormatFloat(buy, 'f', 2, 64))
-	// db.DB.Exec(`UPDATE settings SET value = ? WHERE key = 'sell_price_per_baht'`, strconv.FormatFloat(sell, 'f', 2, 64))
-	return nil
+	if err == nil && barBuy > 0 && barSell > 0 {
+		db.DB.Exec(`
+			INSERT INTO gold_prices (date, update_time, buy_price_per_baht, sell_price_per_baht, om_buy_price, om_sell_price)
+			VALUES (?, ?, ?, ?, ?, ?)
+			ON CONFLICT(update_time) DO NOTHING
+		`, today, updateTime, barBuy, barSell, omBuy, omSell)
+	}
+}
+
+// StartPolling starts a background worker that fetches prices continuously
+func (h *GoldPriceHandler) StartPolling(interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	go func() {
+		// Run once immediately on startup
+		h.fetchAndSaveLatest()
+		for {
+			select {
+			case <-h.ctx.Done():
+				ticker.Stop()
+				return
+			case <-ticker.C:
+				h.fetchAndSaveLatest()
+			}
+		}
+	}()
 }
 
 // GetPriceHistory returns the last n days of gold prices, newest first.
@@ -111,9 +126,9 @@ func (h *GoldPriceHandler) GetPriceHistory(days int) ([]models.GoldPrice, error)
 		days = 30
 	}
 	rows, err := db.DB.Query(`
-		SELECT id, date, buy_price_per_baht, sell_price_per_baht, om_buy_price, om_sell_price
+		SELECT id, date, update_time, buy_price_per_baht, sell_price_per_baht, om_buy_price, om_sell_price
 		FROM gold_prices
-		ORDER BY date DESC
+		ORDER BY id DESC
 		LIMIT ?
 	`, days)
 	if err != nil {
@@ -124,7 +139,7 @@ func (h *GoldPriceHandler) GetPriceHistory(days int) ([]models.GoldPrice, error)
 	var list []models.GoldPrice
 	for rows.Next() {
 		var gp models.GoldPrice
-		if err := rows.Scan(&gp.ID, &gp.Date, &gp.BuyPricePerBaht, &gp.SellPricePerBaht, &gp.OmBuyPrice, &gp.OmSellPrice); err != nil {
+		if err := rows.Scan(&gp.ID, &gp.Date, &gp.UpdateTime, &gp.BuyPricePerBaht, &gp.SellPricePerBaht, &gp.OmBuyPrice, &gp.OmSellPrice); err != nil {
 			return nil, err
 		}
 		list = append(list, gp)
