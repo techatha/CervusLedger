@@ -110,7 +110,6 @@ func (h *GoldPriceHandler) scrapeGoldTradersWebsite() (barBuy, barSell, omBuy, o
 	omBuy, _ = strconv.ParseFloat(cleanOmBuy, 64)
 	omSell, _ = strconv.ParseFloat(cleanOmSell, 64)
 
-	// Clean updateTime to exclude date: "20/05/2569 เวลา 17:00 น. (ครั้งที่ 34)" -> "เวลา 17:00 น. (ครั้งที่ 34)"
 	rawTime := doc.Find("#DetailPlace_uc_goldprices1_lblAsTime").Text()
 	rawTime = strings.TrimSpace(rawTime)
 	parts := strings.Fields(rawTime)

@@ -1,95 +1,57 @@
-/* ─── Premium Live Market Ticker Layout ─── */
-.market-price-container {
-  background: var(--card-bg);
+/* ─── Top Section Layout ─── */
+.cashier-top-section {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 20px;
+  align-items: stretch; /* Ensures both boxes are exactly the same height */
+}
+
+/* Left side takes 2 parts */
+.cashier-top-section .market-price-container {
+  flex: 2;
+}
+
+/* Right side takes 1 part (25%) */
+.qr-payment-container {
+  flex: 1;
+  background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
 }
 
-.market-price-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+.qr-header {
   border-bottom: 1px solid var(--border);
   padding: 14px 20px;
   background: var(--bg-hover);
+  text-align: center;
 }
 
-.market-price-title-text {
+.qr-title-text {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.price-refresh-btn {
-  background: none;
-  border: none;
+.qr-body {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.qr-placeholder-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
   color: var(--text-muted);
+}
+
+.qr-hint {
   font-size: 12px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: color 0.2s;
 }
-
-.price-refresh-btn:hover {
-  color: var(--text-primary);
-}
-
-.price-refresh-btn.spinning svg {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  100% { transform: rotate(360deg); }
-}
-
-.market-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-  padding: 16px 20px;
-}
-
-.market-col {
-  background: var(--bg-hover);
-  padding: 14px 20px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-}
-
-.market-col-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px dashed var(--border);
-}
-
-.price-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px 0;
-}
-
-.price-lbl {
-  color: var(--text-secondary);
-  font-size: 13px;
-}
-
-.price-val {
-  font-family: var(--font-display, monospace);
-  font-size: 20px;
-  font-weight: 700;
-}
-
-/* Inherit your existing red/green variables for Buy/Sell text */
-.sell-color { color: var(--red); }
-.buy-color  { color: var(--green); }
