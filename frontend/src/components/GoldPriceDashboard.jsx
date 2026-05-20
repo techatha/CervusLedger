@@ -76,30 +76,50 @@ const GoldPriceDashboard = forwardRef(({ onPriceLoaded }, ref) => {
   const renderPriceCell = (label, curr, prev) => {
     const hasPrev = prev !== null && prev !== undefined && prev > 0
     const diff = hasPrev ? curr - prev : 0
-    
+
     let priceColorClass = ''
+    let diffColorVar = 'inherit'
+
     if (diff > 0) {
       priceColorClass = 'buy-color' // green
+      diffColorVar = 'var(--green)'
     } else if (diff < 0) {
       priceColorClass = 'sell-color' // red
+      diffColorVar = 'var(--red)'
     }
-    
+
     return (
       <div className="price-row">
         <span className="price-lbl">{label}</span>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span className={`price-val ${priceColorClass}`}>
-              {curr > 0 ? curr.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}
-            </span>
-            {curr > 0 && diff > 0 && <FontAwesomeIcon icon={faArrowUp} style={{ color: 'var(--green)', fontSize: '13px' }} />}
-            {curr > 0 && diff < 0 && <FontAwesomeIcon icon={faArrowDown} style={{ color: 'var(--red)', fontSize: '13px' }} />}
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+
+          {/* Current Price */}
+          <span className={`price-val ${priceColorClass}`}>
+            {curr > 0 ? curr.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'}
+          </span>
+
+          {/* The Indicator Stack: Arrow on top, Number below it */}
           {curr > 0 && diff !== 0 && (
-            <span style={{ fontSize: '12.5px', fontWeight: '700', color: diff > 0 ? 'var(--green)' : 'var(--red)', marginTop: '2px' }}>
-              {diff > 0 ? '+' : ''}{diff.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              color: diffColorVar,
+              lineHeight: 1
+            }}>
+              {/* Arrow on top */}
+              <FontAwesomeIcon
+                icon={diff > 0 ? faArrowUp : faArrowDown}
+                style={{ fontSize: '12px', marginBottom: '2px' }}
+              />
+
+              {/* Difference Number below it */}
+              <span style={{ fontSize: '11px', fontWeight: '700', fontVariantNumeric: 'tabular-nums' }}>
+                {diff > 0 ? '+' : ''}{diff.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
           )}
+
         </div>
       </div>
     )
