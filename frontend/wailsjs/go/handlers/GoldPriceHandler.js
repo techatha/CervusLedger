@@ -10,6 +10,10 @@ export function GetTodayPrice() {
   return window['go']['handlers']['GoldPriceHandler']['GetTodayPrice']();
 }
 
+export function StartPolling(arg1) {
+  return window['go']['handlers']['GoldPriceHandler']['StartPolling'](arg1);
+}
+
 export function Startup(arg1) {
   return window['go']['handlers']['GoldPriceHandler']['Startup'](arg1);
 }

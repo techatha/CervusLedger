@@ -16,7 +16,7 @@ const BLANK = {
   status:      'available',
 }
 
-export default function GoldForm({ item, onSaved, onClose }) {
+export default function GoldStockForm({ item, onSaved, onClose }) {
   const isEdit = !!item
   const [form,   setForm]   = useState(BLANK)
   const [saving, setSaving] = useState(false)

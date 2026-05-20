@@ -4,7 +4,7 @@ import CustomerList    from './pages/customers/CustomerList'
 import CustomerProfile from './pages/customers/CustomerProfile'
 import PawnList        from './pages/pawns/PawnList'
 import PawnDetail      from './pages/pawns/PawnDetail'
-import GoldList        from './pages/gold/GoldList'
+import GoldStockList   from './pages/gold_stock/GoldStockList'
 import SalesList       from './pages/sales/SalesList'
 import IncomePage      from './pages/income/IncomePage'
 import './App.css'
@@ -36,7 +36,7 @@ function App() {
             <Route path="/customers/:id" element={<CustomerProfile />} />
             <Route path="/pawns"         element={<PawnList />} />
             <Route path="/pawns/:id"     element={<PawnDetail />} />
-            <Route path="/gold"          element={<GoldList />} />
+            <Route path="/gold"          element={<GoldStockList />} />
             <Route path="/sales"         element={<SalesList />} />
             <Route path="/income"        element={<IncomePage />} />
             <Route path="/dashboard"     element={<Placeholder title="แดชบอร์ด" />} />

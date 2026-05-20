@@ -4,8 +4,8 @@ import {
   DeleteGoldItem,
 } from '../../../wailsjs/go/handlers/GoldItemHandler'
 import { toBE } from '../../utils/thai'
-import GoldForm from './GoldForm'
-import './GoldList.css'
+import GoldStockForm from './GoldStockForm'
+import './GoldStockList.css'
 
 const STATUS_TABS = [
   { value: '',            label: 'ทั้งหมด'  },
@@ -19,7 +19,7 @@ const PURITY_COLOR = {
   '99.9%':  'badge-gold',
 }
 
-export default function GoldList() {
+export default function GoldStockList() {
   const [items,   setItems]   = useState([])
   const [status,  setStatus]  = useState('')
   const [loading, setLoading] = useState(true)
@@ -185,7 +185,7 @@ export default function GoldList() {
 
       {/* Form modal */}
       {modal !== null && (
-        <GoldForm
+        <GoldStockForm
           item={modal === 'new' ? null : modal}
           onSaved={() => { setModal(null); load(status) }}
           onClose={() => setModal(null)}
