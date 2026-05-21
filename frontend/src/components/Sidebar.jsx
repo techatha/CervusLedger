@@ -1,15 +1,16 @@
 import { NavLink } from 'react-router-dom'
 import './Sidebar.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { 
+import {
   faHouse,
-  faGem, 
-  faBoxesStacked, 
-  faPiggyBank, 
-  faSackDollar, 
-  faGears, 
+  faGem,
+  faBoxesStacked,
+  faPiggyBank,
+  faSackDollar,
+  faGears,
   faUsers,
   faClipboardList,
+  faHandHoldingDollar,
 } from '@fortawesome/free-solid-svg-icons'
 
 const NAV = [
@@ -31,6 +32,7 @@ const NAV = [
     items: [
       { to: '/gold', icon: <FontAwesomeIcon icon={faBoxesStacked} />, label: 'สต็อกทอง' },
       { to: '/sales', icon: <FontAwesomeIcon icon={faSackDollar} />, label: 'ซื้อ-ขาย' },
+      { to: '/buy', icon: <FontAwesomeIcon icon={faHandHoldingDollar} />, label: 'รับซื้อของเก่า' },
     ],
   },
   {

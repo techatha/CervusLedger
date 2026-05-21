@@ -28,6 +28,11 @@ func Init(dbPath string) {
 
 
 func createTables() {
+	// Drop old gold_items, gold_stock_logs, and purchased_gold tables to apply new schema structure cleanly
+	_, _ = DB.Exec(`DROP TABLE IF EXISTS gold_stock_logs`)
+	_, _ = DB.Exec(`DROP TABLE IF EXISTS gold_items`)
+	_, _ = DB.Exec(`DROP TABLE IF EXISTS purchased_gold`)
+
 	queries := []string{
 
 		// Customers
@@ -39,8 +44,8 @@ func createTables() {
 			phone           TEXT,
 			id_card         TEXT UNIQUE,
 			address_no      TEXT,
-			address_line    TEXT,
 			moo             TEXT,
+			soi             TEXT,
 			road            TEXT,
 			tambon          TEXT,
 			amphoe          TEXT,
@@ -48,15 +53,38 @@ func createTables() {
 			created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 
-		// Gold inventory (baht weight)
+		// Gold inventory catalog (SKUs) - simplified, no purity
 		`CREATE TABLE IF NOT EXISTS gold_items (
 			id          INTEGER PRIMARY KEY AUTOINCREMENT,
 			type        TEXT NOT NULL,
 			weight_baht REAL NOT NULL,
-			purity      TEXT,
-			description TEXT,
-			status      TEXT DEFAULT 'available',
 			created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		// Gold monthly stock counts
+		`CREATE TABLE IF NOT EXISTS gold_stock_logs (
+			id           INTEGER PRIMARY KEY AUTOINCREMENT,
+			gold_item_id INTEGER NOT NULL,
+			amount       INTEGER NOT NULL DEFAULT 0,
+			log_date     DATE NOT NULL,
+			created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (gold_item_id) REFERENCES gold_items(id),
+			UNIQUE(gold_item_id, log_date)
+		)`,
+
+		// Purchased gold ledger from customers (no purity, no price_per_baht)
+		`CREATE TABLE IF NOT EXISTS purchased_gold (
+			id             INTEGER PRIMARY KEY AUTOINCREMENT,
+			customer_id    INTEGER NOT NULL,
+			type           TEXT NOT NULL,
+			weight_baht    REAL NOT NULL,
+			total_amount   REAL NOT NULL DEFAULT 0,
+			notes          TEXT,
+			date           DATE NOT NULL,
+			is_inventory   INTEGER DEFAULT 0,
+			still_exists   INTEGER DEFAULT 1,
+			created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (customer_id) REFERENCES customers(id)
 		)`,
 
 		// Daily gold price

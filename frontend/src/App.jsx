@@ -6,6 +6,7 @@ import PawnList        from './pages/pawns/PawnList'
 import PawnDetail      from './pages/pawns/PawnDetail'
 import GoldStockList   from './pages/gold_stock/GoldStockList'
 import SalesList       from './pages/sales/SalesList'
+import PurchaseHistory from './pages/purchase_his/PurchaseHistory'
 import IncomePage      from './pages/income/IncomePage'
 import './App.css'
 
@@ -38,6 +39,7 @@ function App() {
             <Route path="/pawns/:id"     element={<PawnDetail />} />
             <Route path="/gold"          element={<GoldStockList />} />
             <Route path="/sales"         element={<SalesList />} />
+            <Route path="/buy"           element={<PurchaseHistory />} />
             <Route path="/income"        element={<IncomePage />} />
             <Route path="/dashboard"     element={<Placeholder title="แดชบอร์ด" />} />
             <Route path="/settings"      element={<Placeholder title="ตั้งค่า" />} />

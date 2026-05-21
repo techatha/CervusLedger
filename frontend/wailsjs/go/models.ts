@@ -42,9 +42,6 @@ export namespace models {
 	    id: number;
 	    type: string;
 	    weight_baht: number;
-	    purity: string;
-	    description: string;
-	    status: string;
 	    created_at: string;
 	
 	    static createFrom(source: any = {}) {
@@ -56,9 +53,6 @@ export namespace models {
 	        this.id = source["id"];
 	        this.type = source["type"];
 	        this.weight_baht = source["weight_baht"];
-	        this.purity = source["purity"];
-	        this.description = source["description"];
-	        this.status = source["status"];
 	        this.created_at = source["created_at"];
 	    }
 	}
@@ -66,9 +60,6 @@ export namespace models {
 	    id: number;
 	    type: string;
 	    weight_baht: number;
-	    purity: string;
-	    description: string;
-	    status: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new GoldItemInput(source);
@@ -79,9 +70,6 @@ export namespace models {
 	        this.id = source["id"];
 	        this.type = source["type"];
 	        this.weight_baht = source["weight_baht"];
-	        this.purity = source["purity"];
-	        this.description = source["description"];
-	        this.status = source["status"];
 	    }
 	}
 	export class GoldPrice {
@@ -106,6 +94,46 @@ export namespace models {
 	        this.sell_price_per_baht = source["sell_price_per_baht"];
 	        this.om_buy_price = source["om_buy_price"];
 	        this.om_sell_price = source["om_sell_price"];
+	    }
+	}
+	export class GoldStockLog {
+	    id: number;
+	    gold_item_id: number;
+	    type: string;
+	    weight_baht: number;
+	    amount: number;
+	    log_date: string;
+	    created_at: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new GoldStockLog(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.gold_item_id = source["gold_item_id"];
+	        this.type = source["type"];
+	        this.weight_baht = source["weight_baht"];
+	        this.amount = source["amount"];
+	        this.log_date = source["log_date"];
+	        this.created_at = source["created_at"];
+	    }
+	}
+	export class GoldStockLogInput {
+	    gold_item_id: number;
+	    amount: number;
+	    log_date: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new GoldStockLogInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.gold_item_id = source["gold_item_id"];
+	        this.amount = source["amount"];
+	        this.log_date = source["log_date"];
 	    }
 	}
 	export class IncomeExpense {
@@ -380,6 +408,38 @@ export namespace models {
 	        this.notes = source["notes"];
 	    }
 	}
+	export class PurchasedGold {
+	    id: number;
+	    customer_id: number;
+	    customer_name: string;
+	    type: string;
+	    weight_baht: number;
+	    total_amount: number;
+	    notes: string;
+	    date: string;
+	    is_inventory: number;
+	    still_exists: number;
+	    created_at: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PurchasedGold(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.customer_id = source["customer_id"];
+	        this.customer_name = source["customer_name"];
+	        this.type = source["type"];
+	        this.weight_baht = source["weight_baht"];
+	        this.total_amount = source["total_amount"];
+	        this.notes = source["notes"];
+	        this.date = source["date"];
+	        this.is_inventory = source["is_inventory"];
+	        this.still_exists = source["still_exists"];
+	        this.created_at = source["created_at"];
+	    }
+	}
 	export class Sale {
 	    id: number;
 	    customer_id: number;
@@ -427,8 +487,7 @@ export namespace models {
 	    notes: string;
 	    date: string;
 	    item_type: string;
-	    purity: string;
-	    description: string;
+	    is_inventory: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new SaleInput(source);
@@ -446,8 +505,7 @@ export namespace models {
 	        this.notes = source["notes"];
 	        this.date = source["date"];
 	        this.item_type = source["item_type"];
-	        this.purity = source["purity"];
-	        this.description = source["description"];
+	        this.is_inventory = source["is_inventory"];
 	    }
 	}
 

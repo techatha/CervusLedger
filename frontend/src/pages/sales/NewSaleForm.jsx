@@ -20,14 +20,13 @@ const BLANK_SELL = {
 
 const BLANK_BUY = {
   item_type:      '',
-  purity:         '96.5%',
-  description:    '',
   weight_baht:    '',
   customer_id:    0,
   customer_label: '',
-  price_per_baht: '',
+  total_amount:   '',
   notes:          '',
   date:           today(),
+  is_inventory:   0,
 }
 
 // ── NEW BLANK STATE FOR DISCOUNT MODE ──
@@ -54,7 +53,6 @@ export default function NewSaleForm({ defaultType, todayPrice, onSaved, onClose,
 
   const [buy, setBuy] = useState({
     ...BLANK_BUY,
-    price_per_baht: todayPrice ? String(todayPrice.buy_price_per_baht) : '',
   })
 
   // ── NEW DISCOUNT STATE ──
@@ -110,9 +108,7 @@ export default function NewSaleForm({ defaultType, todayPrice, onSaved, onClose,
     ? sell.gold_item_weight * parseFloat(sell.price_per_baht || 0)
     : 0
 
-  const buyTotal = buy.weight_baht && buy.price_per_baht
-    ? parseFloat(buy.weight_baht) * parseFloat(buy.price_per_baht || 0)
-    : 0
+  const buyTotal = buy.total_amount ? parseFloat(buy.total_amount || 0) : 0
 
   // ── NEW LIVE DISCOUNT TOTAL ──
   const discountTotal = discount.amount ? parseFloat(discount.amount || 0) : 0
@@ -157,7 +153,6 @@ export default function NewSaleForm({ defaultType, todayPrice, onSaved, onClose,
     setGoldSearch('')
     if (todayPrice) {
       if (t === 'sell') setSellField('price_per_baht', String(todayPrice.sell_price_per_baht))
-      else if (t === 'buy') setBuyField('price_per_baht',  String(todayPrice.buy_price_per_baht))
     }
   }
 
@@ -169,9 +164,10 @@ export default function NewSaleForm({ defaultType, todayPrice, onSaved, onClose,
       if (!sell.gold_item_id)    { setError('กรุณาเลือกรายการทองที่จะขาย'); return }
       if (!sell.price_per_baht)  { setError('กรุณากรอกราคา/บาท'); return }
     } else if (tab === 'buy') {
+      if (!buy.customer_id)      { setError('กรุณาเลือกลูกค้าสำหรับการรับซื้อทอง'); return }
       if (!buy.item_type.trim()) { setError('กรุณากรอกประเภททอง'); return }
       if (!buy.weight_baht)      { setError('กรุณากรอกน้ำหนัก'); return }
-      if (!buy.price_per_baht)   { setError('กรุณากรอกราคา/บาท'); return }
+      if (!buy.total_amount)     { setError('กรุณากรอกราคารับซื้อรวม'); return }
     } else if (tab === 'discount') {
       if (!discount.title.trim()) { setError('กรุณากรอกหัวข้อส่วนลด'); return }
       if (!discount.amount || parseFloat(discount.amount) <= 0) { setError('กรุณากรอกมูลค่าส่วนลดให้ถูกต้อง'); return }
@@ -204,15 +200,14 @@ export default function NewSaleForm({ defaultType, todayPrice, onSaved, onClose,
           gold_item_id:  0,
           weight_baht:   parseFloat(buy.weight_baht),
           gold_price_id: priceID,
-          price_per_baht: parseFloat(buy.price_per_baht),
+          price_per_baht: 0,
           total_amount:  buyTotal,
           notes:         buy.notes,
           date:          buy.date,
           item_type:     buy.item_type,
-          purity:        buy.purity,
-          description:   buy.description,
+          is_inventory:  buy.is_inventory,
         }
-        label = `${buy.item_type} ${buy.purity}${buy.description ? ` (${buy.description})` : ''}`
+        label = `รับซื้อ: ${buy.item_type} — ${buy.weight_baht} บาท`
       } else if (tab === 'discount') {
         // Formulating the generic deduction payload object for the cashier map queue
         payload = {
@@ -348,43 +343,43 @@ export default function NewSaleForm({ defaultType, todayPrice, onSaved, onClose,
           {tab === 'buy' && (
             <>
               <div className="section-divider">รายละเอียดทอง</div>
-              <div className="form-row form-row-2">
-                <div className="form-group">
-                  <label className="form-label form-label-required">ประเภท</label>
-                  <input
-                    className="input"
-                    placeholder="เช่น สร้อยคอ, แหวน"
-                    value={buy.item_type}
-                    onChange={e => setBuyField('item_type', e.target.value)}
-                    autoFocus
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">ความบริสุทธิ์</label>
-                  <select className="input" value={buy.purity} onChange={e => setBuyField('purity', e.target.value)}>
-                    {PURITIES.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
-              </div>
               <div className="form-group">
-                <label className="form-label">รายละเอียด</label>
-                <input className="input" placeholder="ลักษณะ, ตราประทับ..." value={buy.description} onChange={e => setBuyField('description', e.target.value)} />
+                <label className="form-label form-label-required">ประเภททอง</label>
+                <input
+                  className="input"
+                  placeholder="เช่น สร้อยคอ, แหวน"
+                  value={buy.item_type}
+                  onChange={e => setBuyField('item_type', e.target.value)}
+                  autoFocus
+                />
               </div>
 
-              <div className="section-divider">ราคา</div>
+              <div className="section-divider">ราคา & วันที่</div>
               <div className="form-row form-row-3">
                 <div className="form-group">
                   <label className="form-label form-label-required">น้ำหนัก (บาท)</label>
                   <input className="input" type="number" placeholder="0.00" min="0" step="0.0001" value={buy.weight_baht} onChange={e => setBuyField('weight_baht', e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label form-label-required">ราคา / บาท (บาท)</label>
-                  <input className="input" type="number" value={buy.price_per_baht} onChange={e => setBuyField('price_per_baht', e.target.value)} placeholder="0" />
+                  <label className="form-label form-label-required">ราคารับซื้อรวม (บาท)</label>
+                  <input className="input" type="number" value={buy.total_amount} onChange={e => setBuyField('total_amount', e.target.value)} placeholder="0" />
                 </div>
                 <div className="form-group">
                   <label className="form-label">วันที่</label>
                   <input className="input" type="date" value={buy.date} onChange={e => setBuyField('date', e.target.value)} />
                 </div>
+              </div>
+
+              <div className="form-group" style={{ marginTop: '15px' }}>
+                <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}>
+                  <input
+                    type="checkbox"
+                    checked={buy.is_inventory === 1}
+                    onChange={e => setBuyField('is_inventory', e.target.checked ? 1 : 0)}
+                    style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
+                  />
+                  <span>นำเข้าคลังสินค้าหลัก (บันทึกในคลังสำหรับนับสต็อกประจำเดือน)</span>
+                </label>
               </div>
             </>
           )}
@@ -445,7 +440,9 @@ export default function NewSaleForm({ defaultType, todayPrice, onSaved, onClose,
               <div className="section-divider">ลูกค้า & หมายเหตุ</div>
               <div className="form-row form-row-2">
                 <div className="form-group" ref={custRef} style={{ position:'relative' }}>
-                  <label className="form-label">ลูกค้า (ไม่บังคับ)</label>
+                  <label className={`form-label ${tab === 'buy' ? 'form-label-required' : ''}`}>
+                    {tab === 'buy' ? 'ลูกค้า' : 'ลูกค้า (ไม่บังคับ)'}
+                  </label>
                   <input
                     className="input"
                     placeholder="ค้นหาชื่อหรือเบอร์..."
@@ -470,8 +467,11 @@ export default function NewSaleForm({ defaultType, todayPrice, onSaved, onClose,
                   <input
                     className="input"
                     placeholder="(ไม่บังคับ)"
-                    value={sell.notes}
-                    onChange={e => setSellField('notes', e.target.value)}
+                    value={tab === 'sell' ? sell.notes : buy.notes}
+                    onChange={e => {
+                      if (tab === 'sell') setSellField('notes', e.target.value)
+                      else if (tab === 'buy') setBuyField('notes', e.target.value)
+                    }}
                   />
                 </div>
               </div>

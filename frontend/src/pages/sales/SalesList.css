@@ -201,3 +201,35 @@
   color: var(--text-primary) !important;
   border-color: var(--text-primary) !important;
 }
+
+/* Sales Page Tab Switcher */
+.sales-tabs-container {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+.sales-tab-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 15px;
+  font-weight: 600;
+  padding: 8px 16px;
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: all var(--transition);
+}
+
+.sales-tab-btn:hover {
+  color: var(--text-primary);
+  background: var(--bg-hover);
+}
+
+.sales-tab-btn-active {
+  color: var(--gold) !important;
+  background: var(--bg-active) !important;
+  border: 1px solid var(--gold-dim);
+}

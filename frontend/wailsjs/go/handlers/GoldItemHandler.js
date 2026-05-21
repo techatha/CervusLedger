@@ -18,6 +18,14 @@ export function ListGoldItems(arg1) {
   return window['go']['handlers']['GoldItemHandler']['ListGoldItems'](arg1);
 }
 
+export function ListStockLogs(arg1) {
+  return window['go']['handlers']['GoldItemHandler']['ListStockLogs'](arg1);
+}
+
+export function RecordStockLog(arg1) {
+  return window['go']['handlers']['GoldItemHandler']['RecordStockLog'](arg1);
+}
+
 export function SetGoldItemStatus(arg1, arg2) {
   return window['go']['handlers']['GoldItemHandler']['SetGoldItemStatus'](arg1, arg2);
 }

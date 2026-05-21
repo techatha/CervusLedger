@@ -6,14 +6,9 @@ const GOLD_TYPES = [
   'ต่างหู', 'กำไล', 'จี้', 'เหรียญทอง', 'อื่นๆ',
 ]
 
-const PURITIES = ['96.5%', '99.9%', '99.99%', '90%', 'อื่นๆ']
-
 const BLANK = {
   type:        '',
   weight_baht: '',
-  purity:      '96.5%',
-  description: '',
-  status:      'available',
 }
 
 export default function GoldStockForm({ item, onSaved, onClose }) {
@@ -27,9 +22,6 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
       setForm({
         type:        item.type        || '',
         weight_baht: item.weight_baht != null ? String(item.weight_baht) : '',
-        purity:      item.purity      || '96.5%',
-        description: item.description || '',
-        status:      item.status      || 'available',
       })
     }
   }, [item])
@@ -53,9 +45,6 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
         id:          isEdit ? item.id : 0,
         type:        form.type,
         weight_baht: parseFloat(form.weight_baht),
-        purity:      form.purity,
-        description: form.description,
-        status:      form.status,
       }
       if (isEdit) {
         await UpdateGoldItem(payload)
@@ -111,60 +100,18 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
             />
           </div>
 
-          <div className="form-row form-row-2">
-            <div className="form-group">
-              <label className="form-label form-label-required">น้ำหนัก (บาท)</label>
-              <input
-                className="input"
-                type="number"
-                placeholder="0.00"
-                min="0"
-                step="0.0001"
-                value={form.weight_baht}
-                onChange={e => set('weight_baht', e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">ความบริสุทธิ์</label>
-              <select
-                className="input"
-                value={form.purity}
-                onChange={e => set('purity', e.target.value)}
-              >
-                {PURITIES.map(p => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
           <div className="form-group">
-            <label className="form-label">รายละเอียดเพิ่มเติม</label>
+            <label className="form-label form-label-required">น้ำหนัก (บาท)</label>
             <input
               className="input"
-              placeholder="ลักษณะ, เครื่องหมาย, ยี่ห้อ..."
-              value={form.description}
-              onChange={e => set('description', e.target.value)}
+              type="number"
+              placeholder="0.00"
+              min="0"
+              step="0.0001"
+              value={form.weight_baht}
+              onChange={e => set('weight_baht', e.target.value)}
             />
           </div>
-
-          {/* Status — only show when editing */}
-          {isEdit && (
-            <>
-              <div className="section-divider">สถานะ</div>
-              <div className="form-group">
-                <label className="form-label">สถานะรายการ</label>
-                <select
-                  className="input"
-                  value={form.status}
-                  onChange={e => set('status', e.target.value)}
-                >
-                  <option value="available">มีอยู่</option>
-                  <option value="sold">ขายแล้ว</option>
-                </select>
-              </div>
-            </>
-          )}
         </div>
 
         <div className="modal-footer">

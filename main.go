@@ -37,6 +37,7 @@ func main() {
 	goldItemHandler := handlers.NewGoldItemHandler()
 	saleHandler := handlers.NewSaleHandler()
 	goldPriceHandler := handlers.NewGoldPriceHandler()
+	purchaseHandler := handlers.NewPurchaseHandler()
 
 	err := wails.Run(&options.App{
 		Title:  "CervusLedger",
@@ -54,6 +55,7 @@ func main() {
 			goldItemHandler.Startup(ctx)
 			saleHandler.Startup(ctx)
 			goldPriceHandler.Startup(ctx)
+			purchaseHandler.Startup(ctx)
 			
 			// Start background polling worker
 			go goldPriceHandler.StartPolling(2 * time.Minute)
@@ -66,6 +68,7 @@ func main() {
 			goldItemHandler,
 			saleHandler,
 			goldPriceHandler,
+			purchaseHandler,
 		},
 	})
 
