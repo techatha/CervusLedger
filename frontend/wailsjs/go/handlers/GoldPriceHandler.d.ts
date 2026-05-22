@@ -13,3 +13,5 @@ export function GetTodayPrice():Promise<models.GoldPrice>;
 export function StartPolling(arg1:time.Duration):Promise<void>;
 
 export function Startup(arg1:context.Context):Promise<void>;
+
+export function UpsertTodayPrice(arg1:number,arg2:number):Promise<void>;

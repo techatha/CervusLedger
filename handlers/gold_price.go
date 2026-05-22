@@ -236,3 +236,19 @@ func (h *GoldPriceHandler) settingsGoldPrices() (buy, sell float64) {
 	}
 	return
 }
+
+// UpsertTodayPrice sets (or updates) today's buy and sell prices.
+func (h *GoldPriceHandler) UpsertTodayPrice(buy, sell float64) error {
+	today := time.Now().Format("2006-01-02")
+	updateTime := fmt.Sprintf("Manual %s", time.Now().Format("15:04:05"))
+
+	_, err := db.DB.Exec(`
+		INSERT INTO gold_prices (date, update_time, buy_price_per_baht, sell_price_per_baht, om_buy_price, om_sell_price)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, today, updateTime, buy, sell, buy, sell)
+	if err != nil {
+		return fmt.Errorf("upsert gold price: %w", err)
+	}
+
+	return nil
+}

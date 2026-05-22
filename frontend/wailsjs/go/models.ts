@@ -38,6 +38,150 @@ export namespace models {
 	        this.created_at = source["created_at"];
 	    }
 	}
+	export class IncomeExpense {
+	    id: number;
+	    type: string;
+	    category: string;
+	    amount: number;
+	    notes: string;
+	    source: string;
+	    date: string;
+	    created_at: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new IncomeExpense(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.type = source["type"];
+	        this.category = source["category"];
+	        this.amount = source["amount"];
+	        this.notes = source["notes"];
+	        this.source = source["source"];
+	        this.date = source["date"];
+	        this.created_at = source["created_at"];
+	    }
+	}
+	export class PawnRecord {
+	    id: number;
+	    ticket_number: number;
+	    customer_id: number;
+	    customer_name?: string;
+	    item_type: string;
+	    weight_grams: number;
+	    description: string;
+	    pawned_date: string;
+	    initial_principal: number;
+	    current_principal: number;
+	    monthly_interest_rate: number;
+	    interest_amount: number;
+	    status: string;
+	    ticket_status: string;
+	    created_at: string;
+	    last_paid_month?: number;
+	    last_paid_year?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PawnRecord(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.ticket_number = source["ticket_number"];
+	        this.customer_id = source["customer_id"];
+	        this.customer_name = source["customer_name"];
+	        this.item_type = source["item_type"];
+	        this.weight_grams = source["weight_grams"];
+	        this.description = source["description"];
+	        this.pawned_date = source["pawned_date"];
+	        this.initial_principal = source["initial_principal"];
+	        this.current_principal = source["current_principal"];
+	        this.monthly_interest_rate = source["monthly_interest_rate"];
+	        this.interest_amount = source["interest_amount"];
+	        this.status = source["status"];
+	        this.ticket_status = source["ticket_status"];
+	        this.created_at = source["created_at"];
+	        this.last_paid_month = source["last_paid_month"];
+	        this.last_paid_year = source["last_paid_year"];
+	    }
+	}
+	export class GoldPrice {
+	    id: number;
+	    date: string;
+	    update_time: string;
+	    buy_price_per_baht: number;
+	    sell_price_per_baht: number;
+	    om_buy_price: number;
+	    om_sell_price: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new GoldPrice(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.date = source["date"];
+	        this.update_time = source["update_time"];
+	        this.buy_price_per_baht = source["buy_price_per_baht"];
+	        this.sell_price_per_baht = source["sell_price_per_baht"];
+	        this.om_buy_price = source["om_buy_price"];
+	        this.om_sell_price = source["om_sell_price"];
+	    }
+	}
+	export class DashboardStats {
+	    today_price: GoldPrice;
+	    active_pawn_count: number;
+	    active_pawn_principal: number;
+	    paid_this_month: number;
+	    unpaid_this_month: number;
+	    today_income: number;
+	    today_expense: number;
+	    today_new_pawns: number;
+	    month_interest_collected: number;
+	    recent_pawns: PawnRecord[];
+	    recent_activity: IncomeExpense[];
+	
+	    static createFrom(source: any = {}) {
+	        return new DashboardStats(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.today_price = this.convertValues(source["today_price"], GoldPrice);
+	        this.active_pawn_count = source["active_pawn_count"];
+	        this.active_pawn_principal = source["active_pawn_principal"];
+	        this.paid_this_month = source["paid_this_month"];
+	        this.unpaid_this_month = source["unpaid_this_month"];
+	        this.today_income = source["today_income"];
+	        this.today_expense = source["today_expense"];
+	        this.today_new_pawns = source["today_new_pawns"];
+	        this.month_interest_collected = source["month_interest_collected"];
+	        this.recent_pawns = this.convertValues(source["recent_pawns"], PawnRecord);
+	        this.recent_activity = this.convertValues(source["recent_activity"], IncomeExpense);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class GoldItem {
 	    id: number;
 	    type: string;
@@ -72,30 +216,7 @@ export namespace models {
 	        this.weight_baht = source["weight_baht"];
 	    }
 	}
-	export class GoldPrice {
-	    id: number;
-	    date: string;
-	    update_time: string;
-	    buy_price_per_baht: number;
-	    sell_price_per_baht: number;
-	    om_buy_price: number;
-	    om_sell_price: number;
 	
-	    static createFrom(source: any = {}) {
-	        return new GoldPrice(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.date = source["date"];
-	        this.update_time = source["update_time"];
-	        this.buy_price_per_baht = source["buy_price_per_baht"];
-	        this.sell_price_per_baht = source["sell_price_per_baht"];
-	        this.om_buy_price = source["om_buy_price"];
-	        this.om_sell_price = source["om_sell_price"];
-	    }
-	}
 	export class GoldStockLog {
 	    id: number;
 	    gold_item_id: number;
@@ -136,32 +257,7 @@ export namespace models {
 	        this.log_date = source["log_date"];
 	    }
 	}
-	export class IncomeExpense {
-	    id: number;
-	    type: string;
-	    category: string;
-	    amount: number;
-	    notes: string;
-	    source: string;
-	    date: string;
-	    created_at: string;
 	
-	    static createFrom(source: any = {}) {
-	        return new IncomeExpense(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.type = source["type"];
-	        this.category = source["category"];
-	        this.amount = source["amount"];
-	        this.notes = source["notes"];
-	        this.source = source["source"];
-	        this.date = source["date"];
-	        this.created_at = source["created_at"];
-	    }
-	}
 	export class IncomeExpenseFilter {
 	    type: string;
 	    source: string;
@@ -294,50 +390,7 @@ export namespace models {
 	        this.ticket_number = source["ticket_number"];
 	    }
 	}
-	export class PawnRecord {
-	    id: number;
-	    ticket_number: number;
-	    customer_id: number;
-	    customer_name?: string;
-	    item_type: string;
-	    weight_grams: number;
-	    description: string;
-	    pawned_date: string;
-	    initial_principal: number;
-	    current_principal: number;
-	    monthly_interest_rate: number;
-	    interest_amount: number;
-	    status: string;
-	    ticket_status: string;
-	    created_at: string;
-	    last_paid_month?: number;
-	    last_paid_year?: number;
 	
-	    static createFrom(source: any = {}) {
-	        return new PawnRecord(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.ticket_number = source["ticket_number"];
-	        this.customer_id = source["customer_id"];
-	        this.customer_name = source["customer_name"];
-	        this.item_type = source["item_type"];
-	        this.weight_grams = source["weight_grams"];
-	        this.description = source["description"];
-	        this.pawned_date = source["pawned_date"];
-	        this.initial_principal = source["initial_principal"];
-	        this.current_principal = source["current_principal"];
-	        this.monthly_interest_rate = source["monthly_interest_rate"];
-	        this.interest_amount = source["interest_amount"];
-	        this.status = source["status"];
-	        this.ticket_status = source["ticket_status"];
-	        this.created_at = source["created_at"];
-	        this.last_paid_month = source["last_paid_month"];
-	        this.last_paid_year = source["last_paid_year"];
-	    }
-	}
 	export class PawnSettings {
 	    LowRate: number;
 	    HighRate: number;

@@ -1,0 +1,152 @@
+.sct-card {
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+/* ─── Reader graphic ──────────────────────────────────── */
+.sct-reader-graphic {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.sct-reader-icon {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--bg-hover);
+  border: 2px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  transition: all 0.3s;
+}
+
+.sct-reading {
+  border-color: var(--gold) !important;
+  color: var(--gold) !important;
+  background: var(--gold-dim) !important;
+  animation: sct-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes sct-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(200,150,60,0.3); }
+  50%       { box-shadow: 0 0 0 10px rgba(200,150,60,0); }
+}
+
+.sct-reader-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+/* ─── Spinner ─────────────────────────────────────────── */
+.sct-spinner {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ─── Result grid ─────────────────────────────────────── */
+.sct-result {
+  width: 100%;
+  max-width: 480px;
+  border: 1px solid var(--green-bg);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--green-bg);
+}
+
+.sct-result-header {
+  padding: 10px 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--green);
+  border-bottom: 1px solid rgba(61,154,104,0.2);
+}
+
+.sct-result-grid {
+  background: var(--bg-surface);
+}
+
+.sct-result-row {
+  display: flex;
+  gap: 12px;
+  padding: 9px 20px;
+  border-bottom: 1px solid var(--divider);
+}
+.sct-result-row:last-child { border-bottom: none; }
+
+.sct-result-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  min-width: 120px;
+  padding-top: 1px;
+}
+
+.sct-result-value {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.sct-mono {
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+/* ─── Setup steps ─────────────────────────────────────── */
+.sct-setup {}
+
+.sct-step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.sct-step-num {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--gold-dim);
+  color: var(--gold);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.sct-step-label {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.sct-code {
+  display: inline-block;
+  padding: 4px 10px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  color: var(--text-primary);
+}
