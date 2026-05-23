@@ -1,5 +1,8 @@
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { useState } from 'react'
+import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import Sidebar         from './components/Sidebar'
+import SmartCardWatcher from './components/SmartCardWatcher'
+import CustomerForm     from './pages/customers/CustomerForm'
 import Dashboard       from './pages/dashboard/Dashboard'
 import CustomerList    from './pages/customers/CustomerList'
 import CustomerProfile from './pages/customers/CustomerProfile'
@@ -28,28 +31,58 @@ const Placeholder = ({ title }) => (
   </div>
 )
 
+function AppContent() {
+  const [registerCardData, setRegisterCardData] = useState(null)
+  const navigate = useNavigate()
+
+  return (
+    <div className="app-shell">
+      <Sidebar />
+      <main className="app-main">
+        <Routes>
+          <Route path="/"              element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard"     element={<Dashboard />} />
+          <Route path="/customers"     element={<CustomerList />} />
+          <Route path="/customers/:id" element={<CustomerProfile />} />
+          <Route path="/pawns"         element={<PawnList />} />
+          <Route path="/pawns/:id"     element={<PawnDetail />} />
+          <Route path="/gold"          element={<GoldStockList />} />
+          <Route path="/sales"         element={<SalesList />} />
+          <Route path="/buy"           element={<PurchaseHistory />} />
+          <Route path="/income"        element={<IncomePage />} />
+          <Route path="/settings"      element={<SettingsPage />} />
+          <Route path="/smartcard"     element={<SmartCardTest />} />
+        </Routes>
+      </main>
+
+      {/* Global Smartcard Insertion Watcher */}
+      <SmartCardWatcher onOpenRegisterModal={(card) => setRegisterCardData(card)} />
+
+      {/* Unregistered Customer Auto-Registration Modal */}
+      {registerCardData && (
+        <CustomerForm
+          customerId={null}
+          initialCardData={registerCardData}
+          onSaved={(newId) => {
+            setRegisterCardData(null)
+            if (newId) {
+              const isPawnFormOpen = document.querySelector('.npf-modal') !== null
+              if (!isPawnFormOpen) {
+                navigate(`/customers/${newId}`)
+              }
+            }
+          }}
+          onClose={() => setRegisterCardData(null)}
+        />
+      )}
+    </div>
+  )
+}
+
 function App() {
   return (
     <Router>
-      <div className="app-shell">
-        <Sidebar />
-        <main className="app-main">
-          <Routes>
-            <Route path="/"              element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard"     element={<Dashboard />} />
-            <Route path="/customers"     element={<CustomerList />} />
-            <Route path="/customers/:id" element={<CustomerProfile />} />
-            <Route path="/pawns"         element={<PawnList />} />
-            <Route path="/pawns/:id"     element={<PawnDetail />} />
-            <Route path="/gold"          element={<GoldStockList />} />
-            <Route path="/sales"         element={<SalesList />} />
-            <Route path="/buy"           element={<PurchaseHistory />} />
-            <Route path="/income"        element={<IncomePage />} />
-            <Route path="/settings"      element={<SettingsPage />} />
-            <Route path="/smartcard"     element={<SmartCardTest />} />
-          </Routes>
-        </main>
-      </div>
+      <AppContent />
     </Router>
   )
 }

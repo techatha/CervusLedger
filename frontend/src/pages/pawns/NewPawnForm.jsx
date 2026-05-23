@@ -78,6 +78,27 @@ export default function NewPawnForm({ onSaved, onClose }) {
     setCustomers([])
   }
 
+  // Handle auto-selection from smart card events (insertion or registration)
+  useEffect(() => {
+    const handleSmartcardSelect = (e) => {
+      const c = e.detail?.customer
+      if (c) {
+        console.log('[NewPawnForm] Smartcard selection event triggered for customer:', c)
+        const name = fullName(c)
+        setForm(prev => ({
+          ...prev,
+          customer_id: c.id,
+          customer_label: name
+        }))
+        setCustSearch(name)
+        setShowDrop(false)
+        setCustomers([])
+      }
+    }
+    window.addEventListener('smartcard-pawn-select', handleSmartcardSelect)
+    return () => window.removeEventListener('smartcard-pawn-select', handleSmartcardSelect)
+  }, [])
+
   const validate = () => {
     if (!form.customer_id)         return 'กรุณาเลือกลูกค้า'
     if (!form.item_type.trim())    return 'กรุณากรอกประเภทรายการ'

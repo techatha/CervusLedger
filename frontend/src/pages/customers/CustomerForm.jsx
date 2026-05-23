@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   GetCustomer,
   CreateCustomer,
@@ -26,7 +26,7 @@ const BLANK = {
   province:     'เชียงใหม่',
 }
 
-export default function CustomerForm({ customerId, onSaved, onClose }) {
+export default function CustomerForm({ customerId, onSaved, onClose, initialCardData }) {
   const isEdit = !!customerId
 
   const [form,         setForm]         = useState(BLANK)
@@ -36,14 +36,71 @@ export default function CustomerForm({ customerId, onSaved, onClose }) {
   const [cardReading,  setCardReading]  = useState(false)
   const [cardSuccess,  setCardSuccess]  = useState(false)
 
-  // Load existing customer for edit
+  const formRef = useRef(form)
+  formRef.current = form
+
+  // Load existing customer for edit or pre-populate with smart card data
   useEffect(() => {
-    if (!isEdit) return
-    GetCustomer(customerId)
-      .then(c => setForm({ ...BLANK, ...c }))
-      .catch(e => setError('โหลดข้อมูลไม่สำเร็จ: ' + e))
-      .finally(() => setLoading(false))
-  }, [customerId, isEdit])
+    if (isEdit) {
+      GetCustomer(customerId)
+        .then(c => setForm({ ...BLANK, ...c }))
+        .catch(e => setError('โหลดข้อมูลไม่สำเร็จ: ' + e))
+        .finally(() => setLoading(false))
+    } else if (initialCardData) {
+      setForm(prev => ({
+        ...prev,
+        prefix:       initialCardData.prefix       || prev.prefix,
+        firstname:    initialCardData.firstname     || prev.firstname,
+        lastname:     initialCardData.lastname      || prev.lastname,
+        id_card:      initialCardData.id_card       || prev.id_card,
+        address_no:   initialCardData.address_no    || prev.address_no,
+        moo:          initialCardData.moo           || prev.moo,
+        road:         initialCardData.road          || prev.road,
+        tambon:       initialCardData.tambon        || prev.tambon,
+        amphoe:       initialCardData.amphoe        || prev.amphoe,
+        province:     initialCardData.province      || prev.province,
+      }))
+      setLoading(false)
+    }
+  }, [customerId, isEdit, initialCardData])
+
+  // Listen to card insertion while this form is open
+  useEffect(() => {
+    const handleSmartCardInsert = (e) => {
+      const card = e.detail?.card
+      if (!card) return
+      
+      const currentForm = formRef.current
+      const hasTypedData = (currentForm.firstname || '').trim() || 
+                           (currentForm.lastname || '').trim() || 
+                           (currentForm.phone || '').trim() || 
+                           (currentForm.id_card || '').trim()
+      
+      if (hasTypedData) {
+        const confirmImport = window.confirm('พบการเสียบบัตรประชาชน ต้องการนำเข้าข้อมูลจากบัตรทับข้อมูลที่กรอกอยู่หรือไม่?')
+        if (!confirmImport) return
+      }
+
+      setForm(prev => ({
+        ...prev,
+        prefix:       card.prefix       || prev.prefix,
+        firstname:    card.firstname     || prev.firstname,
+        lastname:     card.lastname      || prev.lastname,
+        id_card:      card.id_card       || prev.id_card,
+        address_no:   card.address_no    || prev.address_no,
+        moo:          card.moo           || prev.moo,
+        road:         card.road          || prev.road,
+        tambon:       card.tambon        || prev.tambon,
+        amphoe:       card.amphoe        || prev.amphoe,
+        province:     card.province      || prev.province,
+      }))
+      setCardSuccess(true)
+      setTimeout(() => setCardSuccess(false), 3000)
+    }
+
+    window.addEventListener('smartcard-insert', handleSmartCardInsert)
+    return () => window.removeEventListener('smartcard-insert', handleSmartCardInsert)
+  }, [])
 
   const set = (field, val) =>
     setForm(prev => ({ ...prev, [field]: val }))
@@ -99,10 +156,23 @@ export default function CustomerForm({ customerId, onSaved, onClose }) {
       }
       if (isEdit) {
         await UpdateCustomer(payload)
+        onSaved()
       } else {
-        await CreateCustomer(payload)
+        const newId = await CreateCustomer(payload)
+        
+        // Dispatch select event for NewPawnForm to catch
+        const matched = {
+          id: newId,
+          prefix: form.prefix,
+          firstname: form.firstname,
+          lastname: form.lastname,
+          phone: form.phone,
+          id_card: payload.id_card,
+        }
+        window.dispatchEvent(new CustomEvent('smartcard-pawn-select', { detail: { customer: matched } }))
+        
+        onSaved(newId)
       }
-      onSaved()
     } catch (e) {
       setError('บันทึกไม่สำเร็จ: ' + e)
     } finally {

@@ -71,10 +71,6 @@ func (h *SmartCardHandler) ReadSmartCard() (models.Customer, error) {
 	h.p2 = 0x00
 	if status, err := card.Status(); err == nil {
 		fmt.Printf("[SmartCard] ATR: %x\n", status.Atr)
-		if len(status.Atr) > 0 && status.Atr[0] == 0x3B {
-			h.p2 = 0x01
-			fmt.Println("[SmartCard] Thai ID Card detected, setting GET RESPONSE P2 to 0x01")
-		}
 	} else {
 		fmt.Printf("[SmartCard] Failed to read ATR: %v\n", err)
 	}
