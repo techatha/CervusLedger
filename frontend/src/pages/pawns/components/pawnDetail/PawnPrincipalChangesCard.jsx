@@ -1,5 +1,5 @@
 import React from 'react'
-import { toBE, formatBaht } from '../../../utils/thai'
+import { toBE, formatBaht } from '../../../../utils/thai'
 
 export default function PawnPrincipalChangesCard({ changes }) {
   if (!changes || changes.length === 0) return null

@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { formatBaht } from '../../../utils/thai'
-import { thaiMonthShort } from '../../../utils/pawn'
+import { formatBaht } from '../../../../utils/thai'
+import { thaiMonthShort } from '../../../../utils/pawn'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCartArrowDown } from '@fortawesome/free-solid-svg-icons'
 
@@ -74,11 +74,13 @@ export default function PawnPendingInterestCard({ pendingMonths, pawn, onPayPend
                       style={{ cursor: 'pointer' }}
                       checked={isSelected}
                       onChange={() => {
-                        setSelectedPending(prev =>
-                          prev.includes(idx)
-                            ? prev.filter(i => i !== idx)
-                            : [...prev, idx]
-                        )
+                        if (isSelected) {
+                          // Unchecking: Keep only items older than the unchecked one
+                          setSelectedPending(pendingMonths.map((_, i) => i).filter(i => i < idx))
+                        } else {
+                          // Checking: Select all items up to and including the checked one
+                          setSelectedPending(pendingMonths.map((_, i) => i).filter(i => i <= idx))
+                        }
                       }}
                     />
                   </td>

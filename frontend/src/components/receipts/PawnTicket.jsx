@@ -195,7 +195,7 @@ function TicketBody({ pawn, customer, shop, principal, copyLabel }) {
       {/* Legal terms */}
       <div className="rcp-legal">
         <div style={{ fontWeight: 700, marginBottom: 4, fontSize: 12 }}>เงื่อนไขและข้อตกลง</div>
-        {LEGAL_TERMS}
+        <PawnLegalTerms text={shop?.pawn_legal_terms} />
       </div>
 
       {/* Signatures */}
@@ -215,20 +215,53 @@ function TicketBody({ pawn, customer, shop, principal, copyLabel }) {
   )
 }
 
-/* ── Placeholder legal terms ──
-   Replace with real text from the shop's actual ticket template.
-────────────────────────────────────────────────────────────── */
-const LEGAL_TERMS = (
-  <p>
-    ผู้จำนำรับทราบและยินยอมว่าหากไม่มาชำระดอกเบี้ยหรือไถ่ถอนทรัพย์สินภายในระยะเวลาที่กำหนด
-    ทรัพย์สินที่จำนำจะตกเป็นกรรมสิทธิ์ของผู้รับจำนำโดยสมบูรณ์
-    กรุณาเก็บตั๋วนี้ไว้เป็นหลักฐาน หากตั๋วสูญหายกรุณาแจ้งทางร้านทันที
-    {' '}
-    <span style={{ opacity: 0.4 }}>
-      [กรุณาใส่ข้อความเพิ่มเติมจากตั๋วจริงของร้าน]
-    </span>
-  </p>
-)
+const DEFAULT_LEGAL_TERMS = "ข้่าพเจ้าขอรับรองว่าทรัพย์สินดั่งกล่าวเป็นของข้าพเจ้าจริงไม่ใช่ทรัพย์สินที่ได้มาจากการกระทำผิดใดๆ ทั้งสิ้น และ <bold><underline> จะมาถอนภายในกำหนด หนึ่ง เดือน </underline></bold> หากพ้นกำหนดนี้แล้ว ข้าพเจ้ายินยอมให้กรรมสิทธิในทรัพสินดังกล่าวเป็นกรรมสิทธิของทางร้าน ข้าพเจ้าได้อ่านสัญญาดีแล้วจึงลงลายมือไว้เป็นหลักฐาน";
+
+function PawnLegalTerms({ text }) {
+  const content = text || DEFAULT_LEGAL_TERMS;
+  const tokens = content.split(/(<\/?(?:bold|underline)>)/gi);
+  let isBold = false;
+  let isUnderline = false;
+
+  return (
+    <p>
+      {tokens.map((token, index) => {
+        const lower = token.toLowerCase();
+        if (lower === '<bold>') {
+          isBold = true;
+          return null;
+        }
+        if (lower === '</bold>') {
+          isBold = false;
+          return null;
+        }
+        if (lower === '<underline>') {
+          isUnderline = true;
+          return null;
+        }
+        if (lower === '</underline>') {
+          isUnderline = false;
+          return null;
+        }
+
+        if (!token) return null;
+
+        const styles = {};
+        if (isBold) styles.fontWeight = 'bold';
+        if (isUnderline) styles.textDecoration = 'underline';
+
+        if (isBold || isUnderline) {
+          return (
+            <span key={index} style={styles}>
+              {token}
+            </span>
+          );
+        }
+        return token;
+      })}
+    </p>
+  );
+}
 
 function IconPrint() {
   return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>

@@ -1,5 +1,5 @@
 import React from 'react'
-import { formatBaht } from '../../../utils/thai'
+import { formatBaht } from '../../../../utils/thai'
 
 function PdRow({ label, value }) {
   return (

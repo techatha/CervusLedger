@@ -46,6 +46,43 @@ export function formatTicket(n) {
 }
 
 /**
+ * ฟังก์ชันจัดฟอร์แมตที่อยู่ลูกค้าตามเงื่อนไข (ตัดฟิลด์ที่ว่างออกอัตโนมัติ)
+ */
+export function formatCustomerAddress(c) {
+  if (!c) return '—';
+  const parts = [];
+  
+  if (c.address_no) parts.push(`บ้านเลขที่ ${c.address_no}`);
+  if (c.address_line) parts.push(c.address_line);
+  if (c.moo) parts.push(`หมู่ ${c.moo}`);
+  if (c.road) parts.push(`ถ. ${c.road}`);
+  if (c.tambon) parts.push(`ต. ${c.tambon}`);
+  if (c.amphoe) parts.push(`อ. ${c.amphoe}`);
+  if (c.province) parts.push(`จ. ${c.province}`);
+  
+  return parts.filter(Boolean).join(' ') || '—';
+}
+
+/**
+ * ฟังก์ชันแปลงรูปแบบวันที่เป็นภาษาไทยเต็มรูปแบบ (วันที่ xx เดือน xx พ.ศ. xxx)
+ */
+export function formatFullThaiDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  
+  const day = d.getDate();
+  const monthNames = [
+    'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+    'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+  ];
+  const month = monthNames[d.getMonth()];
+  const year = d.getFullYear() + 543;
+  
+  return `วันที่ ${day} ${month} พ.ศ. ${year}`;
+}
+
+/**
  * Build full name from customer object
  */
 export function fullName(c) {
@@ -77,3 +114,79 @@ export const PROVINCES = [
   'หนองคาย','หนองบัวลำภู','อ่างทอง','อำนาจเจริญ','อุดรธานี',
   'อุตรดิตถ์','อุทัยธานี','อุบลราชธานี',
 ]
+
+/**
+ * แปลงจำนวนเงินเป็นตัวหนังสือภาษาไทย (Thai Baht Text)
+ */
+export function thaiBahtText(num) {
+  if (num == null || num === '') return '—';
+  let number = parseFloat(num);
+  if (isNaN(number)) return '—';
+  
+  if (number === 0) return 'ศูนย์บาทถ้วน';
+
+  // ปัดเศษให้เหลือ 2 ตำแหน่งตามทศนิยมของสตางค์
+  number = Math.round(number * 100) / 100;
+  
+  const baht = Math.floor(number);
+  const satang = Math.round((number - baht) * 100);
+
+  let text = '';
+
+  if (baht > 0) {
+    text += convertToThaiText(baht) + 'บาท';
+  }
+
+  if (satang > 0) {
+    text += convertToThaiText(satang) + 'สตางค์';
+  } else if (baht > 0) {
+    text += 'ถ้วน';
+  }
+
+  return text;
+}
+
+function convertToThaiText(number) {
+  const numberText = ['ศูนย์', 'หนึ่ง', 'สอง', 'สาม', 'สี่', 'ห้า', 'หก', 'เจ็ด', 'แปด', 'เก้า'];
+  const unitText = ['', 'สิบ', 'ร้อย', 'พัน', 'หมื่น', 'แสน', 'ล้าน'];
+
+  let str = Math.floor(number).toString();
+  let len = str.length;
+
+  if (len > 6) {
+    const millionStr = str.substring(0, len - 6);
+    const unitsStr = str.substring(len - 6);
+    
+    const millionVal = parseInt(millionStr, 10);
+    const unitsVal = parseInt(unitsStr, 10);
+    
+    let text = convertToThaiText(millionVal) + 'ล้าน';
+    if (unitsVal > 0) {
+      if (unitsVal === 1) {
+        text += 'เอ็ด';
+      } else {
+        text += convertToThaiText(unitsVal);
+      }
+    }
+    return text;
+  }
+
+  let text = '';
+  for (let i = 0; i < len; i++) {
+    const digit = parseInt(str.charAt(i), 10);
+    const position = len - i - 1;
+
+    if (digit !== 0) {
+      if (position === 1 && digit === 1) {
+        text += 'สิบ';
+      } else if (position === 1 && digit === 2) {
+        text += 'ยี่สิบ';
+      } else if (position === 0 && digit === 1 && len > 1) {
+        text += 'เอ็ด';
+      } else {
+        text += numberText[digit] + unitText[position];
+      }
+    }
+  }
+  return text;
+}

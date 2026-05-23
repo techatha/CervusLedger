@@ -13,6 +13,7 @@ const DEFAULTS = {
   interest_threshold:   '10000',
   min_interest_amount:  '20',
   last_ticket_number:   '0',
+  pawn_legal_terms:     '',
 }
 
 export default function SettingsPage() {
@@ -224,6 +225,27 @@ export default function SettingsPage() {
                   </strong>
                 </span>
               </div>
+            </Field>
+          </div>
+        </section>
+
+        {/* ── Pawn Legal Terms ── */}
+        <section className="card sp-section">
+          <div className="card-header">
+            <span className="card-title">เงื่อนไขและข้อตกลงตั๋วจำนำ</span>
+          </div>
+          <div className="sp-fields">
+            <Field
+              label="ข้อความเงื่อนไข"
+              hint="สามารถเน้นข้อความตัวหนาด้วย <bold>ข้อความ</bold> และขีดเส้นใต้ด้วย <underline>ข้อความ</underline> ได้"
+            >
+              <textarea
+                className="input"
+                style={{ height: 'auto', minHeight: '120px', lineHeight: '1.6', resize: 'vertical' }}
+                value={form.pawn_legal_terms || ''}
+                onChange={e => set('pawn_legal_terms', e.target.value)}
+                placeholder="กรอกข้อความเงื่อนไขทางกฎหมายสำหรับแสดงบนตั๋วจำนำ..."
+              />
             </Field>
           </div>
         </section>

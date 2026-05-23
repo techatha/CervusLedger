@@ -135,11 +135,6 @@ export default function PawnList() {
                   <tr key={p.id} onClick={() => navigate(`/pawns/${p.id}`)}>
                     <td>
                       <span className="pl-ticket">{formatTicket(p.ticket_number)}</span>
-                      {p.ticket_status !== 'active' && (
-                        <span className="badge badge-amber pl-ticket-flag">
-                          {p.ticket_status === 'lost' ? 'ทำหาย' : 'ชำรุด'}
-                        </span>
-                      )}
                     </td>
                     <td className="pl-customer">{p.customer_name}</td>
                     <td>
@@ -173,6 +168,11 @@ export default function PawnList() {
                             </span>
                           ) : null
                         })()}
+                        {p.ticket_status !== 'active' && (
+                        <span className="badge badge-amber">
+                          {p.ticket_status === 'lost' ? 'ทำหาย' : 'ชำรุด'}
+                        </span>
+                      )}
                       </div>
                     </td>
                   </tr>

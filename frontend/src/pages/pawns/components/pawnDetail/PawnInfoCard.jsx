@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { toBE } from '../../../utils/thai'
-import { UpdatePawnDescription } from '../../../../wailsjs/go/handlers/PawnHandler'
+import { toBE } from '../../../../utils/thai'
+import { UpdatePawnDescription } from '../../../../../wailsjs/go/handlers/PawnHandler'
 
 function PdRow({ label, value }) {
   return (
@@ -36,7 +36,7 @@ export default function PawnInfoCard({ pawn, pawnId, isActive, onReload, onError
         {pawn.weight_grams > 0 && (
           <PdRow label="น้ำหนัก" value={`${pawn.weight_grams} กรัม`} />
         )}
-        
+
         <div className="pd-row" style={{ display: 'block' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: editingDesc ? 8 : 4 }}>
             <span className="pd-row-label">รายละเอียด</span>

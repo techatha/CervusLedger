@@ -1,27 +1,36 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import { PrintWindow } from '../../../wailsjs/go/handlers/SettingsHandler'
-import { toBE, formatBaht, formatTicket } from '../../utils/thai'
+import { formatBaht, formatTicket, formatCustomerAddress, formatFullThaiDate, thaiBahtText } from '../../utils/thai'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPrint } from '@fortawesome/free-solid-svg-icons'
 import './PawnTicket.css'
 
-/**
- * PawnTicket (2 Copies / A4 Version)
- * Props:
- *   pawn      — PawnRecord (with current_principal)
- *   customer  — Customer (full object)
- *   shop      — ShopSettings { shop_name, shop_address, shop_phone }
- *   onClose   — fn
- */
 export default function PawnTicket({ pawn, customer, shop, onClose }) {
   const printRef = useRef(null)
 
-  const handlePrint = () => {
-    if (PrintWindow) {
-      PrintWindow().catch((err) => {
-        console.error("PrintWindow failed, falling back to window.print:", err)
+  const handlePrint = async () => {
+    // 1. เก็บชื่อ Title เดิมของหน้าต่างเว็บเอาไว้ก่อน
+    const originalTitle = document.title;
+
+    // 2. ตั้งชื่อ Title ใหม่ ซึ่งจะกลายเป็นชื่อไฟล์ PDF อัตโนมัติ
+    // เช่น "สัญญาขายฝาก_0145"
+    document.title = `สัญญาขายฝาก_${formatTicket(pawn.ticket_number)}`;
+
+    try {
+      if (PrintWindow) {
+        await PrintWindow().catch((err) => {
+          console.error("PrintWindow failed, falling back to window.print:", err)
+          window.print()
+        })
+      } else {
         window.print()
-      })
-    } else {
-      window.print()
+      }
+    } finally {
+      // 3. คืนค่าชื่อ Title เดิมกลับมาหลังจากสั่ง Print เสร็จ
+      // ใส่ setTimeout ไว้เล็กน้อยเพื่อให้ระบบ Print ดึงชื่อใหม่ไปใช้ให้ทันก่อนเราเปลี่ยนกลับ
+      setTimeout(() => {
+        document.title = originalTitle;
+      }, 500);
     }
   }
 
@@ -29,25 +38,15 @@ export default function PawnTicket({ pawn, customer, shop, onClose }) {
 
   return (
     <>
-      {/* ── Screen modal ── */}
       <div className="modal-backdrop" onClick={onClose}>
-        <div
-          className="modal receipt-preview-modal"
-          onClick={e => e.stopPropagation()}
-        >
+        <div className="modal receipt-preview-modal" onClick={e => e.stopPropagation()}>
           <div className="modal-header">
-            <div className="modal-title">ตัวอย่างตั๋วจำนำ</div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button className="modal-close" onClick={onClose}>×</button>
-            </div>
+            <div className="modal-title">ตัวอย่างเอกสาร</div>
+            <button className="modal-close" onClick={onClose}>×</button>
           </div>
 
           <div className="receipt-preview-body">
-            <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginBottom: 12 }}>
-              2 สำเนา / A4 — ตัดตรงเส้นประ
-            </p>
 
-            {/* The element that gets printed */}
             <div className="print-root" ref={printRef}>
               {/* ── Copy 1: Customer ── */}
               <div className="receipt-copy-customer">
@@ -56,14 +55,12 @@ export default function PawnTicket({ pawn, customer, shop, onClose }) {
                   customer={customer}
                   shop={shop}
                   principal={principal}
-                  copyLabel="สำเนาลูกค้า"
+                  copyLabel="&bull; สำเนาสำหรับลูกค้า"
                 />
               </div>
 
               {/* ── Cut line ── */}
               <div className="rcp-cut-line">
-                <div className="rcp-cut-dashes" />
-                <span>✂ ตัดตรงนี้</span>
                 <div className="rcp-cut-dashes" />
               </div>
 
@@ -74,7 +71,7 @@ export default function PawnTicket({ pawn, customer, shop, onClose }) {
                   customer={customer}
                   shop={shop}
                   principal={principal}
-                  copyLabel="สำเนาร้าน"
+                  copyLabel="&bull; สำเนาสำหรับร้านค้า"
                 />
               </div>
             </div>
@@ -83,7 +80,7 @@ export default function PawnTicket({ pawn, customer, shop, onClose }) {
           <div className="modal-footer">
             <button className="btn btn-ghost" onClick={onClose}>ปิด</button>
             <button className="btn btn-primary" onClick={handlePrint}>
-              <IconPrint /> พิมพ์
+            <FontAwesomeIcon icon={faPrint} /> พิมพ์เอกสาร
             </button>
           </div>
         </div>
@@ -92,143 +89,142 @@ export default function PawnTicket({ pawn, customer, shop, onClose }) {
   )
 }
 
-/* ── Single ticket body (reused for both copies) ──────────── */
+/* ── โครงสร้างเอกสารสัญญาเดี่ยว (TicketBody) ──────────── */
 function TicketBody({ pawn, customer, shop, principal, copyLabel }) {
   return (
     <div className="receipt-paper">
-      {/* Shop header */}
-      <div className="rcp-shop-header">
-        <div className="rcp-shop-name">{shop.shop_name || 'ร้านทองของเรา'}</div>
-        {shop.shop_address && <div className="rcp-shop-addr">{shop.shop_address}</div>}
-        {shop.shop_phone && <div className="rcp-shop-phone">โทร. {shop.shop_phone}</div>}
+
+      {/* ── ส่วนหัวข้อสัญญา และ เลขที่เอกสารมุมขวาบน ── */}
+      <div className="rcp-header-block">
+        <div className="rcp-header-left">
+          <div className="rcp-main-title">สัญญาขายฝาก</div>
+          <div className="rcp-date-thai">{formatFullThaiDate(pawn.pawned_date)}</div>
+        </div>
+        <div className="rcp-ticket-badge">
+          <div className="rcp-badge-lbl">{copyLabel}</div>
+          <span className="rcp-badge-num">No. {formatTicket(pawn.ticket_number)}</span>
+        </div>
       </div>
 
-      {/* Title + ticket number */}
-      <div className="rcp-title-row">
-        <div className="rcp-title">ใบรับจำนำ</div>
-        <div className="rcp-ticket-num">{formatTicket(pawn.ticket_number)}</div>
-      </div>
+      {/* ข้อมูลสาขาผู้ออกเอกสาร (ขนาดเล็ก) - ย้ายไปด้านล่าง แต่ยังคงเส้นใต้ไว้ตามเดิม */}
+      <div className="rcp-shop-mini-info" style={{ padding: 0, height: 0, overflow: 'hidden' }} />
 
-      {/* Customer info */}
+      {/* ข้อมูลลูกค้า */}
       <div className="rcp-section">
-        <div className="rcp-section-title">ข้อมูลลูกค้า</div>
+        {/* <div className="rcp-section-title">ข้อมูลผู้ขายฝาก</div> */}
         <div className="rcp-row">
           <span className="rcp-label">ชื่อ-นามสกุล</span>
           <span className="rcp-value rcp-value-lg">
             {[customer?.prefix, customer?.firstname, customer?.lastname].filter(Boolean).join(' ') || '—'}
           </span>
         </div>
-        {customer?.phone && (
-          <div className="rcp-row">
-            <span className="rcp-label">เบอร์โทร</span>
-            <span className="rcp-value">{customer.phone}</span>
-          </div>
-        )}
-        {customer?.id_card && (
-          <div className="rcp-row">
-            <span className="rcp-label">บัตร ปชช.</span>
-            <span className="rcp-value" style={{ fontFamily: 'Courier New', fontSize: 12 }}>
-              {customer.id_card}
-            </span>
-          </div>
-        )}
-        {(customer?.tambon || customer?.amphoe || customer?.province) && (
-          <div className="rcp-row">
-            <span className="rcp-label">ที่อยู่</span>
-            <span className="rcp-value" style={{ fontSize: 12 }}>
-              {[
-                customer.address_no,
-                customer.moo ? `ม.${customer.moo}` : '',
-                customer.road,
-                customer.tambon,
-                customer.amphoe,
-                customer.province,
-              ].filter(Boolean).join(' ')}
-            </span>
-          </div>
-        )}
+
+        <div className="rcp-row">
+          <span className="rcp-label">เบอร์โทรศัพท์</span>
+          <span className="rcp-value">{customer?.phone || '-'}</span>
+        </div>
+        <div className="rcp-row">
+          <span className="rcp-label">เลขประจำตัวประชาชน</span>
+          <span className="rcp-value" style={{ fontFamily: 'Courier New', fontSize: '13px', fontWeight: 'bold' }}>
+            {customer?.id_card || '-'}
+          </span>
+        </div>
+        <div className="rcp-row">
+          <span className="rcp-label">ที่อยู่ตามภูมิลำเนา</span>
+          <span className="rcp-value" style={{ fontSize: '12.5px', lineHeight: '1.4' }}>
+            {formatCustomerAddress(customer)}
+          </span>
+        </div>
       </div>
 
-      {/* Item info */}
+      {/* รายการทรัพย์สินหลักประกัน (ปรับเป็นตาราง HTML ตามบรีฟ) */}
       <div className="rcp-section">
-        <div className="rcp-section-title">รายการที่จำนำ</div>
-        <div className="rcp-row">
-          <span className="rcp-label">ประเภท</span>
-          <span className="rcp-value rcp-value-lg">{pawn.item_type || '—'}</span>
-        </div>
-        {pawn.weight_grams > 0 && (
-          <div className="rcp-row">
-            <span className="rcp-label">น้ำหนัก</span>
-            <span className="rcp-value">{pawn.weight_grams} กรัม</span>
-          </div>
-        )}
-        {pawn.description && (
-          <div className="rcp-row">
-            <span className="rcp-label">ลักษณะ</span>
-            <span className="rcp-value">{pawn.description}</span>
-          </div>
-        )}
-        <div className="rcp-row">
-          <span className="rcp-label">วันที่จำนำ</span>
-          <span className="rcp-value">{toBE(pawn.pawned_date)}</span>
-        </div>
+        <div className="rcp-section-title">รายละเอียดทรัพย์สินหลักประกัน</div>
+        <table className="rcp-item-data-table">
+          <thead>
+            <tr>
+              <th style={{ width: '40%' }}>ประเภทสินค้า</th>
+              <th style={{ width: '25%' }}>น้ำหนักรวม</th>
+              <th style={{ width: '35%' }}>หมายเหตุ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td className="rcp-value-lg">{pawn.item_type || '—'}</td>
+              <td style={{ fontWeight: '600' }}>{pawn.weight_grams > 0 ? `${pawn.weight_grams} กรัม` : '—'}</td>
+              <td style={{ color: '#555', fontSize: '12px' }}>{pawn.description || '—'}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
-
-      {/* Financial */}
       <div className="rcp-finance">
-        <div className="rcp-section-title" style={{ marginBottom: 6 }}>การเงิน</div>
         <div className="rcp-finance-row">
-          <span>เงินต้น</span>
-          <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatBaht(principal)}</span>
-        </div>
-        <div className="rcp-finance-row">
-          <span>อัตราดอกเบี้ย</span>
-          <span>{pawn.monthly_interest_rate}% ต่อเดือน</span>
-        </div>
-        <div className="rcp-finance-row rcp-total">
-          <span>ดอกเบี้ย / เดือน</span>
-          <span style={{ fontVariantNumeric: 'tabular-nums' }}>{formatBaht(pawn.interest_amount)}</span>
+          <span>ขายฝากรวมเป็นเงินทั้งสิ้น</span>
+          <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}>
+            {formatBaht(principal)} ({thaiBahtText(principal)})
+          </span>
         </div>
       </div>
 
-      {/* Legal terms */}
+      {/* ข้อตกลงกฎหมาย */}
       <div className="rcp-legal">
         <div style={{ fontWeight: 700, marginBottom: 4, fontSize: 12 }}>เงื่อนไขและข้อตกลง</div>
-        {LEGAL_TERMS}
+        <PawnLegalTerms text={shop?.pawn_legal_terms} />
       </div>
 
-      {/* Signatures */}
+      {/* ช่องลงชื่อ */}
       <div className="rcp-sigs">
         <div className="rcp-sig">
           <div className="rcp-sig-line" />
-          <div className="rcp-sig-label">ลายมือชื่อลูกค้า</div>
+          <div className="rcp-sig-label">ลงชื่อ ผู้ขายฝาก (ลูกค้า)</div>
         </div>
         <div className="rcp-sig">
           <div className="rcp-sig-line" />
-          <div className="rcp-sig-label">ลายมือชื่อเจ้าหน้าที่</div>
+          <div className="rcp-sig-label">ลงชื่อ ผู้รับซื้อฝาก (เจ้าหน้าที่)</div>
         </div>
       </div>
 
-      <div className="rcp-copy-label">{copyLabel}</div>
+      {/* ข้อมูลสาขาผู้ออกเอกสาร (ขนาดเล็ก) ย้ายมาด้านล่าง */}
+      <div className="rcp-shop-mini-info" style={{ borderBottom: 'none', borderTop: '1px solid #eee', marginTop: '10px', paddingTop: '8px', textAlign: 'center' }}>
+        <strong>หมายเหตุ:</strong> ถ้าเอกสารใบนี้สูญหายจะไม่สามารถไถ่ถอนได้ทุกกรณี
+        <br />{shop.shop_name || 'ห้างทอง'}
+        {shop.shop_phone && ` (โทร: ${shop.shop_phone})`}
+        {shop.shop_address && (
+          <>
+            <br />
+            {shop.shop_address}
+          </>
+        )}
+      </div>
     </div>
   )
 }
 
-/* ── Placeholder legal terms ──
-   Replace with real text from the shop's actual ticket template.
-────────────────────────────────────────────────────────────── */
-const LEGAL_TERMS = (
-  <p>
-    ผู้จำนำรับทราบและยินยอมว่าหากไม่มาชำระดอกเบี้ยหรือไถ่ถอนทรัพย์สินภายในระยะเวลาที่กำหนด
-    ทรัพย์สินที่จำนำจะตกเป็นกรรมสิทธิ์ของผู้รับจำนำโดยสมบูรณ์
-    กรุณาเก็บตั๋วนี้ไว้เป็นหลักฐาน หากตั๋วสูญหายกรุณาแจ้งทางร้านทันที
-    {' '}
-    <span style={{ opacity: 0.4 }}>
-      [กรุณาใส่ข้อความเพิ่มเติมจากตั๋วจริงของร้าน]
-    </span>
-  </p>
-)
+const DEFAULT_LEGAL_TERMS = "ข้่าพเจ้าขอรับรองว่าทรัพย์สินดั่งกล่าวเป็นของข้าพเจ้าจริงไม่ใช่ทรัพย์สินที่ได้มาจากการกระทำผิดใดๆ ทั้งสิ้น และ <bold><underline> จะมาถอนภายในกำหนด หนึ่งเดือน </underline></bold> หากพ้นกำหนดนี้แล้ว ข้าพเจ้านินยอมให้กรรมสิทธิในทรัพสินดังกล่าวเป็นกรรมสิทธิของทางร้าน ข้าพเจ้าได้อ่านสัญญาดีแล้วจึงลงลายมือไว้เป็นหลักฐาน";
 
-function IconPrint() {
-  return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></svg>
+function PawnLegalTerms({ text }) {
+  const content = text || DEFAULT_LEGAL_TERMS;
+  const tokens = content.split(/(<\/?(?:bold|underline)>)/gi);
+  let isBold = false;
+  let isUnderline = false;
+
+  return (
+    <p>
+      {tokens.map((token, index) => {
+        const lower = token.toLowerCase();
+        if (lower === '<bold>') { isBold = true; return null; }
+        if (lower === '</bold>') { isBold = false; return null; }
+        if (lower === '<underline>') { isUnderline = true; return null; }
+        if (lower === '</underline>') { isUnderline = false; return null; }
+        if (!token) return null;
+
+        const styles = {};
+        if (isBold) styles.fontWeight = 'bold';
+        if (isUnderline) styles.textDecoration = 'underline';
+
+        return isBold || isUnderline ? <span key={index} style={styles}>{token}</span> : token;
+      })}
+    </p>
+  );
 }
+
