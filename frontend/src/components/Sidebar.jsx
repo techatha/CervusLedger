@@ -51,6 +51,18 @@ const NAV = [
 ]
 
 export default function Sidebar() {
+  const [shopName, setShopName] = useState('ห้างทองแต้ยืนยง')
+
+  useEffect(() => {
+    GetAllSettings()
+      .then(data => {
+        if (data && data.shop_name) {
+          setShopName(data.shop_name)
+        }
+      })
+      .catch(e => console.error('Failed to load shop name in sidebar:', e))
+  }, [])
+
   return (
     <aside className="sidebar">
       {/* Logo */}
