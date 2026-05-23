@@ -14,10 +14,10 @@ export default function SmartCardWatcher({ onOpenRegisterModal }) {
       const isNewPawnFormOpen = document.querySelector('.npf-modal') !== null
       
       // Bypassed if any modal other than CustomerForm or NewPawnForm is active
-      const isOtherModalOpen = document.querySelector('.modal-backdrop:not(.npf-modal):not(.cf-modal), .modal:not(.npf-modal):not(.cf-modal)') !== null
+      const isOtherModalOpen = document.querySelector('.modal:not(.cf-modal):not(.npf-modal)') !== null
 
       if (isOtherModalOpen) {
-        console.log('[SmartCardWatcher] Check bypassed: Another modal backdrop is active.')
+        console.log('[SmartCardWatcher] Check bypassed: Another modal is active.')
         return
       }
 

@@ -63,15 +63,7 @@ function AppContent() {
         <CustomerForm
           customerId={null}
           initialCardData={registerCardData}
-          onSaved={(newId) => {
-            setRegisterCardData(null)
-            if (newId) {
-              const isPawnFormOpen = document.querySelector('.npf-modal') !== null
-              if (!isPawnFormOpen) {
-                navigate(`/customers/${newId}`)
-              }
-            }
-          }}
+          onSaved={() => setRegisterCardData(null)}
           onClose={() => setRegisterCardData(null)}
         />
       )}

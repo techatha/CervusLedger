@@ -8,6 +8,7 @@ import {
   ReadSmartCard,
 } from '../../../wailsjs/go/handlers/SmartCardHandler'
 import { PREFIXES, PROVINCES } from '../../utils/thai'
+import { useNavigate } from 'react-router-dom'
 import './CustomerForm.css'
 
 const BLANK = {
@@ -28,6 +29,7 @@ const BLANK = {
 
 export default function CustomerForm({ customerId, onSaved, onClose, initialCardData }) {
   const isEdit = !!customerId
+  const navigate = useNavigate()
 
   const [form,         setForm]         = useState(BLANK)
   const [loading,      setLoading]      = useState(isEdit)
@@ -60,6 +62,8 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
         amphoe:       initialCardData.amphoe        || prev.amphoe,
         province:     initialCardData.province      || prev.province,
       }))
+      setCardSuccess(true)
+      setTimeout(() => setCardSuccess(false), 3000)
       setLoading(false)
     }
   }, [customerId, isEdit, initialCardData])
@@ -172,6 +176,11 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
         window.dispatchEvent(new CustomEvent('smartcard-pawn-select', { detail: { customer: matched } }))
         
         onSaved(newId)
+        
+        const isPawnFormOpen = document.querySelector('.npf-modal') !== null
+        if (!isPawnFormOpen) {
+          navigate(`/customers/${newId}`)
+        }
       }
     } catch (e) {
       setError('บันทึกไม่สำเร็จ: ' + e)
