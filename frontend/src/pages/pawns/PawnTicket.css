@@ -1,15 +1,16 @@
 /* ─────────────────────────────────────────────────────────────
-   receipt.css
-   Imported by PawnTicket.jsx and SaleReceipt.jsx.
+   PawnTicket.css
+   Imported by PawnTicket.jsx under pages/pawns.
    Screen: receipt renders inside a modal preview.
    Print:  @media print hides everything except .print-root.
-───────────────────────────────────────────────────────────── */
+   ───────────────────────────────────────────────────────────── */
 
+/* ── Print isolation ──────────────────────────────────────── */
 /* ── Print isolation ──────────────────────────────────────── */
 @media print {
   @page {
-    size: A4 portrait;
-    margin: 8mm;
+    size: A4 landscape;
+    margin: 0; /* Forces the browser to turn off "Shrink to Fit" scaling */
   }
 
   /* Hide everything on the page … */
@@ -18,22 +19,82 @@
   }
 
   /* … then reveal only the receipt */
-  .print-root,
-  .print-root * {
+  .print-root, .print-root * {
     visibility: visible !important;
   }
 
+  /* ── 1. The Canvas: Exact A4 Stretch ── */
   .print-root {
     position: fixed !important;
-    inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;  /* Fills the paper width completely */
+    height: 100vh !important; /* Fills the paper height completely */
     background: #fff !important;
-    padding: 0 !important;
+    
+    /* This padding acts as the "printer margin" for the outer edges */
+    padding: 10mm 15mm !important; 
     margin: 0 !important;
-    overflow: visible !important;
+    box-sizing: border-box !important;
     z-index: 99999 !important;
+    
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
   }
 
-  /* Modal chrome hidden is handled by visibility: hidden in body > * */
+  /* ── 2. The 50/50 Split ── */
+  .receipt-copy-customer,
+  .receipt-copy-shop {
+    flex: 1 !important; /* This guarantees both sides take exactly 50% */
+    height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    
+    /* Pushes the tickets slightly inward, away from the center line */
+    padding: 0 10mm !important; 
+    box-sizing: border-box !important;
+  }
+
+  /* ── 3. The Perfect Center Cut Line ── */
+  .rcp-cut-line {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 2px !important;     /* Keep it extremely thin */
+    flex-shrink: 0 !important; /* Prevent it from squishing */
+  }
+  
+  .rcp-cut-dashes {
+    flex: 1 !important;
+    border-left: 1px dashed #888 !important;
+    width: 0 !important;
+  }
+
+  /* Hide the scissor text on the print so it doesn't throw off the pixel-perfect center */
+  .rcp-cut-line span {
+    display: none !important; 
+  }
+
+  /* ── 4. Expand the tickets to fill their space ── */
+  .receipt-paper {
+    border: 1px solid #000 !important;
+    box-shadow: none !important;
+    
+    width: 100% !important;  
+    height: 100% !important; 
+    max-width: none !important; /* Overrides screen constraints */
+    margin: 0 !important;
+    
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+  }
+
+  /* ── 5. Push the signatures to the absolute bottom ── */
+  .rcp-sigs {
+    margin-top: auto !important; 
+  }
 }
 
 /* ── Screen: modal preview wrapper ───────────────────────── */
@@ -63,7 +124,7 @@
   line-height: 1.5;
   max-width: 420px;
   margin: 0 auto;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 /* ── Shop header ──────────────────────────────────────────── */

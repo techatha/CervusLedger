@@ -8,6 +8,8 @@ export function GetSettingFloat(arg1:string,arg2:number):Promise<number>;
 
 export function GetSettingString(arg1:string,arg2:string):Promise<string>;
 
+export function PrintWindow():Promise<void>;
+
 export function SaveAllSettings(arg1:Record<string, string>):Promise<void>;
 
 export function Startup(arg1:context.Context):Promise<void>;

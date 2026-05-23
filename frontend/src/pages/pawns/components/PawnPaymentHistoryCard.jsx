@@ -1,0 +1,50 @@
+import { toBE } from '../../../utils/thai'
+import { thaiMonthShort } from '../../../utils/pawn'
+
+function IconCheckCircle() {
+  return (
+    <div style={{
+      width: 20, height: 20, borderRadius: '50%',
+      backgroundColor: '#22c55e', display: 'flex',
+      alignItems: 'center', justifyContent: 'center'
+    }}>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="20 6 9 17 4 12" />
+      </svg>
+    </div>
+  )
+}
+
+export default function PawnPaymentHistoryCard({ payments }) {
+  return (
+    <div className="card">
+      <div className="card-header">
+        <span className="card-title">ประวัติการจ่ายดอกเบี้ย</span>
+      </div>
+      <div className="table-wrap">
+        <table className="table">
+          <thead>
+            <tr>
+              <th width="40"></th>
+              <th>งวดเดือน</th>
+              <th>วันที่จ่าย</th>
+              <th className="col-250">หมายเหตุ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {payments.map(p => (
+              <tr key={p.id}>
+                <td><IconCheckCircle /></td>
+                <td style={{ fontWeight: 500 }}>{thaiMonthShort(p.month)} {p.year}</td>
+                <td>{toBE(p.paid_date)}</td>
+                <td className="truncate-cell" style={{ color: 'var(--text-muted)', fontSize: 13 }} title={p.notes}>
+                  {p.notes || '—'}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}

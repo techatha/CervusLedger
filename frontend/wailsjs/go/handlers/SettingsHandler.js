@@ -14,6 +14,10 @@ export function GetSettingString(arg1, arg2) {
   return window['go']['handlers']['SettingsHandler']['GetSettingString'](arg1, arg2);
 }
 
+export function PrintWindow() {
+  return window['go']['handlers']['SettingsHandler']['PrintWindow']();
+}
+
 export function SaveAllSettings(arg1) {
   return window['go']['handlers']['SettingsHandler']['SaveAllSettings'](arg1);
 }

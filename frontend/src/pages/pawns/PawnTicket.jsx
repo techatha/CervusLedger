@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { PrintWindow } from '../../../wailsjs/go/handlers/SettingsHandler'
 import { toBE, formatBaht, formatTicket } from '../../utils/thai'
-import './receipt.css'
+import './PawnTicket.css'
 
 /**
- * PawnTicket
+ * PawnTicket (2 Copies / A4 Version)
  * Props:
  *   pawn      — PawnRecord (with current_principal)
  *   customer  — Customer (full object)
@@ -38,9 +38,6 @@ export default function PawnTicket({ pawn, customer, shop, onClose }) {
           <div className="modal-header">
             <div className="modal-title">ตัวอย่างตั๋วจำนำ</div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-primary btn-sm" onClick={handlePrint}>
-                <IconPrint /> พิมพ์
-              </button>
               <button className="modal-close" onClick={onClose}>×</button>
             </div>
           </div>
@@ -53,13 +50,15 @@ export default function PawnTicket({ pawn, customer, shop, onClose }) {
             {/* The element that gets printed */}
             <div className="print-root" ref={printRef}>
               {/* ── Copy 1: Customer ── */}
-              <TicketBody
-                pawn={pawn}
-                customer={customer}
-                shop={shop}
-                principal={principal}
-                copyLabel="สำเนาลูกค้า"
-              />
+              <div className="receipt-copy-customer">
+                <TicketBody
+                  pawn={pawn}
+                  customer={customer}
+                  shop={shop}
+                  principal={principal}
+                  copyLabel="สำเนาลูกค้า"
+                />
+              </div>
 
               {/* ── Cut line ── */}
               <div className="rcp-cut-line">

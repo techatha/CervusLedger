@@ -4,6 +4,8 @@ import (
 	"CervusLedger/db"
 	"context"
 	"strconv"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 type SettingsHandler struct {
@@ -16,6 +18,10 @@ func NewSettingsHandler() *SettingsHandler {
 
 func (h *SettingsHandler) Startup(ctx context.Context) {
 	h.ctx = ctx
+}
+
+func (h *SettingsHandler) PrintWindow() {
+	runtime.WindowPrint(h.ctx)
 }
 
 // AllSettings returns every key-value pair from the settings table.
