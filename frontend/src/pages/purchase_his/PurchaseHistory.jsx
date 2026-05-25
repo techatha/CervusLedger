@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { ListPurchasedGold, ToggleStillExists } from '../../../wailsjs/go/handlers/PurchaseHandler.js'
-import { toBE, formatBaht } from '../../utils/thai.js'
+import { ListPurchasedGold, ToggleStillExists } from 'wailsjs/go/handlers/PurchaseHandler.js'
+import { toBE, formatBaht } from '@/utils/thai.js'
 import './PurchaseHistory.css'
 
 export default function PurchaseHistory() {

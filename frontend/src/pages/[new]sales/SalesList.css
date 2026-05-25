@@ -1,7 +1,0 @@
-
-/* Print button column */
-.sl-print {
-  opacity: 0;
-  transition: opacity var(--transition);
-}
-tr:hover .sl-print { opacity: 1; }

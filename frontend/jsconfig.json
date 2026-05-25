@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "wailsjs/*": ["wailsjs/*"]
+    }
+  },
+  "exclude": ["node_modules", "dist"]
+}

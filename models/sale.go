@@ -42,5 +42,6 @@ type SaleInput struct {
 
 	// Buy only: details for the new gold_item created from this purchase
 	ItemType    string `json:"item_type"`
+	ItemSubtype string `json:"item_subtype"`
 	IsInventory int    `json:"is_inventory"` // 1 = entered as store stock, 0 = scrap
 }

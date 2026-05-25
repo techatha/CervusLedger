@@ -24,26 +24,7 @@ export function pawnStatusBadge(status) {
   }
 }
 
-/**
- * Format number as Thai Baht (no decimals for integers, 2dp otherwise)
- */
-export function formatBaht(n) {
-  if (n == null || n === '') return '—'
-  const num = parseFloat(n)
-  if (isNaN(num)) return '—'
-  return num.toLocaleString('th-TH', {
-    minimumFractionDigits: Number.isInteger(num) ? 0 : 2,
-    maximumFractionDigits: 2,
-  }) + ' ฿'
-}
-
-/**
- * Ticket number formatted with zero-padding to 4 digits
- */
-export function formatTicket(n) {
-  if (!n) return '—'
-  return String(n).padStart(4, '0')
-}
+export { formatBaht, formatTicket } from './number'
 
 /**
  * ฟังก์ชันจัดฟอร์แมตที่อยู่ลูกค้าตามเงื่อนไข (ตัดฟิลด์ที่ว่างออกอัตโนมัติ)

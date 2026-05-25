@@ -1,5 +1,5 @@
-import { toBE } from '../../../../utils/thai'
-import { thaiMonthShort } from '../../../../utils/pawn'
+import { toBE } from '@/utils/thai'
+import { thaiMonthShort } from '@/utils/pawn'
 
 function IconCheckCircle() {
   return (

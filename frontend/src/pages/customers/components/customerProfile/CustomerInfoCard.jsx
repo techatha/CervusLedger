@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { toBE } from '../../../../utils/thai'
+import { toBE } from '@/utils/thai'
 
 export default function CustomerInfoCard({ customer }) {
   return (

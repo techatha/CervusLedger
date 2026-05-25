@@ -3,11 +3,11 @@ import {
   GetCustomer,
   CreateCustomer,
   UpdateCustomer,
-} from '../../../wailsjs/go/handlers/CustomerHandler'
+} from 'wailsjs/go/handlers/CustomerHandler'
 import {
   ReadSmartCard,
-} from '../../../wailsjs/go/handlers/SmartCardHandler'
-import { PREFIXES, PROVINCES } from '../../utils/thai'
+} from 'wailsjs/go/handlers/SmartCardHandler'
+import { PREFIXES, PROVINCES } from '@/utils/thai'
 import { useNavigate } from 'react-router-dom'
 import './CustomerForm.css'
 

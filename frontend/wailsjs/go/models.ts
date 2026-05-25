@@ -185,7 +185,7 @@ export namespace models {
 	export class GoldItem {
 	    id: number;
 	    type: string;
-	    weight_baht: number;
+	    subtype: string;
 	    created_at: string;
 	
 	    static createFrom(source: any = {}) {
@@ -196,14 +196,14 @@ export namespace models {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
 	        this.type = source["type"];
-	        this.weight_baht = source["weight_baht"];
+	        this.subtype = source["subtype"];
 	        this.created_at = source["created_at"];
 	    }
 	}
 	export class GoldItemInput {
 	    id: number;
 	    type: string;
-	    weight_baht: number;
+	    subtype: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new GoldItemInput(source);
@@ -213,7 +213,7 @@ export namespace models {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.id = source["id"];
 	        this.type = source["type"];
-	        this.weight_baht = source["weight_baht"];
+	        this.subtype = source["subtype"];
 	    }
 	}
 	
@@ -221,7 +221,7 @@ export namespace models {
 	    id: number;
 	    gold_item_id: number;
 	    type: string;
-	    weight_baht: number;
+	    subtype: string;
 	    amount: number;
 	    log_date: string;
 	    created_at: string;
@@ -235,7 +235,7 @@ export namespace models {
 	        this.id = source["id"];
 	        this.gold_item_id = source["gold_item_id"];
 	        this.type = source["type"];
-	        this.weight_baht = source["weight_baht"];
+	        this.subtype = source["subtype"];
 	        this.amount = source["amount"];
 	        this.log_date = source["log_date"];
 	        this.created_at = source["created_at"];
@@ -540,6 +540,7 @@ export namespace models {
 	    notes: string;
 	    date: string;
 	    item_type: string;
+	    item_subtype: string;
 	    is_inventory: number;
 	
 	    static createFrom(source: any = {}) {
@@ -558,6 +559,7 @@ export namespace models {
 	        this.notes = source["notes"];
 	        this.date = source["date"];
 	        this.item_type = source["item_type"];
+	        this.item_subtype = source["item_subtype"];
 	        this.is_inventory = source["is_inventory"];
 	    }
 	}

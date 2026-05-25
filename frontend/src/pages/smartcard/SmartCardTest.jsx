@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ReadSmartCard } from '../../../wailsjs/go/handlers/SmartCardHandler'
+import { ReadSmartCard } from 'wailsjs/go/handlers/SmartCardHandler'
 import './SmartCardTest.css'
 
 export default function SmartCardTest() {

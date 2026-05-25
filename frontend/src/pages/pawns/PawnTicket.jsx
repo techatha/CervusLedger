@@ -1,6 +1,6 @@
 import { useRef } from 'react'
-import { PrintWindow } from '../../../wailsjs/go/handlers/SettingsHandler'
-import { formatBaht, formatTicket, formatCustomerAddress, formatFullThaiDate, thaiBahtText } from '../../utils/thai'
+import { PrintWindow } from 'wailsjs/go/handlers/SettingsHandler'
+import { formatBaht, formatTicket, formatCustomerAddress, formatFullThaiDate, thaiBahtText } from '@/utils/thai'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPrint } from '@fortawesome/free-solid-svg-icons'
 import './PawnTicket.css'

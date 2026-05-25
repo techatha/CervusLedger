@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { ReadSmartCard } from '../../wailsjs/go/handlers/SmartCardHandler'
-import { GetCustomers } from '../../wailsjs/go/handlers/CustomerHandler'
+import { ReadSmartCard } from 'wailsjs/go/handlers/SmartCardHandler'
+import { GetCustomers } from 'wailsjs/go/handlers/CustomerHandler'
 
 export default function SmartCardWatcher({ onOpenRegisterModal }) {
   const navigate = useNavigate()

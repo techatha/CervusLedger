@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import { toBE, pawnStatusBadge, formatBaht, formatTicket } from '../../../../utils/thai'
-import { getPendingMonths } from '../../../../utils/pawn'
+import { toBE, pawnStatusBadge, formatBaht, formatTicket } from '@/utils/thai'
+import { getPendingMonths } from '@/utils/pawn'
 
 export default function CustomerPawnHistoryCard({ pawns }) {
   const navigate = useNavigate()

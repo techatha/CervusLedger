@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { formatBaht } from '../../../../utils/thai'
-import { thaiMonthShort } from '../../../../utils/pawn'
+import { formatBaht } from '@/utils/thai'
+import { thaiMonthShort } from '@/utils/pawn'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCartArrowDown } from '@fortawesome/free-solid-svg-icons'
 

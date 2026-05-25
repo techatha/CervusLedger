@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Fragment } from 'react'
 import {
   ListGoldItems,
   DeleteGoldItem,
   ListStockLogs,
   RecordStockLog,
-} from '../../../wailsjs/go/handlers/GoldItemHandler'
-import { toBE } from '../../utils/thai'
+} from 'wailsjs/go/handlers/GoldItemHandler'
+import { toBE } from '@/utils/thai'
+import { parseWeightToBaht } from '@/utils/number'
 import GoldStockForm from './GoldStockForm'
 import './GoldStockList.css'
 
@@ -125,7 +126,7 @@ export default function GoldStockList() {
 
   // Audit tab: live sums from input states
   const totalQuantity = stockLogs.reduce((s, log) => s + (parseInt(editedAmounts[log.gold_item_id]) || 0), 0)
-  const totalWeight = stockLogs.reduce((s, log) => s + ((log.weight_baht || 0) * (parseInt(editedAmounts[log.gold_item_id]) || 0)), 0)
+  const totalWeight = stockLogs.reduce((s, log) => s + (parseWeightToBaht(log.subtype) * (parseInt(editedAmounts[log.gold_item_id]) || 0)), 0)
 
   return (
     <div className="page-view">
@@ -199,8 +200,8 @@ export default function GoldStockList() {
               <thead>
                 <tr>
                   <th>#</th>
-                  <th>ประเภท</th>
-                  <th style={{ textAlign: 'right' }}>น้ำหนักเดี่ยว (บาท)</th>
+                  <th>ประเภทหลัก</th>
+                  <th>รุ่น / น้ำหนัก (Subtype)</th>
                   <th>วันที่เพิ่ม</th>
                   <th style={{ width: 110 }}></th>
                 </tr>
@@ -222,7 +223,7 @@ export default function GoldStockList() {
                   >
                     <td className="gl-index">{i + 1}</td>
                     <td className="gl-type">{item.type}</td>
-                    <td className="gl-weight" style={{ textAlign: 'right' }}>{item.weight_baht.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}</td>
+                    <td className="gl-subtype">{item.subtype}</td>
                     <td className="gl-date">{toBE(item.created_at)}</td>
                     <td className="gl-actions" onClick={e => e.stopPropagation()}>
                       <button className="btn btn-ghost btn-xs" onClick={() => setModal(item)}>แก้ไข</button>
@@ -235,7 +236,7 @@ export default function GoldStockList() {
           </div>
         </div>
       ) : (
-        // AUDIT VIEW
+        // AUDIT VIEW (Grouped by Type)
         <div>
           <div className="gl-audit-header">
             <div className="gl-audit-controls">
@@ -262,11 +263,11 @@ export default function GoldStockList() {
               <table className="table">
                 <thead>
                   <tr>
-                    <th>#</th>
-                    <th>ประเภท</th>
-                    <th style={{ textAlign: 'right' }}>น้ำหนักเดี่ยว (บาท)</th>
-                    <th style={{ textAlign: 'right', width: 150 }}>จำนวนคงเหลือ (ชิ้น)</th>
-                    <th style={{ textAlign: 'right' }}>น้ำหนักรวม (บาท)</th>
+                    <th style={{ width: 60 }}>#</th>
+                    <th>รุ่น / น้ำหนัก (Subtype)</th>
+                    <th style={{ textAlign: 'right', width: 180 }}>น้ำหนักเดี่ยวโดยประมาณ (บาท)</th>
+                    <th style={{ textAlign: 'right', width: 180 }}>จำนวนคงเหลือ (ชิ้น)</th>
+                    <th style={{ textAlign: 'right', width: 180 }}>น้ำหนักรวมโดยประมาณ (บาท)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -278,34 +279,56 @@ export default function GoldStockList() {
                         ไม่มีสินค้าในทะเบียนให้ตรวจนับ (กรุณาลงทะเบียนทองที่แท็บทะเบียนสินค้าก่อน)
                       </td>
                     </tr>
-                  ) : stockLogs.map((log, i) => {
-                    const amtStr = editedAmounts[log.gold_item_id] || ''
-                    const amtInt = parseInt(amtStr) || 0
-                    const totalWeightRow = (log.weight_baht || 0) * amtInt
+                  ) : (
+                    (() => {
+                      // Group stock logs by main type
+                      const groups = {}
+                      stockLogs.forEach(log => {
+                        if (!groups[log.type]) groups[log.type] = []
+                        groups[log.type].push(log)
+                      })
 
-                    return (
-                      <tr key={log.gold_item_id}>
-                        <td className="gl-index">{i + 1}</td>
-                        <td className="gl-type">{log.type}</td>
-                        <td className="gl-weight" style={{ textAlign: 'right' }}>
-                          {log.weight_baht.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
-                        </td>
-                        <td style={{ textAlign: 'right' }}>
-                          <input 
-                            type="number" 
-                            min="0" 
-                            className="input gl-audit-input-amount" 
-                            value={amtStr}
-                            placeholder="0"
-                            onChange={e => handleAmountChange(log.gold_item_id, e.target.value)}
-                          />
-                        </td>
-                        <td style={{ textAlign: 'right', fontWeight: 'bold', color: 'var(--gold)', fontSize: '15px' }}>
-                          {totalWeightRow.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
-                        </td>
-                      </tr>
-                    )
-                  })}
+                      return Object.keys(groups).map(mainType => (
+                        <Fragment key={mainType}>
+                          <tr className="gl-group-header-row" style={{ backgroundColor: 'var(--bg-hover)', fontWeight: 'bold' }}>
+                            <td colSpan={5} style={{ padding: '12px 16px', color: 'var(--gold)', fontSize: '15px' }}>
+                              📁 {mainType} ({groups[mainType].length} รายการ)
+                            </td>
+                          </tr>
+                          {groups[mainType].map((log, index) => {
+                            const amtStr = editedAmounts[log.gold_item_id] || ''
+                            const amtInt = parseInt(amtStr) || 0
+                            const estWeight = parseWeightToBaht(log.subtype)
+                            const totalWeightRow = estWeight * amtInt
+
+                            return (
+                              <tr key={log.gold_item_id}>
+                                <td className="gl-index">{index + 1}</td>
+                                <td className="gl-subtype" style={{ fontWeight: '500' }}>{log.subtype}</td>
+                                <td className="gl-weight" style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
+                                  {estWeight > 0 ? `${estWeight.toFixed(4)} บาท` : '—'}
+                                </td>
+                                <td style={{ textAlign: 'right' }}>
+                                  <input 
+                                    type="number" 
+                                    min="0" 
+                                    className="input gl-audit-input-amount" 
+                                    value={amtStr}
+                                    placeholder="0"
+                                    onChange={e => handleAmountChange(log.gold_item_id, e.target.value)}
+                                    style={{ width: '100px', textAlign: 'right' }}
+                                  />
+                                </td>
+                                <td style={{ textAlign: 'right', fontWeight: 'bold', color: 'var(--gold)', fontSize: '15px' }}>
+                                  {totalWeightRow > 0 ? `${totalWeightRow.toFixed(4)} บาท` : '—'}
+                                </td>
+                              </tr>
+                            )
+                          })}
+                        </Fragment>
+                      ))
+                    })()
+                  )}
                 </tbody>
               </table>
             </div>
@@ -332,8 +355,7 @@ export default function GoldStockList() {
             </div>
             <div className="modal-body">
               <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-                ต้องการลบ <strong style={{ color: 'var(--text-primary)' }}>{confirmDelete.type}</strong>
-                {' '}({confirmDelete.weight_baht} บาท) ออกจากทะเบียนสินค้า?
+                ต้องการลบ <strong style={{ color: 'var(--text-primary)' }}>{confirmDelete.type} {confirmDelete.subtype}</strong> ออกจากทะเบียนสินค้า?
               </p>
             </div>
             <div className="modal-footer">

@@ -22,9 +22,9 @@ func (h *GoldItemHandler) Startup(ctx context.Context) {
 
 func (h *GoldItemHandler) ListGoldItems(status string) ([]models.GoldItem, error) {
 	query := `
-		SELECT id, type, weight_baht, created_at
+		SELECT id, type, subtype, created_at
 		FROM gold_items
-		ORDER BY created_at DESC
+		ORDER BY type ASC, subtype ASC
 	`
 	rows, err := db.DB.Query(query)
 	if err != nil {
@@ -36,7 +36,7 @@ func (h *GoldItemHandler) ListGoldItems(status string) ([]models.GoldItem, error
 	for rows.Next() {
 		var g models.GoldItem
 		if err := rows.Scan(
-			&g.ID, &g.Type, &g.WeightBaht, &g.CreatedAt,
+			&g.ID, &g.Type, &g.Subtype, &g.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan gold item: %w", err)
 		}
@@ -48,10 +48,10 @@ func (h *GoldItemHandler) ListGoldItems(status string) ([]models.GoldItem, error
 func (h *GoldItemHandler) GetGoldItem(id int) (models.GoldItem, error) {
 	var g models.GoldItem
 	err := db.DB.QueryRow(`
-		SELECT id, type, weight_baht, created_at
+		SELECT id, type, subtype, created_at
 		FROM gold_items WHERE id = ?
 	`, id).Scan(
-		&g.ID, &g.Type, &g.WeightBaht, &g.CreatedAt,
+		&g.ID, &g.Type, &g.Subtype, &g.CreatedAt,
 	)
 	if err != nil {
 		return g, fmt.Errorf("get gold item %d: %w", id, err)
@@ -61,9 +61,9 @@ func (h *GoldItemHandler) GetGoldItem(id int) (models.GoldItem, error) {
 
 func (h *GoldItemHandler) CreateGoldItem(input models.GoldItemInput) (models.GoldItem, error) {
 	res, err := db.DB.Exec(`
-		INSERT INTO gold_items (type, weight_baht)
+		INSERT INTO gold_items (type, subtype)
 		VALUES (?, ?)
-	`, input.Type, input.WeightBaht)
+	`, input.Type, input.Subtype)
 	if err != nil {
 		return models.GoldItem{}, fmt.Errorf("create gold item: %w", err)
 	}
@@ -74,9 +74,9 @@ func (h *GoldItemHandler) CreateGoldItem(input models.GoldItemInput) (models.Gol
 func (h *GoldItemHandler) UpdateGoldItem(input models.GoldItemInput) error {
 	_, err := db.DB.Exec(`
 		UPDATE gold_items
-		SET type = ?, weight_baht = ?
+		SET type = ?, subtype = ?
 		WHERE id = ?
-	`, input.Type, input.WeightBaht, input.ID)
+	`, input.Type, input.Subtype, input.ID)
 	return err
 }
 
@@ -91,13 +91,13 @@ func (h *GoldItemHandler) ListStockLogs(logDate string) ([]models.GoldStockLog, 
 			COALESCE(l.id, 0) as log_id,
 			g.id as gold_item_id,
 			g.type,
-			g.weight_baht,
+			g.subtype,
 			COALESCE(l.amount, 0) as amount,
 			COALESCE(l.log_date, ?) as log_date,
 			COALESCE(l.created_at, '') as created_at
 		FROM gold_items g
 		LEFT JOIN gold_stock_logs l ON g.id = l.gold_item_id AND l.log_date = ?
-		ORDER BY g.type ASC, g.weight_baht ASC
+		ORDER BY g.type ASC, g.subtype ASC
 	`
 	rows, err := db.DB.Query(query, logDate, logDate)
 	if err != nil {
@@ -109,7 +109,7 @@ func (h *GoldItemHandler) ListStockLogs(logDate string) ([]models.GoldStockLog, 
 	for rows.Next() {
 		var l models.GoldStockLog
 		if err := rows.Scan(
-			&l.ID, &l.GoldItemID, &l.Type, &l.WeightBaht,
+			&l.ID, &l.GoldItemID, &l.Type, &l.Subtype,
 			&l.Amount, &l.LogDate, &l.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan stock log: %w", err)

@@ -4,8 +4,8 @@ import {
   GetIncomeExpenseSummary,
   DeleteIncomeExpense,
   ExportIncomeExpense,
-} from '../../../wailsjs/go/handlers/SaleHandler.js'
-import { toBE, formatBaht } from '../../utils/thai'
+} from 'wailsjs/go/handlers/SaleHandler.js'
+import { toBE, formatBaht } from '@/utils/thai'
 import ManualEntryModal from './ManualEntryModal'
 import './IncomePage.css'
 

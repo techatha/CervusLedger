@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
-import { PrintWindow } from '../../../wailsjs/go/handlers/SettingsHandler'
-import { toBE, formatBaht, formatTicket } from '../../utils/thai'
+import { PrintWindow } from 'wailsjs/go/handlers/SettingsHandler'
+import { toBE, formatBaht, formatTicket } from '@/utils/thai'
 import './receipt.css'
 
 /**

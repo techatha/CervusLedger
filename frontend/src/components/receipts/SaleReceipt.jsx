@@ -1,4 +1,4 @@
-import { formatBaht, toBE } from '../../utils/thai'
+import { formatBaht, toBE } from '@/utils/thai'
 import './receipt.css'
 
 /**

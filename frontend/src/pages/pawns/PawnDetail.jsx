@@ -7,9 +7,9 @@ import {
   RedeemPawn,
   ForfeitPawn,
   UpdateTicketStatus,
-} from '../../../wailsjs/go/handlers/PawnHandler'
-import { GetCustomer } from '../../../wailsjs/go/handlers/CustomerHandler'
-import { GetAllSettings } from '../../../wailsjs/go/handlers/SettingsHandler'
+} from 'wailsjs/go/handlers/PawnHandler'
+import { GetCustomer } from 'wailsjs/go/handlers/CustomerHandler'
+import { GetAllSettings } from 'wailsjs/go/handlers/SettingsHandler'
 import PawnTicket from './PawnTicket'
 import PawnInfoCard from './components/pawnDetail/PawnInfoCard'
 import PawnFinancialCard from './components/pawnDetail/PawnFinancialCard'
@@ -17,8 +17,8 @@ import PawnStatusCard from './components/pawnDetail/PawnStatusCard'
 import PawnPaymentHistoryCard from './components/pawnDetail/PawnPaymentHistoryCard'
 import PawnPendingInterestCard from './components/pawnDetail/PawnPendingInterestCard'
 import PawnPrincipalChangesCard from './components/pawnDetail/PawnPrincipalChangesCard'
-import { formatTicket, pawnStatusBadge } from '../../utils/thai'
-import { getPendingMonths, thaiMonthShort } from '../../utils/pawn'
+import { formatTicket, pawnStatusBadge } from '@/utils/thai'
+import { getPendingMonths, thaiMonthShort } from '@/utils/pawn'
 import { RecordPaymentModal, PrincipalChangeModal } from './PawnModals'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPrint } from '@fortawesome/free-solid-svg-icons'

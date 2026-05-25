@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { GetAllSettings } from '../../wailsjs/go/handlers/SettingsHandler'
+import { GetAllSettings } from 'wailsjs/go/handlers/SettingsHandler'
 import './Sidebar.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {

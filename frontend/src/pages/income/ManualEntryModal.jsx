@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CreateIncomeExpense } from '../../../wailsjs/go/handlers/SaleHandler'
+import { CreateIncomeExpense } from 'wailsjs/go/handlers/SaleHandler'
 
 const today = () => new Date().toISOString().slice(0, 10)
 

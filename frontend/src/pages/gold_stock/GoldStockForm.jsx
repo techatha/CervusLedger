@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { CreateGoldItem, UpdateGoldItem } from '../../../wailsjs/go/handlers/GoldItemHandler'
+import { CreateGoldItem, UpdateGoldItem } from 'wailsjs/go/handlers/GoldItemHandler'
 
 const GOLD_TYPES = [
   'ทองแท่ง', 'สร้อยคอ', 'สร้อยข้อมือ', 'แหวน',
@@ -7,8 +7,8 @@ const GOLD_TYPES = [
 ]
 
 const BLANK = {
-  type:        '',
-  weight_baht: '',
+  type:    '',
+  subtype: '',
 }
 
 export default function GoldStockForm({ item, onSaved, onClose }) {
@@ -20,8 +20,8 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
   useEffect(() => {
     if (item) {
       setForm({
-        type:        item.type        || '',
-        weight_baht: item.weight_baht != null ? String(item.weight_baht) : '',
+        type:    item.type    || '',
+        subtype: item.subtype || '',
       })
     }
   }, [item])
@@ -30,8 +30,7 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
 
   const validate = () => {
     if (!form.type.trim())      return 'กรุณาเลือกหรือกรอกประเภท'
-    const w = parseFloat(form.weight_baht)
-    if (!w || w <= 0)           return 'กรุณากรอกน้ำหนักที่ถูกต้อง'
+    if (!form.subtype.trim())   return 'กรุณากรอกรุ่น/น้ำหนัก (Subtype)'
     return null
   }
 
@@ -42,9 +41,9 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
     setError(null)
     try {
       const payload = {
-        id:          isEdit ? item.id : 0,
-        type:        form.type,
-        weight_baht: parseFloat(form.weight_baht),
+        id:      isEdit ? item.id : 0,
+        type:    form.type,
+        subtype: form.subtype,
       }
       if (isEdit) {
         await UpdateGoldItem(payload)
@@ -101,15 +100,13 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
           </div>
 
           <div className="form-group">
-            <label className="form-label form-label-required">น้ำหนัก (บาท)</label>
+            <label className="form-label form-label-required">รุ่น / น้ำหนัก (Subtype)</label>
             <input
               className="input"
-              type="number"
-              placeholder="0.00"
-              min="0"
-              step="0.0001"
-              value={form.weight_baht}
-              onChange={e => set('weight_baht', e.target.value)}
+              type="text"
+              placeholder="เช่น 1 บาท, 2 สลึง, ครึ่งสลึง, 1.9 กรัม..."
+              value={form.subtype}
+              onChange={e => set('subtype', e.target.value)}
             />
           </div>
         </div>

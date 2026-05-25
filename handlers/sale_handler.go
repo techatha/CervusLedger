@@ -47,18 +47,18 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 		if input.CustomerID == 0 {
 			return models.Sale{}, fmt.Errorf("ต้องระบุลูกค้าสำหรับการรับซื้อทอง")
 		}
-		// Find existing SKU, or create a new SKU if it doesn't exist (no purity checking)
+		// Find existing SKU, or create a new SKU if it doesn't exist
 		err = tx.QueryRow(`
 			SELECT id FROM gold_items 
-			WHERE type = ? AND weight_baht = ?
+			WHERE type = ? AND subtype = ?
 			LIMIT 1
-		`, input.ItemType, input.WeightBaht).Scan(&goldItemID)
+		`, input.ItemType, input.ItemSubtype).Scan(&goldItemID)
 		if err != nil {
 			// Insert new SKU in gold_items catalog
 			resInsert, err := tx.Exec(`
-				INSERT INTO gold_items (type, weight_baht)
+				INSERT INTO gold_items (type, subtype)
 				VALUES (?, ?)
-			`, input.ItemType, input.WeightBaht)
+			`, input.ItemType, input.ItemSubtype)
 			if err != nil {
 				return models.Sale{}, fmt.Errorf("insert new gold item from buy: %w", err)
 			}

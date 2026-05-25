@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { GetCustomer } from '../../../wailsjs/go/handlers/CustomerHandler'
-import { GetCustomerPawnRecords } from '../../../wailsjs/go/handlers/PawnHandler'
-import { GetCustomerPurchaseRecords } from '../../../wailsjs/go/handlers/PurchaseHandler'
-import { fullName } from '../../utils/thai'
-import { getPendingMonths } from '../../utils/pawn'
+import { GetCustomer } from 'wailsjs/go/handlers/CustomerHandler'
+import { GetCustomerPawnRecords } from 'wailsjs/go/handlers/PawnHandler'
+import { GetCustomerPurchaseRecords } from 'wailsjs/go/handlers/PurchaseHandler'
+import { fullName, formatBaht } from '@/utils/thai'
+import { getPendingMonths } from '@/utils/pawn'
 import CustomerForm from './CustomerForm'
 import CustomerInfoCard from './components/customerProfile/CustomerInfoCard'
 import CustomerAddressCard from './components/customerProfile/CustomerAddressCard'
-import CustomerStatsGrid from './components/customerProfile/CustomerStatsGrid'
+import StatCard from '@/components/StatCard'
 import CustomerPawnHistoryCard from './components/customerProfile/CustomerPawnHistoryCard'
 import CustomerGoldPurchasesCard from './components/customerProfile/CustomerGoldPurchasesCard'
 import './CustomerProfile.css'
@@ -92,12 +92,35 @@ export default function CustomerProfile() {
         </div>
 
         {/* 1. Stats Row */}
-        <CustomerStatsGrid
-          activePawnsCount={activePawns.length}
-          overdueCount={overdueCount}
-          totalActive={totalActive}
-          totalPawnsCount={pawns.length}
-        />
+        <div className="cp-stat-grid" style={{ marginBottom: '24px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+              <StatCard
+                label="จำนำที่ยังอยู่"
+                value={activePawns.length}
+                unit="รายการ"
+                color="green"
+                variant="profile"
+              />
+              <StatCard
+                label="ค้างจ่ายดอกเบี้ย"
+                value={overdueCount}
+                unit="รายการ"
+                color="red"
+                variant="profile"
+              />
+              <StatCard
+                label="ยอดรวมปัจจุบัน"
+                value={formatBaht(totalActive)}
+                color="gold"
+                variant="profile"
+              />
+              <StatCard
+                label="รายการจำนำทั้งหมด"
+                value={pawns.length}
+                unit="รายการ"
+                color="muted"
+                variant="profile"
+              />
+            </div>
 
         {/* ── Bottom Section: History Table ── */}
         <div className="cp-history-section">

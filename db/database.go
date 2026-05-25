@@ -57,7 +57,7 @@ func createTables() {
 		`CREATE TABLE IF NOT EXISTS gold_items (
 			id          INTEGER PRIMARY KEY AUTOINCREMENT,
 			type        TEXT NOT NULL,
-			weight_baht REAL NOT NULL,
+			subtype     TEXT NOT NULL,
 			created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 

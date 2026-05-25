@@ -2,9 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import {
   GetPawnSettings,
   CreatePawn,
-} from '../../../wailsjs/go/handlers/PawnHandler'
-import { GetCustomers } from '../../../wailsjs/go/handlers/CustomerHandler'
-import { formatBaht, fullName } from '../../utils/thai'
+} from 'wailsjs/go/handlers/PawnHandler'
+import { GetCustomers } from 'wailsjs/go/handlers/CustomerHandler'
+import { formatBaht, fullName } from '@/utils/thai'
 import './NewPawnForm.css'
 
 const today = () => new Date().toISOString().slice(0, 10)

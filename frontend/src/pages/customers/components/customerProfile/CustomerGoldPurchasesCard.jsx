@@ -1,4 +1,4 @@
-import { toBE, formatBaht } from '../../../../utils/thai'
+import { toBE, formatBaht } from '@/utils/thai'
 
 export default function CustomerGoldPurchasesCard({ purchases }) {
   return (

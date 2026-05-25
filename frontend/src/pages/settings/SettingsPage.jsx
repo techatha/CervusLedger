@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { GetAllSettings, SaveAllSettings } from '../../../wailsjs/go/handlers/SettingsHandler'
+import { GetAllSettings, SaveAllSettings } from 'wailsjs/go/handlers/SettingsHandler'
 import './SettingsPage.css'
 
 const DEFAULTS = {

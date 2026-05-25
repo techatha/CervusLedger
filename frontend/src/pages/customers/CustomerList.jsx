@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import {
   GetCustomers,
   DeleteCustomer,
-} from '../../../wailsjs/go/handlers/CustomerHandler'
-import { fullName, toBE } from '../../utils/thai'
+} from 'wailsjs/go/handlers/CustomerHandler'
+import { fullName, toBE } from '@/utils/thai'
 import CustomerForm from './CustomerForm'
 import './CustomerList.css'
 

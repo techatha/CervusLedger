@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { toBE } from '../../../../utils/thai'
-import { UpdatePawnDescription } from '../../../../../wailsjs/go/handlers/PawnHandler'
+import { toBE } from '@/utils/thai'
+import { UpdatePawnDescription } from 'wailsjs/go/handlers/PawnHandler'
 
 function PdRow({ label, value }) {
   return (
