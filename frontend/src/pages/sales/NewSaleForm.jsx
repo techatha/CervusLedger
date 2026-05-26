@@ -2,10 +2,41 @@ import { useState } from 'react'
 import NewSaleFormSell from './components/newSaleForm/Sell.jsx'
 import NewSaleFormBuy from './components/newSaleForm/Buy.jsx'
 import NewSaleFormDiscount from './components/newSaleForm/Discount.jsx'
+import { CreateSale } from 'wailsjs/go/handlers/SaleHandler.js'
 import './NewSaleForm.css'
 
 export default function NewSaleForm({ defaultType, todayPrice, onSaved, onClose, onAdd }) {
   const [tab, setTab] = useState(defaultType || 'sell')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  const handleTabChange = (newTab) => {
+    setTab(newTab)
+    setError(null)
+  }
+
+  const handleSave = async (payload, secondaryPayload = null) => {
+    setError(null)
+    setSaving(true)
+    try {
+      if (onAdd) {
+        onAdd(payload)
+        if (secondaryPayload) {
+          onAdd(secondaryPayload)
+        }
+      } else {
+        await CreateSale(payload)
+        if (secondaryPayload) {
+          await CreateSale(secondaryPayload)
+        }
+        onSaved()
+      }
+    } catch (e) {
+      setError('บันทึกไม่สำเร็จ: ' + e)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
@@ -15,19 +46,19 @@ export default function NewSaleForm({ defaultType, todayPrice, onSaved, onClose,
         <div className="nsf-tab-header" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
           <button
             className={`nsf-tab ${tab === 'sell' ? 'nsf-tab-active nsf-tab-sell' : ''}`}
-            onClick={() => setTab('sell')}
+            onClick={() => handleTabChange('sell')}
           >
             <IconUp /> ขายทอง
           </button>
           <button
             className={`nsf-tab ${tab === 'buy' ? 'nsf-tab-active nsf-tab-buy' : ''}`}
-            onClick={() => setTab('buy')}
+            onClick={() => handleTabChange('buy')}
           >
             <IconDown /> รับซื้อทอง
           </button>
           <button
             className={`nsf-tab ${tab === 'discount' ? 'nsf-tab-active nsf-tab-discount' : ''}`}
-            onClick={() => setTab('discount')}
+            onClick={() => handleTabChange('discount')}
             style={tab === 'discount' ? { borderBottomColor: 'var(--blue)', color: 'var(--blue)' } : {}}
           >
             <IconTagMain /> เพิ่มส่วนลด
@@ -38,8 +69,10 @@ export default function NewSaleForm({ defaultType, todayPrice, onSaved, onClose,
         {tab === 'sell' && (
           <NewSaleFormSell
             todayPrice={todayPrice}
-            onAdd={onAdd}
-            onSaved={onSaved}
+            saving={saving}
+            error={error}
+            setError={setError}
+            onSave={handleSave}
             onClose={onClose}
           />
         )}
@@ -47,8 +80,10 @@ export default function NewSaleForm({ defaultType, todayPrice, onSaved, onClose,
         {tab === 'buy' && (
           <NewSaleFormBuy
             todayPrice={todayPrice}
-            onAdd={onAdd}
-            onSaved={onSaved}
+            saving={saving}
+            error={error}
+            setError={setError}
+            onSave={handleSave}
             onClose={onClose}
           />
         )}
@@ -56,8 +91,10 @@ export default function NewSaleForm({ defaultType, todayPrice, onSaved, onClose,
         {tab === 'discount' && (
           <NewSaleFormDiscount
             todayPrice={todayPrice}
-            onAdd={onAdd}
-            onSaved={onSaved}
+            saving={saving}
+            error={error}
+            setError={setError}
+            onSave={handleSave}
             onClose={onClose}
           />
         )}

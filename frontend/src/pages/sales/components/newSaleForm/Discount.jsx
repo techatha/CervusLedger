@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { CreateSale } from 'wailsjs/go/handlers/SaleHandler.js'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -10,52 +9,34 @@ const BLANK_DISCOUNT = {
   date: today(),
 }
 
-export default function NewSaleFormDiscount({ todayPrice, onAdd, onSaved, onClose }) {
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
-
+export default function NewSaleFormDiscount({ todayPrice, saving, error, setError, onSave, onClose }) {
   const [discount, setDiscount] = useState({
     ...BLANK_DISCOUNT,
   })
 
   const setDiscountField = (k, v) => setDiscount(p => ({ ...p, [k]: v }))
 
-  const handleSave = async () => {
+  const handleSave = () => {
     setError(null)
     if (!discount.title.trim()) { setError('กรุณากรอกหัวข้อส่วนลด'); return }
     if (!discount.amount || parseFloat(discount.amount) <= 0) { setError('กรุณากรอกมูลค่าส่วนลดให้ถูกต้อง'); return }
 
-    setSaving(true)
-    try {
-      const priceID = todayPrice?.id || 0
-      const payload = {
-        type: 'discount',
-        customer_id: 0,
-        gold_item_id: 0,
-        weight_baht: 0,
-        gold_price_id: priceID,
-        price_per_baht: 0,
-        total_amount: parseFloat(discount.amount),
-        notes: discount.notes,
-        date: discount.date,
-        item_type: '', purity: '', description: '',
-      }
-
-      if (onAdd) {
-        onAdd({
-          ...payload,
-          label: discount.title,
-          notes: discount.notes
-        })
-      } else {
-        await CreateSale(payload)
-        onSaved()
-      }
-    } catch (e) {
-      setError('บันทึกไม่สำเร็จ: ' + e)
-    } finally {
-      setSaving(false)
+    const priceID = todayPrice?.id || 0
+    const payload = {
+      type: 'discount',
+      customer_id: 0,
+      gold_item_id: 0,
+      weight_baht: 0,
+      gold_price_id: priceID,
+      price_per_baht: 0,
+      total_amount: parseFloat(discount.amount),
+      notes: discount.notes,
+      date: discount.date,
+      item_type: '', purity: '', description: '',
+      label: discount.title,
     }
+
+    onSave(payload)
   }
 
   return (

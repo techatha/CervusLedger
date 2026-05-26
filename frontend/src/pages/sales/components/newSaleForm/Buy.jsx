@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { CreateSale } from 'wailsjs/go/handlers/SaleHandler.js'
 import { parseWeightToBaht } from '@/utils/number.js'
 import { fullName } from '@/utils/thai.js'
 import CustomerNoteSection from './CustomerNote.jsx'
@@ -18,10 +17,7 @@ const BLANK_BUY = {
   is_inventory: 0,
 }
 
-export default function NewSaleFormBuy({ todayPrice, onAdd, onSaved, onClose }) {
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
-
+export default function NewSaleFormBuy({ todayPrice, saving, error, setError, onSave, onClose }) {
   const [buy, setBuy] = useState({
     ...BLANK_BUY,
   })
@@ -37,7 +33,7 @@ export default function NewSaleFormBuy({ todayPrice, onAdd, onSaved, onClose }) 
     }))
   }
 
-  const handleSave = async () => {
+  const handleSave = () => {
     setError(null)
     if (!buy.customer_id) { setError('กรุณาเลือกลูกค้าสำหรับการรับซื้อทอง'); return }
     if (!buy.item_type.trim()) { setError('กรุณากรอกประเภททอง'); return }
@@ -45,39 +41,24 @@ export default function NewSaleFormBuy({ todayPrice, onAdd, onSaved, onClose }) 
     if (!buy.weight_baht) { setError('กรุณากรอกน้ำหนัก'); return }
     if (!buy.total_amount) { setError('กรุณากรอกราคารับซื้อรวม'); return }
 
-    setSaving(true)
-    try {
-      const priceID = todayPrice?.id || 0
-      const payload = {
-        type: 'buy',
-        customer_id: buy.customer_id,
-        gold_item_id: 0,
-        weight_baht: parseFloat(buy.weight_baht),
-        gold_price_id: priceID,
-        price_per_baht: 0,
-        total_amount: parseFloat(buy.total_amount),
-        notes: buy.notes,
-        date: buy.date,
-        item_type: buy.item_type,
-        item_subtype: buy.item_subtype,
-        is_inventory: buy.is_inventory,
-      }
-
-      if (onAdd) {
-        onAdd({
-          ...payload,
-          label: `รับซื้อ: ${buy.item_type} — ${buy.item_subtype || (buy.weight_baht + ' บาท')}`,
-          notes: buy.notes
-        })
-      } else {
-        await CreateSale(payload)
-        onSaved()
-      }
-    } catch (e) {
-      setError('บันทึกไม่สำเร็จ: ' + e)
-    } finally {
-      setSaving(false)
+    const priceID = todayPrice?.id || 0
+    const payload = {
+      type: 'buy',
+      customer_id: buy.customer_id,
+      gold_item_id: 0,
+      weight_baht: parseFloat(buy.weight_baht),
+      gold_price_id: priceID,
+      price_per_baht: 0,
+      total_amount: parseFloat(buy.total_amount),
+      notes: buy.notes,
+      date: buy.date,
+      item_type: buy.item_type,
+      item_subtype: buy.item_subtype,
+      is_inventory: buy.is_inventory,
+      label: `รับซื้อ: ${buy.item_type} — ${buy.item_subtype || (buy.weight_baht + ' บาท')}`,
     }
+
+    onSave(payload)
   }
 
   return (

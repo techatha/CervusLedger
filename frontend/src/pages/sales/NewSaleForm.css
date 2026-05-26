@@ -94,6 +94,7 @@
 }
 .nsf-total-sell { background: var(--green-bg); border: 1px solid rgba(61,154,104,0.2); }
 .nsf-total-buy  { background: var(--amber-bg); border: 1px solid rgba(184,120,48,0.2); }
+.nsf-total-gold { background: var(--gold-glow); border: 1px solid rgba(200, 150, 60, 0.3); }
 
 .nsf-total-label  { font-size: 13px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; }
 .nsf-total-amount {
@@ -104,3 +105,42 @@
 }
 .nsf-total-sell .nsf-total-amount { color: var(--green); }
 .nsf-total-buy  .nsf-total-amount { color: var(--amber); }
+.nsf-total-gold .nsf-total-amount { color: var(--gold); }
+
+/* ─── Red/White Negotiated Price Styles ───────────────────── */
+.input-negotiated {
+  background: var(--white) !important;
+  border: 1px solid var(--red) !important;
+  color: var(--red) !important;
+  font-weight: bold !important;
+}
+.input-negotiated::placeholder {
+  color: rgba(212, 92, 92, 0.5) !important;
+}
+.input-negotiated:focus {
+  border-color: var(--red) !important;
+  box-shadow: 0 0 0 2px var(--red-bg) !important;
+}
+
+.btn-red-outline {
+  background: var(--white);
+  border: 1px solid var(--red);
+  color: var(--red);
+  font-weight: bold;
+  height: 40px;
+  width: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 18px;
+  user-select: none;
+  transition: all var(--transition);
+}
+.btn-red-outline:hover {
+  background: var(--red-bg);
+}
+.btn-red-outline:active {
+  transform: scale(0.95);
+}
