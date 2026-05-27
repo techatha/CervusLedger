@@ -14,4 +14,7 @@ export default defineConfig({
       'wailsjs': path.resolve(__dirname, './wailsjs'),
     },
   },
+  build: {
+    chunkSizeWarningLimit: 1000, // Raises the warning threshold to 1000 kB (1 MB)
+  }
 })

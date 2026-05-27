@@ -70,7 +70,72 @@ export default function SalesList() {
     setSavingCart(true)
     setError(null)
     try {
+      const mergedCart = []
+      const revenueStack = [] // เปลี่ยนชื่อเป็น revenueStack ให้ชัดเจนว่ารับเฉพาะรายรับ
+
+      // ── ALGORITHM: REVENUE-ONLY CASCADING DISCOUNT ──
       for (const item of cartItems) {
+        const currentItem = { ...item } // Clone state
+
+        // 1. ถ้ารายการเป็น "รายรับ" (ขายทอง หรือ รับดอกเบี้ย) ให้ Push ลง Stack
+        if (currentItem.type === 'sell' || currentItem.type === 'pawn_interest') {
+          revenueStack.push(currentItem)
+        } 
+        // 2. ถ้ารายการเป็น "รับซื้อ (Buy)" มันคือรายจ่าย ให้ข้าม Stack และบันทึกตรงๆ
+        else if (currentItem.type === 'buy') {
+          mergedCart.push(currentItem)
+        }
+        // 3. ถ้ารายการเป็น "ส่วนลด (Discount)"
+        else if (currentItem.type === 'discount') {
+          let remainingDiscount = currentItem.total_amount
+          const discountRefText = currentItem.label || 'ส่วนลด'
+
+          // วนลูปหักส่วนลดจาก "รายรับ" ใน Stack จนกว่าส่วนลดจะหมด หรือ Stack ว่าง
+          while (remainingDiscount > 0 && revenueStack.length > 0) {
+            const topItem = revenueStack.pop() // ดึงรายรับล่าสุดออกมา
+
+            if (topItem.total_amount >= remainingDiscount) {
+              // ยอดรายรับ มากกว่า/เท่ากับ ส่วนลด -> หักแล้วดันกลับเข้า Stack
+              topItem.total_amount -= remainingDiscount
+              topItem.notes = topItem.notes
+                ? `${topItem.notes} | หัก(${discountRefText}: ${remainingDiscount}บ.)`
+                : `หัก(${discountRefText}: ${remainingDiscount}บ.)`
+              
+              remainingDiscount = 0
+              revenueStack.push(topItem)
+            } else {
+              // ส่วนลด มากกว่า ยอดรายรับ -> หักจนรายรับเหลือ 0 แล้วดึงรายการต่อไปมาหักต่อ
+              const applied = topItem.total_amount
+              remainingDiscount -= applied
+              
+              topItem.notes = topItem.notes
+                ? `${topItem.notes} | หัก(${discountRefText}: ${applied}บ.)`
+                : `หัก(${discountRefText}: ${applied}บ.)`
+              
+              topItem.total_amount = 0
+              mergedCart.push(topItem) // ยอดเป็น 0 ส่งเข้าผลลัพธ์สุดท้าย
+            }
+          }
+
+          // 4. ถ้าหักรายรับจนหมดแล้วยังมี "ส่วนลดเหลือ" (หรือไม่มีการขายเลย มีแต่รับซื้อ)
+          // ให้บันทึกส่วนลดก้อนนี้เป็น "Expense (รายจ่าย) 1 ก้อนแยกต่างหาก"
+          if (remainingDiscount > 0) {
+            mergedCart.push({
+              ...currentItem,
+              total_amount: remainingDiscount, // บันทึกเฉพาะส่วนลดที่เหลือ
+              notes: currentItem.notes 
+                ? `${currentItem.notes} [ส่วนลดเกินยอดขาย: บันทึกเป็นรายจ่าย]` 
+                : '[ส่วนลดเกินยอดขาย: บันทึกเป็นรายจ่าย]'
+            })
+          }
+        }
+      }
+
+      // 5. เทรายการรายรับที่เหลือ (ยอดสุทธิหลังหักส่วนลด) ใน Stack ทั้งหมดรวมเข้า Final Result
+      mergedCart.push(...revenueStack)
+
+      // ── SAVE TO BACKEND ──
+      for (const item of mergedCart) {
         if (item.type === 'pawn_interest') {
           await RecordPayment({
             pawn_record_id: item.pawn_record_id,
@@ -83,16 +148,17 @@ export default function SalesList() {
             ticket_number: item.ticket_number,
           })
         } else {
-          // Strip the display label from payload before sending to backend
+          // ถอด label ออกก่อนส่งให้ Backend
           const { label, ...cleanInput } = item
           await CreateSale(cleanInput)
         }
       }
+      
       setCartItems([])
       setQrAmount(0)
       setShowQr(false)
       priceDashboardRef.current?.refresh()
-      alert('บันทึกรายการขายสำเร็จเรียบร้อยแล้ว')
+      alert('บันทึกรายการสำเร็จเรียบร้อยแล้ว')
     } catch (e) {
       setError('บันทึกรายการไม่สำเร็จ: ' + e)
     } finally {
