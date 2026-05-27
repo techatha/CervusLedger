@@ -38,7 +38,7 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 			return models.Sale{}, fmt.Errorf("ต้องระบุรายการทองที่จะขาย")
 		}
 		var count int
-		err := tx.QueryRow("SELECT COUNT(1) FROM gold_items WHERE id = ?", goldItemID).Scan(&count)
+		err := tx.QueryRow("SELECT COUNT(1) FROM gold_stock WHERE id = ?", goldItemID).Scan(&count)
 		if err != nil || count == 0 {
 			return models.Sale{}, fmt.Errorf("ไม่พบรายการทองนี้ในระบบ")
 		}
@@ -49,18 +49,19 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 		}
 		// Find existing SKU, or create a new SKU if it doesn't exist
 		err = tx.QueryRow(`
-			SELECT id FROM gold_items 
+			SELECT id FROM gold_stock 
 			WHERE type = ? AND subtype = ?
 			LIMIT 1
 		`, input.ItemType, input.ItemSubtype).Scan(&goldItemID)
 		if err != nil {
-			// Insert new SKU in gold_items catalog
+			// Insert new SKU in gold_stock catalog with defaults (96.5% and estimated grams)
+			estGrams := input.WeightBaht * 15.16
 			resInsert, err := tx.Exec(`
-				INSERT INTO gold_items (type, subtype)
-				VALUES (?, ?)
-			`, input.ItemType, input.ItemSubtype)
+				INSERT INTO gold_stock (type, subtype, purity, weight_grams)
+				VALUES (?, ?, '96.5', ?)
+			`, input.ItemType, input.ItemSubtype, estGrams)
 			if err != nil {
-				return models.Sale{}, fmt.Errorf("insert new gold item from buy: %w", err)
+				return models.Sale{}, fmt.Errorf("insert new gold stock from buy: %w", err)
 			}
 			id, _ := resInsert.LastInsertId()
 			goldItemID = int(id)
@@ -94,7 +95,7 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 		}
 
 	case "discount":
-		// Do nothing to gold_items for discounts
+		// Do nothing to gold_stock for discounts
 
 	default:
 		return models.Sale{}, fmt.Errorf("ประเภทไม่ถูกต้อง: %s", input.Type)

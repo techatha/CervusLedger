@@ -1,16 +1,20 @@
 package models
 
 type GoldItem struct {
-	ID        int    `json:"id"`
-	Type      string `json:"type"`    // e.g. ทองแท่ง, สร้อยคอ
-	Subtype   string `json:"subtype"` // e.g. 1 บาท, 2 บาท, 1 กรัม, ครึ่งสลึง
-	CreatedAt string `json:"created_at"`
+	ID          int     `json:"id"`
+	Type        string  `json:"type"`    // e.g. ทองแท่ง, สร้อยคอ
+	Subtype     string  `json:"subtype"` // e.g. 1 บาท, 2 บาท, 1 กรัม, ครึ่งสลึง
+	Purity      string  `json:"purity"`
+	WeightGrams float64 `json:"weight_grams"`
+	CreatedAt   string  `json:"created_at"`
 }
 
 type GoldItemInput struct {
-	ID      int    `json:"id"`
-	Type    string `json:"type"`
-	Subtype string `json:"subtype"`
+	ID          int     `json:"id"`
+	Type        string  `json:"type"`
+	Subtype     string  `json:"subtype"`
+	Purity      string  `json:"purity"`
+	WeightGrams float64 `json:"weight_grams"`
 }
 
 type GoldStockLog struct {

@@ -28,11 +28,7 @@ func Init(dbPath string) {
 
 
 func createTables() {
-	// Drop old gold_items, gold_stock_logs, and purchased_gold tables to apply new schema structure cleanly
-	_, _ = DB.Exec(`DROP TABLE IF EXISTS gold_stock_logs`)
-	_, _ = DB.Exec(`DROP TABLE IF EXISTS gold_items`)
-	_, _ = DB.Exec(`DROP TABLE IF EXISTS purchased_gold`)
-
+	// Ensure tables exist
 	queries := []string{
 
 		// Customers
@@ -53,12 +49,14 @@ func createTables() {
 			created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 
-		// Gold inventory catalog (SKUs) - simplified, no purity
-		`CREATE TABLE IF NOT EXISTS gold_items (
-			id          INTEGER PRIMARY KEY AUTOINCREMENT,
-			type        TEXT NOT NULL,
-			subtype     TEXT NOT NULL,
-			created_at  DATETIME DEFAULT CURRENT_TIMESTAMP
+		// Gold stock catalog (no longer per item but per type/purity/weight)
+		`CREATE TABLE IF NOT EXISTS gold_stock (
+			id            INTEGER PRIMARY KEY AUTOINCREMENT,
+			type          TEXT NOT NULL,
+			subtype       TEXT NOT NULL,
+			purity        TEXT NOT NULL,
+			weight_grams  REAL NOT NULL,
+			created_at    DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 
 		// Gold monthly stock counts
@@ -68,7 +66,7 @@ func createTables() {
 			amount       INTEGER NOT NULL DEFAULT 0,
 			log_date     DATE NOT NULL,
 			created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
-			FOREIGN KEY (gold_item_id) REFERENCES gold_items(id),
+			FOREIGN KEY (gold_item_id) REFERENCES gold_stock(id),
 			UNIQUE(gold_item_id, log_date)
 		)`,
 

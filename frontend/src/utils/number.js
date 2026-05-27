@@ -52,27 +52,3 @@ export function parseWeightToBaht(subtype) {
   const raw = parseFloat(s)
   return isNaN(raw) ? 0 : raw
 }
-
-export function parseSubtypeToGrams(subtype) {
-  if (!subtype) return ''
-  const s = subtype.trim().toLowerCase()
-  if (s.includes('ครึ่งสลึง')) return '1.89'
-  if (s.includes('1 สลึง') || s.includes('หนึ่งสลึง')) return '3.79'
-  if (s.includes('2 สลึง') || s.includes('สองสลึง')) return '7.58'
-  if (s.includes('3 สลึง') || s.includes('สามสลึง')) return '11.37'
-
-  const gramMatch = s.match(/([0-9.]+)\s*(กรัม|g|gram)/i)
-  if (gramMatch) return gramMatch[1]
-
-  const bahtMatch = s.match(/([0-9.]+)\s*(บาท|b|baht)/i)
-  if (bahtMatch) {
-    const b = parseFloat(bahtMatch[1])
-    return String((b * 15.16).toFixed(2))
-  }
-
-  const raw = parseFloat(s)
-  if (!isNaN(raw)) return String((raw * 15.16).toFixed(2))
-  return ''
-}
-
-

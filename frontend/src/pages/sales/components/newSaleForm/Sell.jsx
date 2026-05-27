@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTag } from '@fortawesome/free-solid-svg-icons'
+import { faTag, faCheck, faPen } from '@fortawesome/free-solid-svg-icons'
 import { ListGoldItems } from 'wailsjs/go/handlers/GoldItemHandler.js'
 import { formatBaht, fullName, toBE } from '@/utils/thai.js'
-import { formatNumberInput, formatCurrency, parseSubtypeToGrams } from '@/utils/number.js'
+import { formatNumberInput, formatCurrency } from '@/utils/number.js'
 import CustomerNoteSection from './CustomerNote.jsx'
+import { getGoldMainTypes, getGoldSubtypes } from '@/utils/constants.js'
 
-const MAIN_TYPES = ["สร้อยคอ", "สร้อยข้อมือ", "กำไล", "แหวน", "จี้", "ต่างหู", "อื่นๆ"]
-const PURITY_OPTIONS = ["90", "70", "58", "40", "อื่นๆ"]
 const today = () => new Date().toISOString().slice(0, 10)
 
 const BLANK_SELL = {
@@ -25,8 +24,7 @@ const BLANK_SELL = {
 
   // Grams & Purity calculation inputs
   weight_grams: '',
-  purity: '90', // default 90%
-  purity_custom: '',
+  purity: '0', // none selected => 0
 }
 
 export default function NewSaleFormSell({ todayPrice, saving, error, setError, onSave, onClose }) {
@@ -36,42 +34,51 @@ export default function NewSaleFormSell({ todayPrice, saving, error, setError, o
     price_per_baht: todayPrice ? String(todayPrice.sell_price_per_baht) : '',
   })
 
-  // NEW: Separate state for negotiated discount logic (Decoupled from sell.total_amount)
   const [negotiatedPrice, setNegotiatedPrice] = useState('')
-  const [isNegotiatedEdited, setIsNegotiatedEdited] = useState(false)
-  const [showNegotiated, setShowNegotiated] = useState(false)
+  const [negotiationMode, setNegotiationMode] = useState('off')
 
   const [goldItems, setGoldItems] = useState([])
+  const [mainTypes, setMainTypes] = useState([])
+  const [subtypes, setSubtypes] = useState([])
   const [selectedMainType, setSelectedMainType] = useState('')
 
   // Load available gold items on mount
   useEffect(() => {
     ListGoldItems('available').then(d => setGoldItems(d || []))
+    getGoldMainTypes().then(setMainTypes)
   }, [])
+
+  // Load subtypes when main type changes
+  useEffect(() => {
+    if (selectedMainType) {
+      getGoldSubtypes(selectedMainType).then(setSubtypes)
+    } else {
+      setSubtypes([])
+    }
+  }, [selectedMainType])
 
   const sellTotal = sell.total_amount ? parseFloat(sell.total_amount || 0) : 0
 
-  // Reset manual edit flag and visibility when gold_item_id changes
+  // Reset negotiation completely when picking a new gold item
   useEffect(() => {
-    setIsNegotiatedEdited(false)
+    setNegotiationMode('off')
     setNegotiatedPrice('')
-    setShowNegotiated(false)
   }, [sell.gold_item_id])
 
-  // Sync negotiatedPrice with sellTotal initially or when sellTotal changes, until manually edited
-  useEffect(() => {
-    if (sellTotal === 0) {
-      setIsNegotiatedEdited(false)
-      setNegotiatedPrice('')
-    } else if (!isNegotiatedEdited) {
-      setNegotiatedPrice(String(sellTotal))
-    }
-  }, [sellTotal, isNegotiatedEdited])
-
-  // Calculate dynamically for rendering
-  const parsedNegotiated = parseFloat(String(negotiatedPrice)) || 0
-  const hasDiscount = parsedNegotiated != sellTotal
+  // Calculate dynamically
+  const parsedNegotiated = parseFloat(String(negotiatedPrice).replace(/,/g, '')) || 0
+  // Only calculate discount if the feature is turned on
+  const hasDiscount = negotiationMode !== 'off' && parsedNegotiated !== sellTotal
   const discountAmount = hasDiscount ? sellTotal - parsedNegotiated : 0
+
+  // Apply button handler
+  const handleApplyNegotiated = () => {
+    const cleanValue = parseFloat(negotiatedPrice)
+    if (!isNaN(cleanValue)) {
+      setNegotiatedPrice(String(cleanValue))
+    }
+    setNegotiationMode('view')
+  }
 
   const updateSellCalculation = (updatedFields) => {
     setSell(prev => {
@@ -81,7 +88,7 @@ export default function NewSaleFormSell({ todayPrice, saving, error, setError, o
       const basePrice = parseFloat(String(next.price_per_baht).replace(/,/g, '') || 0)
       const labor = parseFloat(String(next.labor_fee).replace(/,/g, '') || 0)
       const weightG = parseFloat(next.weight_grams || 0)
-      const purityVal = next.purity === 'อื่นๆ' ? parseFloat(next.purity_custom || 0) : parseFloat(next.purity || 0)
+      const purityVal = parseFloat(next.purity || 0)
 
       // Calculate pure gold price
       let calculatedGold = 0
@@ -101,17 +108,22 @@ export default function NewSaleFormSell({ todayPrice, saving, error, setError, o
     })
   }
 
-  const selectSubtypeById = (id) => {
-    const item = goldItems.find(g => g.id === parseInt(id));
-    if (!item) {
-      updateSellCalculation({ gold_item_id: 0, gold_item_label: '', weight_grams: '' });
+  const selectSubtypeByName = (subtypeName) => {
+    if (!subtypeName) {
+      updateSellCalculation({ gold_item_id: 0, gold_item_label: '', weight_grams: '', purity: '0' });
       return;
     }
-    const estGrams = parseSubtypeToGrams(item.subtype);
+    const item = goldItems.find(g => g.type === selectedMainType && g.subtype === subtypeName);
+    if (!item) {
+      // Allow selection visually but reset ID since it's not in stock
+      updateSellCalculation({ gold_item_id: 0, gold_item_label: '', weight_grams: '', purity: '0' });
+      return;
+    }
     updateSellCalculation({
       gold_item_id: item.id,
       gold_item_label: `${item.type} — ${item.subtype}`,
-      weight_grams: estGrams
+      weight_grams: item.weight_grams ? String(item.weight_grams) : '',
+      purity: item.purity || '0'
     });
   }
 
@@ -123,10 +135,9 @@ export default function NewSaleFormSell({ todayPrice, saving, error, setError, o
     if (!sell.total_amount) { setError('กรุณากรอกราคารวมขาย'); return }
 
     const priceID = todayPrice?.id || 0
-    const purityPct = sell.purity === 'อื่นๆ' ? sell.purity_custom : sell.purity
     const displayNotes = sell.notes
-      ? `${sell.notes} [ชั่งจริง: ${sell.weight_grams} ก. (ความบริสุทธิ์: ${purityPct}%)]`
-      : `ชั่งจริง: ${sell.weight_grams} ก. (ความบริสุทธิ์: ${purityPct}%)`
+      ? `${sell.notes} [ชั่งจริง: ${sell.weight_grams} ก. (ความบริสุทธิ์: ${sell.purity}%)]`
+      : `ชั่งจริง: ${sell.weight_grams} ก. (ความบริสุทธิ์: ${sell.purity}%)`
     const finalWeightBaht = parseFloat(sell.weight_grams || 0) * 656 / 10000
 
     // 1. Create the primary Sell Payload
@@ -184,7 +195,7 @@ export default function NewSaleFormSell({ todayPrice, saving, error, setError, o
               }}
             >
               <option value="">-- เลือกประเภทหลัก --</option>
-              {MAIN_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              {mainTypes.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
 
@@ -192,16 +203,16 @@ export default function NewSaleFormSell({ todayPrice, saving, error, setError, o
             <label className="form-label form-label-required">เลือกรุ่น/น้ำหนัก </label>
             <select
               className="input"
-              value={sell.gold_item_id || ''}
+              value={sell.gold_item_id 
+                ? goldItems.find(g => g.id === sell.gold_item_id)?.subtype || '' 
+                : ''}
               disabled={!selectedMainType}
-              onChange={e => selectSubtypeById(e.target.value)}
+              onChange={e => selectSubtypeByName(e.target.value)}
             >
               <option value="">-- เลือกรุ่น/น้ำหนัก --</option>
-              {selectedMainType && goldItems
-                .filter(item => item.type === selectedMainType)
-                .map(item => (
-                  <option key={item.id} value={item.id}>{item.subtype}</option>
-                ))}
+              {subtypes.map(t => (
+                <option key={t} value={t}>{t}</option>
+              ))}
             </select>
           </div>
         </div>
@@ -260,34 +271,18 @@ export default function NewSaleFormSell({ todayPrice, saving, error, setError, o
 
           <div className="form-group">
             <label className="form-label form-label-required">ความบริสุทธิ์ (%)</label>
-            <select
-              className="input"
-              value={sell.purity}
-              onChange={e => updateSellCalculation({ purity: e.target.value })}
-              disabled={!sell.gold_item_id}
-            >
-              {PURITY_OPTIONS.map(p => (
-                <option key={p} value={p}>{p === 'อื่นๆ' ? 'อื่นๆ (กรอกเอง)' : `${p}%`}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        {sell.purity === 'อื่นๆ' && (
-          <div className="form-group" style={{ marginTop: '10px' }}>
-            <label className="form-label form-label-required">ระบุความบริสุทธิ์เอง (%)</label>
             <input
               className="input"
               type="number"
               min="0"
               max="100"
               step="0.1"
-              placeholder="เช่น 92.5"
-              value={sell.purity_custom}
-              onChange={e => updateSellCalculation({ purity_custom: e.target.value })}
+              value={sell.purity}
+              onChange={e => updateSellCalculation({ purity: e.target.value })}
+              disabled={!sell.gold_item_id}
             />
           </div>
-        )}
+        </div>
 
         {/* ── Sell Total view ── */}
         {sellTotal > 0 && (
@@ -296,11 +291,13 @@ export default function NewSaleFormSell({ todayPrice, saving, error, setError, o
               <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}>
                 <input
                   type="checkbox"
-                  checked={showNegotiated}
+                  checked={negotiationMode !== 'off'}
                   onChange={e => {
-                    setShowNegotiated(e.target.checked)
-                    if (!e.target.checked) {
-                      setIsNegotiatedEdited(false)
+                    if (e.target.checked) {
+                      setNegotiationMode('edit')
+                      setNegotiatedPrice(String(sellTotal)) // Auto-fill current total
+                    } else {
+                      setNegotiationMode('off')
                       setNegotiatedPrice('')
                     }
                   }}
@@ -310,32 +307,72 @@ export default function NewSaleFormSell({ todayPrice, saving, error, setError, o
               </label>
             </div>
 
-            {/* ── Quick Negotiated Price Input (Moved BELOW Customer Section) ── */}
-            {showNegotiated && (
+            {/* ── Quick Negotiated Price Input ── */}
+            {negotiationMode !== 'off' && (
               <div className="form-group" style={{ marginTop: '8px', background: 'var(--red-bg)', padding: '16px', borderRadius: '8px', borderLeft: '4px solid var(--red)', marginBottom: '12px' }}>
-                <label className="form-label" style={{ marginBottom: '8px', color: 'var(--text-secondary)' }}>
-                  ราคาตกลงขายใหม่ (ส่วนลดจะถูกเพิ่มลงตะกร้าแยกอัตโนมัติ)
-                </label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <input
-                    className="input input-negotiated"
-                    type="text"
-                    placeholder="กรอกราคาที่ลูกค้าต่อรอง..."
-                    value={formatNumberInput(negotiatedPrice)}
-                    onChange={e => {
-                      setIsNegotiatedEdited(true)
-                      setNegotiatedPrice(e.target.value)
-                    }}
-                    onBlur={e => setNegotiatedPrice(formatCurrency(e.target.value))}
-                    disabled={!sell.gold_item_id}
-                    style={{ width: '100%', fontSize: '16px', fontWeight: 'bold' }}
-                  />
-                  {hasDiscount && (
-                    <span style={{ fontSize: '13.5px', color: 'var(--red)', fontWeight: 'bold' }}>
-                      <FontAwesomeIcon icon={faTag} /> ลดไป: {formatBaht(discountAmount)} บ.
-                    </span>
-                  )}
-                </div>
+                {negotiationMode === 'edit' ? (
+                  /* ── EDIT MODE ── */
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label className="form-label" style={{ marginBottom: '8px', color: 'var(--text-secondary)' }}>
+                      ราคาตกลงขายใหม่ (ส่วนลดจะถูกเพิ่มลงตะกร้าแยกอัตโนมัติ)
+                    </label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <input
+                        className="input input-negotiated"
+                        type="number" /* เปลี่ยนกลับเป็น number ให้เด้งแป้นตัวเลขบนมือถือ */
+                        min="0"
+                        placeholder="กรอกราคาที่ลูกค้าต่อรอง..."
+                        value={negotiatedPrice}
+                        onChange={e => setNegotiatedPrice(e.target.value)} /* เก็บค่าตรงๆ ไม่ต้อง Format */
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            handleApplyNegotiated()
+                          }
+                        }}
+                        style={{ flex: 1, fontSize: '16px', fontWeight: 'bold' }}
+                        autoFocus
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={handleApplyNegotiated}
+                        title="ยืนยันราคา"
+                        style={{ height: '40px', width: '40px', padding: 0, borderRadius: '8px', background: 'var(--red)', border: 'none' }}
+                      >
+                        <FontAwesomeIcon icon={faCheck} />
+                      </button>
+                    </div>
+                    {hasDiscount && (
+                      <span style={{ fontSize: '13.5px', color: 'var(--red)', fontWeight: 'bold' }}>
+                        <FontAwesomeIcon icon={faTag} /> ลดไป: {formatBaht(discountAmount)} บ.
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  /* ── VIEW MODE ── */
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
+                    {hasDiscount ? (
+                      <span style={{ fontSize: '15px', color: 'var(--red)', fontWeight: 'bold' }}>
+                        <FontAwesomeIcon icon={faTag} /> ลดไป: {formatBaht(discountAmount)} บ.
+                      </span>
+                    ) : (
+                      <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>
+                        ไม่มีส่วนลดเพิ่มเติม
+                      </span>
+                    )}
+
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      onClick={() => setNegotiationMode('edit')}
+                      title="แก้ไขราคา"
+                      style={{ height: '36px', width: '36px', padding: 0, borderRadius: '8px', color: 'var(--text-secondary)' }}
+                    >
+                      <FontAwesomeIcon icon={faPen} />
+                    </button>
+                  </div>
+                )}
               </div>
             )}
 

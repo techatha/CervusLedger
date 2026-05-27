@@ -186,6 +186,8 @@ export namespace models {
 	    id: number;
 	    type: string;
 	    subtype: string;
+	    purity: string;
+	    weight_grams: number;
 	    created_at: string;
 	
 	    static createFrom(source: any = {}) {
@@ -197,6 +199,8 @@ export namespace models {
 	        this.id = source["id"];
 	        this.type = source["type"];
 	        this.subtype = source["subtype"];
+	        this.purity = source["purity"];
+	        this.weight_grams = source["weight_grams"];
 	        this.created_at = source["created_at"];
 	    }
 	}
@@ -204,6 +208,8 @@ export namespace models {
 	    id: number;
 	    type: string;
 	    subtype: string;
+	    purity: string;
+	    weight_grams: number;
 	
 	    static createFrom(source: any = {}) {
 	        return new GoldItemInput(source);
@@ -214,6 +220,8 @@ export namespace models {
 	        this.id = source["id"];
 	        this.type = source["type"];
 	        this.subtype = source["subtype"];
+	        this.purity = source["purity"];
+	        this.weight_grams = source["weight_grams"];
 	    }
 	}
 	
