@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTag, faCheck, faPen } from '@fortawesome/free-solid-svg-icons'
+import { faTag, faCheck, faPen, faXmark } from '@fortawesome/free-solid-svg-icons'
 import { formatBaht, fullName, toBE } from '@/utils/thai.js'
 import { formatNumberInput, formatCurrency } from '@/utils/number.js'
 import CustomerNoteSection from './CustomerNote.jsx'
@@ -26,10 +26,8 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
     const cleanValue = parseFloat(negotiatedPrice)
     if (!isNaN(cleanValue)) {
       setNegotiatedPrice(String(cleanValue))
-      // อัปเดต discount_amount กลับไปให้แม่
       setFormData(prev => ({ ...prev, discount_amount: discountAmount }))
     }
-    setNegotiationMode('view')
   }
 
   const updateSellCalculation = (updatedFields) => {
@@ -85,8 +83,9 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
             disabled={!formData.gold_item_id}
           />
           {todayPrice && (
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '8px', fontWeight: 'normal' }}>
-              * ราคาขายทองแท่งปัจจุบัน: {formatBaht(todayPrice.sell_price_per_baht)} <br />{toBE(todayPrice.date)} เวลา {todayPrice.update_time}
+            <span className="nsf-price-hint">
+              * ราคาขายทองแท่งปัจจุบัน: {formatBaht(todayPrice.sell_price_per_baht)}{' '}
+              <br />{toBE(todayPrice.date)} เวลา {todayPrice.update_time}
             </span>
           )}
         </div>
@@ -105,97 +104,118 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
         </div>
       </div>
 
+      {/* ─── Total + Negotiation ─────────────────────────────────── */}
       {sellTotal > 0 && (
         <>
-          <div style={{ marginTop: '16px', marginBottom: '8px' }}>
-            <label className="checkbox-label" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', userSelect: 'none' }}>
-              <input
-                type="checkbox"
-                checked={negotiationMode !== 'off'}
-                onChange={e => {
-                  if (e.target.checked) {
-                    setNegotiationMode('edit')
-                    setNegotiatedPrice(String(sellTotal))
-                  } else {
-                    setNegotiationMode('off')
-                    setNegotiatedPrice('')
-                    setFormData(prev => ({ ...prev, discount_amount: 0 }))
-                  }
-                }}
-                style={{ transform: 'scale(1.2)', cursor: 'pointer' }}
-              />
-              <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>ปรับราคาตกลงขายใหม่ (ต่อรองราคา / ให้ส่วนลดพิเศษ)</span>
-            </label>
-          </div>
-
-          {negotiationMode !== 'off' && (
-            <div className="form-group" style={{ marginTop: '8px', background: 'var(--red-bg)', padding: '16px', borderRadius: '8px', borderLeft: '4px solid var(--red)', marginBottom: '12px' }}>
-              {negotiationMode === 'edit' ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <label className="form-label" style={{ marginBottom: '8px', color: 'var(--text-secondary)' }}>
-                    ราคาตกลงขายใหม่ (ส่วนลดจะถูกเพิ่มลงตะกร้าแยกอัตโนมัติ)
-                  </label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <input
-                      className="input input-negotiated"
-                      type="number"
-                      min="0"
-                      placeholder="กรอกราคาที่ลูกค้าต่อรอง..."
-                      value={negotiatedPrice}
-                      onChange={e => setNegotiatedPrice(e.target.value)}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          handleApplyNegotiated()
-                        }
-                      }}
-                      style={{ flex: 1, fontSize: '16px', fontWeight: 'bold' }}
-                      autoFocus
-                    />
-                    <button type="button" className="btn btn-primary" onClick={handleApplyNegotiated} title="ยืนยันราคา" style={{ height: '40px', width: '40px', padding: 0, borderRadius: '8px', background: 'var(--red)', border: 'none' }}>
-                      <FontAwesomeIcon icon={faCheck} />
-                    </button>
-                  </div>
-                  {hasDiscount && (
-                    <span style={{ fontSize: '13.5px', color: 'var(--red)', fontWeight: 'bold' }}>
-                      <FontAwesomeIcon icon={faTag} /> ลดไป: {formatBaht(discountAmount)} บ.
-                    </span>
-                  )}
-                </div>
-              ) : (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 0' }}>
-                  {hasDiscount ? (
-                    <span style={{ fontSize: '15px', color: 'var(--red)', fontWeight: 'bold' }}>
-                      <FontAwesomeIcon icon={faTag} /> ลดไป: {formatBaht(discountAmount)} บ.
-                    </span>
-                  ) : (
-                    <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>ไม่มีส่วนลดเพิ่มเติม</span>
-                  )}
-                  <button type="button" className="btn btn-ghost" onClick={() => setNegotiationMode('edit')} title="แก้ไขราคา" style={{ height: '36px', width: '36px', padding: 0, borderRadius: '8px', color: 'var(--text-secondary)' }}>
-                    <FontAwesomeIcon icon={faPen} />
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="nsf-total nsf-total-gold">
+          {/* Total preview */}
+          <div className="nsf-total nsf-total-gold" style={{ marginTop: '16px' }}>
             <span className="nsf-total-label">ยอดรวมสุทธิ</span>
-            <div style={{ textAlign: 'right' }}>
+            <div className="nsf-total-right">
               {hasDiscount ? (
                 <>
-                  <span style={{ textDecoration: 'line-through', opacity: 0.5, fontSize: '16px', marginRight: '8px' }}>{formatBaht(sellTotal)}</span>
-                  <span className="nsf-total-amount" style={{ color: 'var(--gold)' }}>{formatBaht(parsedNegotiated)}</span>
+                  <div className="nsf-discount-row">
+                    <span className="nsf-price-old">{formatBaht(sellTotal)}</span>
+                    <span className="nsf-total-amount">{formatBaht(parsedNegotiated)}</span>
+                  </div>
+                  <div className="nsf-discount-label">
+                    <FontAwesomeIcon icon={faTag} style={{ marginRight: '4px' }} />
+                    ส่วนลด {formatBaht(discountAmount)}
+                  </div>
                 </>
               ) : (
                 <span className="nsf-total-amount">{formatBaht(sellTotal)}</span>
               )}
               {formData.calculated_gold_price > 0 && (
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                  (ราคาทอง: {formatBaht(formData.calculated_gold_price)} {formData.labor_fee ? `+ ค่ากำเหน็จ: ${formatBaht(parseFloat(String(formData.labor_fee).replace(/,/g, '')))}` : ''})
+                <div className="nsf-total-breakdown">
+                  ราคาทอง: {formatBaht(formData.calculated_gold_price)}
+                  {formData.labor_fee
+                    ? ` + ค่ากำเหน็จ: ${formatBaht(parseFloat(String(formData.labor_fee).replace(/,/g, '')))}`
+                    : ''}
                 </div>
               )}
             </div>
+          </div>
+
+          {/* Negotiation toggle */}
+          <div className="nsf-negotiate">
+            {negotiationMode === 'off' ? (
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm nsf-negotiate-trigger"
+                onClick={() => {
+                  setNegotiationMode('editing')
+                  setNegotiatedPrice(String(sellTotal))
+                }}
+              >
+                <FontAwesomeIcon icon={faPen} style={{ fontSize: '12px' }} />
+                ต่อรองราคา / ให้ส่วนลดพิเศษ
+              </button>
+
+            ) : negotiationMode === 'editing' ? (
+              <div className="nsf-negotiate-bar">
+                <FontAwesomeIcon icon={faTag} className="nsf-negotiate-tag" />
+                <input
+                  className="input input-negotiated"
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="ราคาที่ตกลงกับลูกค้า..."
+                  value={formatNumberInput(negotiatedPrice)}
+                  onChange={e => setNegotiatedPrice(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') { e.preventDefault(); handleApplyNegotiated(); setNegotiationMode('confirmed') }
+                  }}
+                  style={{ flex: 1 }}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  className="nsf-negotiate-confirm"
+                  onClick={() => { handleApplyNegotiated(); setNegotiationMode('confirmed') }}
+                  title="ยืนยันราคา"
+                >
+                  <FontAwesomeIcon icon={faCheck} />
+                </button>
+                <button
+                  type="button"
+                  className="nsf-negotiate-cancel"
+                  onClick={() => {
+                    setNegotiationMode('off')
+                    setNegotiatedPrice('')
+                    setFormData(prev => ({ ...prev, discount_amount: 0 }))
+                  }}
+                  title="ยกเลิก"
+                >
+                  <FontAwesomeIcon icon={faXmark} />
+                </button>
+              </div>
+
+            ) : /* confirmed */ (
+              <div className="nsf-negotiate-bar nsf-negotiate-bar--confirmed">
+                <div className="nsf-negotiate-info">
+                  <div className="nsf-negotiate-check">
+                    <FontAwesomeIcon icon={faCheck} />
+                  </div>
+                  <div>
+                    <div className="nsf-negotiate-discount">
+                      <FontAwesomeIcon icon={faTag} style={{ marginRight: '5px' }} />
+                      ส่วนลด {formatBaht(discountAmount)}
+                    </div>
+                    <div className="nsf-negotiate-agreed">
+                      ราคาตกลง: {formatBaht(parsedNegotiated)}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm nsf-negotiate-edit"
+                  onClick={() => setNegotiationMode('editing')}
+                  title="แก้ไขราคา"
+                >
+                  <FontAwesomeIcon icon={faPen} style={{ fontSize: '12px' }} />
+                  แก้ไข
+                </button>
+              </div>
+            )}
           </div>
         </>
       )}

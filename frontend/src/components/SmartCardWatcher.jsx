@@ -17,7 +17,7 @@ export default function SmartCardWatcher({ onOpenRegisterModal }) {
       const isOtherModalOpen = document.querySelector('.modal:not(.cf-modal):not(.npf-modal)') !== null
 
       if (isOtherModalOpen) {
-        console.log('[SmartCardWatcher] Check bypassed: Another modal is active.')
+        // console.log('[SmartCardWatcher] Check bypassed: Another modal is active.')
         return
       }
 
@@ -33,38 +33,38 @@ export default function SmartCardWatcher({ onOpenRegisterModal }) {
             return
           }
 
-          console.log(`[SmartCardWatcher] New card detected. Setting lastCardId to: "${cleanId}"`)
+          // console.log(`[SmartCardWatcher] New card detected. Setting lastCardId to: "${cleanId}"`)
           setLastCardId(cleanId)
 
           // If CustomerForm is open, dispatch event to it and do nothing else
           if (isCustomerFormOpen) {
-            console.log('[SmartCardWatcher] CustomerForm is open, sending smartcard-insert event.')
+            // console.log('[SmartCardWatcher] CustomerForm is open, sending smartcard-insert event.')
             window.dispatchEvent(new CustomEvent('smartcard-insert', { detail: { card } }))
             return
           }
 
           // Query if customer is already in DB
-          console.log(`[SmartCardWatcher] Querying DB for card ID: "${cleanId}"`)
+          // console.log(`[SmartCardWatcher] Querying DB for card ID: "${cleanId}"`)
           const customers = await GetCustomers(cleanId)
           const matched = (customers || []).find(c => c.id_card === cleanId)
 
           if (matched) {
-            console.log(`[SmartCardWatcher] Match found! Registered customer ID: ${matched.id}`)
+            // console.log(`[SmartCardWatcher] Match found! Registered customer ID: ${matched.id}`)
             if (isNewPawnFormOpen) {
-              console.log('[SmartCardWatcher] NewPawnForm is open, sending smartcard-pawn-select event.')
+              // console.log('[SmartCardWatcher] NewPawnForm is open, sending smartcard-pawn-select event.')
               window.dispatchEvent(new CustomEvent('smartcard-pawn-select', { detail: { customer: matched } }))
             } else if (location.pathname !== `/customers/${matched.id}`) {
-              console.log(`[SmartCardWatcher] Navigating to customer profile: /customers/${matched.id}`)
+              // console.log(`[SmartCardWatcher] Navigating to customer profile: /customers/${matched.id}`)
               navigate(`/customers/${matched.id}`)
             } else {
-              console.log('[SmartCardWatcher] Already on the target customer profile page. No navigation needed.')
+              // console.log('[SmartCardWatcher] Already on the target customer profile page. No navigation needed.')
             }
           } else {
-            console.log('[SmartCardWatcher] No match found. Triggering registration form modal.')
+            // console.log('[SmartCardWatcher] No match found. Triggering registration form modal.')
             onOpenRegisterModal(card)
           }
         } else {
-          console.log('[SmartCardWatcher] Card was read but has no id_card field:', card)
+          // console.log('[SmartCardWatcher] Card was read but has no id_card field:', card)
         }
       } catch (e) {
         const errMsg = String(e)

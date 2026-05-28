@@ -8,6 +8,7 @@ const DEFAULTS = {
   shop_phone:           '',
   buy_price_per_baht:   '',
   sell_price_per_baht:  '',
+  buying_difference:    '0',
   interest_rate_low:    '0.3',
   interest_rate_high:   '0.2',
   interest_threshold:   '10000',
@@ -137,6 +138,15 @@ export default function SettingsPage() {
                 />
               </Field>
             </div>
+            <Field label="ส่วนต่างราคารับซื้อทองคำแท่ง (บาท/บาท)" hint="ใช้หักลบราคาอ้างอิงตอนคำนวณราคารับซื้อ">
+              <input
+                className="input"
+                type="number"
+                value={form.buying_difference}
+                onChange={e => set('buying_difference', e.target.value)}
+                placeholder="0"
+              />
+            </Field>
           </div>
         </section>
 

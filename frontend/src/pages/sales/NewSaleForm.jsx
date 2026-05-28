@@ -14,7 +14,8 @@ const BLANK_SELL = {
 }
 
 const BLANK_BUY = {
-  item_type: '', item_subtype: '', weight_baht: '', total_amount: '',
+  gold_item_id: 0, gold_item_label: '', weight_grams: '', purity: '90',
+  price_per_baht: '', item_type: '', item_subtype: '', weight_baht: '', total_amount: '',
   is_inventory: 0, customer_id: 0, customer_label: '', notes: '', date: today()
 }
 
@@ -32,14 +33,17 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
     if (initialTab === 'sell') {
       return { ...BLANK_SELL, price_per_baht: todayPrice ? String(todayPrice.sell_price_per_baht) : '' }
     }
-    return initialTab === 'buy' ? BLANK_BUY : BLANK_DISCOUNT
+    if (initialTab === 'buy') {
+      return { ...BLANK_BUY, price_per_baht: todayPrice ? String(todayPrice.sell_price_per_baht) : '' }
+    }
+    return BLANK_DISCOUNT
   })
 
   const handleTabChange = (newTab) => {
     setTab(newTab)
     setError(null)
     if (newTab === 'sell') setFormData({ ...BLANK_SELL, price_per_baht: todayPrice ? String(todayPrice.sell_price_per_baht) : '' })
-    else if (newTab === 'buy') setFormData({ ...BLANK_BUY })
+    else if (newTab === 'buy') setFormData({ ...BLANK_BUY, price_per_baht: todayPrice ? String(todayPrice.sell_price_per_baht) : '' })
     else if (newTab === 'discount') setFormData({ ...BLANK_DISCOUNT })
   }
 
@@ -105,7 +109,7 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
         gold_item_id: 0,
         weight_baht: parseFloat(formData.weight_baht),
         gold_price_id: priceID,
-        price_per_baht: 0,
+        price_per_baht: parseFloat(String(formData.price_per_baht).replace(/,/g, '') || 0),
         total_amount: parseFloat(formData.total_amount),
         notes: formData.notes,
         date: formData.date,
@@ -153,12 +157,12 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
           </button>
         </div>
 
-        <div className="modal-body">
-          {error && <div className="alert alert-error">{error}</div>}
+        {error && <div className="alert alert-error" style={{ margin: '12px 16px 0' }}>{error}</div>}
 
+        <div className="modal-body">
           {/* ส่ง State ที่รวมกันแล้วลงไปให้ตัวลูกใช้งาน */}
           {tab === 'sell' && <NewSaleFormSell formData={formData} setFormData={setFormData} todayPrice={todayPrice} />}
-          {tab === 'buy' && <NewSaleFormBuy formData={formData} setFormData={setFormData} />}
+          {tab === 'buy' && <NewSaleFormBuy formData={formData} setFormData={setFormData} todayPrice={todayPrice} />}
           {tab === 'discount' && <NewSaleFormDiscount formData={formData} setFormData={setFormData} />}
         </div>
 
@@ -168,7 +172,7 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
           <button 
             className="btn btn-primary" 
             onClick={handleAddToCart} 
-            style={tab === 'buy' ? { background: 'var(--amber)', color: '#fff', border: 'none' } : tab === 'discount' ? { background: 'var(--blue)', color: '#fff', border: 'none' } : {}}
+            style={tab === 'buy' ? { background: 'var(--amber)', color: '#fff', border: 'none' } : tab === 'discount' ? { background: 'var(--blue)', color: '#fff', border: 'none' } : tab === 'sell' ? { background: 'var(--green)', color: '#fff', border: 'none' } : {}}
           >
             {tab === 'buy' ? 'เพิ่มรายการรับซื้อ' : tab === 'discount' ? 'เพิ่มส่วนลดลงตะกร้า' : 'เพิ่มรายการขาย'}
           </button>

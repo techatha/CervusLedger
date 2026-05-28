@@ -202,6 +202,7 @@ export default function SalesList() {
             mainTotalAmount={mainTotalAmount}
             onClearCart={() => { setCartItems([]); setQrAmount(0); setShowQr(false); }}
             onGenerateQR={handleGenerateQR}
+            onSaveAllSales={handleSaveAllSales}
             savingCart={savingCart}
           />
 

@@ -9,6 +9,7 @@ export default function SalesCart({
   mainTotalAmount,
   onClearCart,
   onGenerateQR,
+  onSaveAllSales,
   savingCart,
 }) {
   return (
@@ -124,14 +125,26 @@ export default function SalesCart({
             <button className="btn btn-ghost" onClick={onClearCart} disabled={savingCart}>
               <FontAwesomeIcon icon={faTrashCan} /> ล้างตะกร้า
             </button>
-            <button
-              className="btn btn-ghost"
-              style={{ borderColor: 'var(--gold)', color: 'var(--gold)' }}
-              onClick={onGenerateQR}
-              disabled={savingCart}
-            >
-              <FontAwesomeIcon icon={faQrcode} /> สร้าง QR Code
-            </button>
+            {mainTotalAmount > 0 ? (
+              <button
+                className="btn btn-ghost"
+                style={{ borderColor: 'var(--gold)', color: 'var(--gold)' }}
+                onClick={onGenerateQR}
+                disabled={savingCart}
+              >
+                <FontAwesomeIcon icon={faQrcode} /> สร้าง QR Code
+              </button>
+            ) : (
+              <button
+                className="btn btn-primary"
+                onClick={onSaveAllSales}
+                disabled={savingCart}
+                style={mainTotalAmount < 0 ? { background: 'var(--amber)', color: '#fff', border: 'none' } : {}}
+              >
+                {savingCart ? 'กำลังบันทึกรายการ...' : 'ยืนยันการทำรายการสำเร็จ'}
+              </button>
+            )}
+
           </div>
         </div>
       )}

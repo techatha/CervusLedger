@@ -164,6 +164,7 @@ func createTables() {
 			('shop_phone',           '053-140-935'),
 			('buy_price_per_baht',   '0'),
 			('sell_price_per_baht',  '0'),
+			('buying_difference',    '0'),
 			('interest_rate_low',    '0.03'),
 			('interest_rate_high',   '0.02'),
 			('interest_threshold',   '10000'),
