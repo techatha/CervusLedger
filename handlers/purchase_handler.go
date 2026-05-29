@@ -27,7 +27,9 @@ func (h *PurchaseHandler) ListPurchasedGold() ([]models.PurchasedGold, error) {
 			p.customer_id,
 			COALESCE(c.prefix || c.firstname || ' ' || c.lastname, 'ลูกค้าทั่วไป') as customer_name,
 			p.type,
+			COALESCE(p.subtype, '') as subtype,
 			p.weight_baht,
+			COALESCE(p.weight_grams, 0.0) as weight_grams,
 			p.total_amount,
 			p.notes,
 			p.date,
@@ -36,7 +38,7 @@ func (h *PurchaseHandler) ListPurchasedGold() ([]models.PurchasedGold, error) {
 			p.created_at
 		FROM purchased_gold p
 		LEFT JOIN customers c ON p.customer_id = c.id
-		ORDER BY p.date DESC, p.created_at DESC
+		ORDER BY p.date ASC, p.created_at ASC
 	`
 	rows, err := db.DB.Query(query)
 	if err != nil {
@@ -48,7 +50,7 @@ func (h *PurchaseHandler) ListPurchasedGold() ([]models.PurchasedGold, error) {
 	for rows.Next() {
 		var p models.PurchasedGold
 		if err := rows.Scan(
-			&p.ID, &p.CustomerID, &p.CustomerName, &p.Type, &p.WeightBaht,
+			&p.ID, &p.CustomerID, &p.CustomerName, &p.Type, &p.Subtype, &p.WeightBaht, &p.WeightGrams,
 			&p.TotalAmount, &p.Notes, &p.Date, &p.IsInventory, &p.StillExists,
 			&p.CreatedAt,
 		); err != nil {
@@ -75,7 +77,9 @@ func (h *PurchaseHandler) GetCustomerPurchaseRecords(customerID int) ([]models.P
 			p.customer_id,
 			COALESCE(c.prefix || c.firstname || ' ' || c.lastname, 'ลูกค้าทั่วไป') as customer_name,
 			p.type,
+			COALESCE(p.subtype, '') as subtype,
 			p.weight_baht,
+			COALESCE(p.weight_grams, 0.0) as weight_grams,
 			p.total_amount,
 			p.notes,
 			p.date,
@@ -85,7 +89,7 @@ func (h *PurchaseHandler) GetCustomerPurchaseRecords(customerID int) ([]models.P
 		FROM purchased_gold p
 		LEFT JOIN customers c ON p.customer_id = c.id
 		WHERE p.customer_id = ?
-		ORDER BY p.date DESC, p.created_at DESC
+		ORDER BY p.date ASC, p.created_at ASC
 	`
 	rows, err := db.DB.Query(query, customerID)
 	if err != nil {
@@ -97,7 +101,7 @@ func (h *PurchaseHandler) GetCustomerPurchaseRecords(customerID int) ([]models.P
 	for rows.Next() {
 		var p models.PurchasedGold
 		if err := rows.Scan(
-			&p.ID, &p.CustomerID, &p.CustomerName, &p.Type, &p.WeightBaht,
+			&p.ID, &p.CustomerID, &p.CustomerName, &p.Type, &p.Subtype, &p.WeightBaht, &p.WeightGrams,
 			&p.TotalAmount, &p.Notes, &p.Date, &p.IsInventory, &p.StillExists,
 			&p.CreatedAt,
 		); err != nil {
@@ -107,3 +111,13 @@ func (h *PurchaseHandler) GetCustomerPurchaseRecords(customerID int) ([]models.P
 	}
 	return list, nil
 }
+
+func (h *PurchaseHandler) UpdateNotes(id int, notes string) error {
+	_, err := db.DB.Exec(`
+		UPDATE purchased_gold
+		SET notes = ?
+		WHERE id = ?
+	`, notes, id)
+	return err
+}
+

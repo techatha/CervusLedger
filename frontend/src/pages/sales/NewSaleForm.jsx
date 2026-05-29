@@ -108,6 +108,7 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
         customer_id: formData.customer_id,
         gold_item_id: 0,
         weight_baht: parseFloat(formData.weight_baht),
+        weight_grams: parseFloat(formData.weight_grams || 0),
         gold_price_id: priceID,
         price_per_baht: parseFloat(String(formData.price_per_baht).replace(/,/g, '') || 0),
         total_amount: parseFloat(formData.total_amount),

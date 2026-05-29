@@ -12,7 +12,8 @@ export default function CustomerGoldPurchasesCard({ purchases }) {
             <tr>
               <th>วันที่รับซื้อ</th>
               <th>ประเภททอง</th>
-              <th style={{ textAlign: 'right' }}>น้ำหนัก (บาท)</th>
+              <th>รุ่น/ขนาด (Sub-type)</th>
+              <th style={{ textAlign: 'right' }}>น้ำหนัก (กรัม)</th>
               <th style={{ textAlign: 'right' }}>ยอดราคารวม</th>
               <th style={{ textAlign: 'center' }}>การเข้าคลัง</th>
               <th style={{ textAlign: 'center' }}>สถานะของทอง</th>
@@ -22,7 +23,7 @@ export default function CustomerGoldPurchasesCard({ purchases }) {
           <tbody>
             {purchases.length === 0 ? (
               <tr className="loading-row">
-                <td colSpan={7}>ยังไม่มีประวัติการรับซื้อทองคำ</td>
+                <td colSpan={8}>ยังไม่มีประวัติการรับซื้อทองคำ</td>
               </tr>
             ) : (
               purchases.map(pur => (
@@ -30,11 +31,16 @@ export default function CustomerGoldPurchasesCard({ purchases }) {
                   <td style={{ whiteSpace: 'nowrap' }}>{toBE(pur.date)}</td>
                   <td>
                     <span className="badge badge-gold" style={{ fontSize: '12px' }}>
-                      {pur.type}
+                      {pur.type || pur.item_type}
                     </span>
                   </td>
+                  <td style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>
+                    {pur.subtype || pur.item_subtype || '—'}
+                  </td>
                   <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontWeight: 'bold' }}>
-                    {pur.weight_baht.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+                    {pur.weight_grams != null 
+                      ? pur.weight_grams.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
+                      : ((pur.weight_baht || 0) * 15.244).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
                   <td style={{ whiteSpace: 'nowrap', textAlign: 'right', fontWeight: 'bold', color: 'var(--red)' }}>
                     {formatBaht(pur.total_amount)}

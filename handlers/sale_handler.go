@@ -69,9 +69,9 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 
 		// Insert record into purchased_gold ledger
 		_, err = tx.Exec(`
-			INSERT INTO purchased_gold (customer_id, type, weight_baht, total_amount, notes, date, is_inventory, still_exists)
-			VALUES (?, ?, ?, ?, ?, ?, ?, 1)
-		`, input.CustomerID, input.ItemType, input.WeightBaht, input.TotalAmount, input.Notes, input.Date, input.IsInventory)
+			INSERT INTO purchased_gold (customer_id, type, subtype, weight_baht, weight_grams, total_amount, notes, date, is_inventory, still_exists)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+		`, input.CustomerID, input.ItemType, input.ItemSubtype, input.WeightBaht, input.WeightGrams, input.TotalAmount, input.Notes, input.Date, input.IsInventory)
 		if err != nil {
 			return models.Sale{}, fmt.Errorf("insert purchased_gold: %w", err)
 		}

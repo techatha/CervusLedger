@@ -75,7 +75,9 @@ func createTables() {
 			id             INTEGER PRIMARY KEY AUTOINCREMENT,
 			customer_id    INTEGER NOT NULL,
 			type           TEXT NOT NULL,
+			subtype        TEXT,
 			weight_baht    REAL NOT NULL,
+			weight_grams   REAL DEFAULT 0.0,
 			total_amount   REAL NOT NULL DEFAULT 0,
 			notes          TEXT,
 			date           DATE NOT NULL,
@@ -181,5 +183,15 @@ func createTables() {
 		if err != nil {
 			log.Fatal("Failed to create table:", err)
 		}
+	}
+
+	// Migrations: Alter tables to add columns if they don't exist
+	alterQueries := []string{
+		`ALTER TABLE purchased_gold ADD COLUMN subtype TEXT`,
+		`ALTER TABLE purchased_gold ADD COLUMN weight_grams REAL DEFAULT 0.0`,
+	}
+	for _, query := range alterQueries {
+		// Ignore error if column already exists
+		_, _ = DB.Exec(query)
 	}
 }

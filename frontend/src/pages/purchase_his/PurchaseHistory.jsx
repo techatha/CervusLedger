@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { ListPurchasedGold, ToggleStillExists } from 'wailsjs/go/handlers/PurchaseHandler.js'
 import { toBE, formatBaht } from '@/utils/thai.js'
+import StatCard from '@/components/StatCard'
+import NewPurchaseModal from './NewPurchaseModal.jsx'
+import PurchaseDetailModal from './PurchaseDetailModal.jsx'
 import './PurchaseHistory.css'
 
 export default function PurchaseHistory() {
@@ -8,10 +11,11 @@ export default function PurchaseHistory() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Filters
   const [searchTerm, setSearchTerm] = useState('')
-  const [statusFilter, setStatusFilter] = useState('all') // 'all' | 'exists' | 'melted'
-  const [inventoryFilter, setInventoryFilter] = useState('all') // 'all' | 'inventory' | 'scrap'
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [inventoryFilter, setInventoryFilter] = useState('all')
+  const [showNewPurchaseModal, setShowNewPurchaseModal] = useState(false)
+  const [selectedPurchase, setSelectedPurchase] = useState(null)
 
   const loadData = async () => {
     setLoading(true)
@@ -26,218 +30,287 @@ export default function PurchaseHistory() {
     }
   }
 
-  useEffect(() => {
-    loadData()
-  }, [])
+  useEffect(() => { loadData() }, [])
 
   const handleToggle = async (item) => {
     try {
       const targetState = item.still_exists === 1 ? 0 : 1
       await ToggleStillExists(item.id, targetState)
-      
-      // Update local state directly for responsive feedback
       setPurchases(p => p.map(x => x.id === item.id ? { ...x, still_exists: targetState } : x))
     } catch (e) {
       alert('ไม่สามารถเปลี่ยนสถานะสินค้าได้: ' + e)
     }
   }
 
-  // Filter logic
   const filteredPurchases = purchases.filter(item => {
-    const nameMatch = (item.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase())
-    const typeMatch = (item.type || '').toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesSearch = nameMatch || typeMatch
+    const matchesSearch =
+      (item.customer_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (item.type || '').toLowerCase().includes(searchTerm.toLowerCase())
 
-    let matchesStatus = true
-    if (statusFilter === 'exists') {
-      matchesStatus = item.still_exists === 1
-    } else if (statusFilter === 'melted') {
-      matchesStatus = item.still_exists === 0
-    }
+    const matchesStatus =
+      statusFilter === 'all' ? true :
+        statusFilter === 'exists' ? item.still_exists === 1 :
+          item.still_exists === 0
 
-    let matchesInventory = true
-    if (inventoryFilter === 'inventory') {
-      matchesInventory = item.is_inventory === 1
-    } else if (inventoryFilter === 'scrap') {
-      matchesInventory = item.is_inventory === 0
-    }
+    const matchesInventory =
+      inventoryFilter === 'all' ? true :
+        inventoryFilter === 'inventory' ? item.is_inventory === 1 :
+          item.is_inventory === 0
 
     return matchesSearch && matchesStatus && matchesInventory
   })
 
-  // Summary stats
   const totalWeight = filteredPurchases.reduce((sum, item) => sum + (item.weight_baht || 0), 0)
   const totalAmount = filteredPurchases.reduce((sum, item) => sum + (item.total_amount || 0), 0)
 
   return (
-    <div className="page-view">
+    <div className="page-view ph-page-view">
       <div className="page-header">
         <div>
           <div className="page-title">รับซื้อของเก่า</div>
           <div className="page-meta">ดูและจัดการประวัติการรับซื้อทองคำจากลูกค้า</div>
         </div>
+        <button className="btn btn-primary" onClick={() => setShowNewPurchaseModal(true)}>
+          + รับซื้อทองใหม่
+        </button>
       </div>
 
-      <div className="purchase-history-container">
-        {error && <div className="alert alert-error">{error}</div>}
+      {showNewPurchaseModal && (
+        <NewPurchaseModal onClose={() => setShowNewPurchaseModal(false)} />
+      )}
 
-      {/* Control panel (Filters) */}
-      <div className="ph-controlscard card">
+      {selectedPurchase && (
+        <PurchaseDetailModal
+          item={selectedPurchase}
+          onClose={() => setSelectedPurchase(null)}
+          onUpdate={(updated) => {
+            setSelectedPurchase(updated)
+            setPurchases(prev => prev.map(p => p.id === updated.id ? updated : p))
+          }}
+        />
+      )}
+
+      {error && <div className="alert alert-error">{error}</div>}
+
+      {/* ─── 1. Filters (Moved to TOP) ───────────────────────────── */}
+      <div className="card ph-filters-card" style={{ marginTop: '16px' }}>
         <div className="ph-filters">
-          <div className="form-group ph-search-group">
+          {/* Search */}
+          <div className="form-group" style={{ flex: 2 }}>
             <label className="form-label">ค้นหา</label>
-            <input
-              type="text"
-              className="input ph-search-input"
-              placeholder="ค้นหาชื่อลูกค้า หรือประเภททอง..."
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-            />
+            <div className="search-wrap">
+              <span className="search-icon">🔍</span>
+              <input
+                type="text"
+                className="input search-input"
+                placeholder="ชื่อลูกค้า หรือประเภททอง..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="form-group">
+          {/* Status filter */}
+          <div className="form-group" style={{ flex: 1.5 }}>
             <label className="form-label">สถานะของทอง</label>
-            <div className="ph-tab-row">
-              <button
-                className={`ph-filter-btn ${statusFilter === 'all' ? 'ph-filter-btn-active' : ''}`}
-                onClick={() => setStatusFilter('all')}
-              >
-                ทั้งหมด
-              </button>
-              <button
-                className={`ph-filter-btn ${statusFilter === 'exists' ? 'ph-filter-btn-active' : ''}`}
-                onClick={() => setStatusFilter('exists')}
-              >
-                ยังอยู่ในร้าน
-              </button>
-              <button
-                className={`ph-filter-btn ${statusFilter === 'melted' ? 'ph-filter-btn-active' : ''}`}
-                onClick={() => setStatusFilter('melted')}
-              >
-                ขาย/ละลายแล้ว
-              </button>
+            <div className="ph-pill-row">
+              {[
+                { key: 'all', label: 'ทั้งหมด' },
+                { key: 'exists', label: 'ยังอยู่ในร้าน' },
+                { key: 'melted', label: 'ขาย/ละลายแล้ว' },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  className={`ph-pill ${statusFilter === key ? 'ph-pill-active' : ''}`}
+                  onClick={() => setStatusFilter(key)}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="form-group">
+          {/* Inventory filter */}
+          <div className="form-group" style={{ flex: 1.5 }}>
             <label className="form-label">การเข้าคลังสินค้า</label>
-            <div className="ph-tab-row">
-              <button
-                className={`ph-filter-btn ${inventoryFilter === 'all' ? 'ph-filter-btn-active' : ''}`}
-                onClick={() => setInventoryFilter('all')}
-              >
-                ทั้งหมด
-              </button>
-              <button
-                className={`ph-filter-btn ${inventoryFilter === 'inventory' ? 'ph-filter-btn-active' : ''}`}
-                onClick={() => setInventoryFilter('inventory')}
-              >
-                นำเข้าคลัง
-              </button>
-              <button
-                className={`ph-filter-btn ${inventoryFilter === 'scrap' ? 'ph-filter-btn-active' : ''}`}
-                onClick={() => setInventoryFilter('scrap')}
-              >
-                ไม่เข้าคลัง
-              </button>
+            <div className="ph-pill-row">
+              {[
+                { key: 'all', label: 'ทั้งหมด' },
+                { key: 'inventory', label: 'นำเข้าคลัง' },
+                { key: 'scrap', label: 'ไม่เข้าคลัง' },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  className={`ph-pill ${inventoryFilter === key ? 'ph-pill-active' : ''}`}
+                  onClick={() => setInventoryFilter(key)}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
-          </div>
-        </div>
-
-        {/* Live filtered summary metrics */}
-        <div className="ph-summary-row">
-          <div className="ph-summary-item">
-            <span className="ph-summary-label">จำนวนรายการ</span>
-            <span className="ph-summary-val">{filteredPurchases.length} รายการ</span>
-          </div>
-          <div className="ph-summary-item">
-            <span className="ph-summary-label">น้ำหนักรวม</span>
-            <span className="ph-summary-val ph-val-gold">{totalWeight.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 4 })} บาท</span>
-          </div>
-          <div className="ph-summary-item">
-            <span className="ph-summary-label">ยอดจ่ายรวม</span>
-            <span className="ph-summary-val ph-val-green">{formatBaht(totalAmount)}</span>
           </div>
         </div>
       </div>
 
-      {/* Main Table */}
-      <div className="card" style={{ marginTop: '20px' }}>
+      {/* ─── Table ───────────────────────────────────────────────── */}
+      <div className="card" style={{ marginTop: '16px' }}>
         <div className="table-wrap">
-          <table className="table ph-table">
+          <table className="table">
             <thead>
               <tr>
-                <th style={{ width: '60px' }}>#</th>
-                <th style={{ width: '120px' }}>วันที่รับซื้อ</th>
-                <th>ลูกค้า</th>
-                <th>ประเภททอง</th>
-                <th style={{ textAlign: 'right', width: '130px' }}>น้ำหนัก (บาท)</th>
-                <th style={{ textAlign: 'right', width: '150px' }}>ยอดราคารวม</th>
-                <th style={{ width: '130px', textAlign: 'center' }}>คลังสินค้า</th>
-                <th style={{ width: '150px', textAlign: 'center' }}>ยังอยู่ในร้าน?</th>
+                <th style={{ width: '16px', padding: 0 }}></th>
+                <th style={{ width: '110px' }}>วันที่</th>
+                <th style={{ width: '220px' }}>ประเภททอง</th>
+                <th style={{ width: '120px', textAlign: 'right' }}>น้ำหนัก (กรัม)</th>
+                <th style={{ width: '130px', textAlign: 'right' }}>ยอดรับซื้อ</th>
+                <th style={{ width: '145px', textAlign: 'center' }}>สถานะ</th>
                 <th>หมายเหตุ</th>
+                <th style={{ width: '130px', textAlign: 'center' }}></th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
-                <tr className="loading-row"><td colSpan={9}>กำลังโหลดข้อมูล...</td></tr>
+                <tr className="loading-row"><td colSpan={8}>กำลังโหลดข้อมูล...</td></tr>
               ) : filteredPurchases.length === 0 ? (
-                <tr className="loading-row">
-                  <td colSpan={9}>
-                    ไม่พบรายการรับซื้อที่ตรงตามเงื่อนไข
+                <tr className="loading-row"><td colSpan={8}>ไม่พบรายการที่ตรงตามเงื่อนไข</td></tr>
+              ) : filteredPurchases.map((item) => (
+                <tr 
+                  key={item.id} 
+                  className={item.still_exists === 0 ? 'ph-row-faded' : ''}
+                  onClick={() => setSelectedPurchase(item)}
+                >
+                  <td style={{ width: '16px', padding: 0 }}></td>
+
+                  {/* วันที่ */}
+                  <td style={{ color: 'var(--text-secondary)', fontSize: '13px' }}>
+                    {toBE(item.date)}
                   </td>
-                </tr>
-              ) : filteredPurchases.map((item, idx) => (
-                <tr key={item.id}>
-                  <td className="ph-index">{idx + 1}</td>
-                  <td className="ph-date">{toBE(item.date)}</td>
-                  <td className="ph-customer">
-                    <span className="ph-cust-name">{item.customer_name}</span>
+
+                  {/* ประเภททอง (แสดงเป็น Normal Text) */}
+                  <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {item.type || item.item_type || '—'} {item.subtype || '—'}
                   </td>
-                  <td className="ph-type">
-                    <span className="badge badge-gold" style={{ fontSize: '12px' }}>
-                      {item.type}
-                    </span>
+
+                  {/* น้ำหนัก (gram) */}
+                  <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--gold)' }}>
+                    {item.weight_grams != null 
+                      ? item.weight_grams.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
+                      : ((item.weight_baht || 0) * 15.244).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </td>
-                  <td className="ph-weight" style={{ textAlign: 'right', fontWeight: 'bold' }}>
-                    {item.weight_baht.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
-                  </td>
-                  <td className="ph-amount" style={{ textAlign: 'right', fontWeight: 'bold', color: 'var(--red)' }}>
+
+                  {/* ยอดซื้อ */}
+                  <td style={{ textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--amber)' }}>
                     {formatBaht(item.total_amount)}
                   </td>
+
+                  {/* สถานะ */}
                   <td style={{ textAlign: 'center' }}>
-                    {item.is_inventory === 1 ? (
-                      <span className="badge badge-purple" style={{ fontSize: '11px' }}>นำเข้าคลัง</span>
+                    {item.still_exists === 0 ? (
+                      <span className="badge badge-muted">ขาย/ละลายแล้ว</span>
+                    ) : item.is_inventory === 1 ? (
+                      <span className="badge badge-blue">นำเข้าคลังแล้ว</span>
                     ) : (
-                      <span className="badge badge-muted" style={{ fontSize: '11px', opacity: 0.6 }}>ไม่เข้าคลัง</span>
+                      <span className="badge badge-green" style={{ background: 'var(--green-bg, #dcfce7)', color: 'var(--green, #16a34a)' }}>มีของในร้าน</span>
                     )}
                   </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                      {/* Beautiful Toggle Switch */}
-                      <label className="ph-switch">
-                        <input
-                          type="checkbox"
-                          checked={item.still_exists === 1}
-                          onChange={() => handleToggle(item)}
-                        />
-                        <span className="ph-slider"></span>
-                      </label>
-                      <span className="ph-switch-label" style={{ fontSize: '10px', color: item.still_exists === 1 ? 'var(--green)' : 'var(--text-disabled)', fontWeight: 'bold' }}>
-                        {item.still_exists === 1 ? 'มีของในร้าน' : 'ขาย/ละลายแล้ว'}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="ph-notes" style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
+
+                  {/* หมายเหตุ */}
+                  <td style={{ fontSize: '12.5px', color: 'var(--text-secondary)' }}>
                     {item.notes || <span style={{ color: 'var(--text-disabled)' }}>—</span>}
                   </td>
+
+                  {/* ปุ่มเปลี่ยนสถานะ ไว้ท้ายสุด */}
+                  <td style={{ textAlign: 'center' }}>
+                    <button
+                      className="btn btn-ghost ph-btn-toggle"
+                      style={{ 
+                        fontSize: '12px', 
+                        padding: '6px 10px', 
+                        height: 'auto', 
+                        border: '1px solid var(--border)',
+                        color: 'var(--text-secondary)'
+                      }}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleToggle(item)
+                      }}
+                      title="สลับสถานะ มีของในร้าน / ละลายแล้ว"
+                    >
+                      {item.still_exists === 1 ? 'นำไปหลอมแล้ว' : 'คืนสถานะมีของ'}
+                    </button>
+                  </td>
+
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* Spacer to push stats to bottom if table is short */}
+      <div className="ph-spacer" />
+
+      {/* ─── 3. Stats Summary (Kept at BOTTOM) ───────────────────── */}
+      <div className="ph-bottom-sticky">
+        <div className="ph-stats-row">
+          <StatCard
+            label="รายการรับซื้อ"
+            value={filteredPurchases.length}
+            unit="รายการ"
+            color="blue"
+            icon={<IconList />}
+          />
+          <StatCard
+            label="น้ำหนักรวม"
+            value={totalWeight.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}
+            unit="บาท"
+            color="gold"
+            icon={<IconScale />}
+          />
+          <StatCard
+            label="ยอดจ่ายรวม"
+            value={formatBaht(totalAmount)}
+            color="green"
+            icon={<IconCash />}
+          />
+        </div>
       </div>
     </div>
+  )
+}
+
+/* ─── Icons ────────────────────────────────────────────────────────── */
+function IconList() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="8" y1="6" x2="21" y2="6" />
+      <line x1="8" y1="12" x2="21" y2="12" />
+      <line x1="8" y1="18" x2="21" y2="18" />
+      <line x1="3" y1="6" x2="3.01" y2="6" />
+      <line x1="3" y1="12" x2="3.01" y2="12" />
+      <line x1="3" y1="18" x2="3.01" y2="18" />
+    </svg>
+  )
+}
+
+function IconScale() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="12" y1="3" x2="12" y2="21" />
+      <line x1="3" y1="7" x2="21" y2="7" />
+      <path d="M6 7l-3 6h6l-3-6" />
+      <path d="M18 7l-3 6h6l-3-6" />
+      <path d="M20 21H4" />
+    </svg>
+  )
+}
+
+function IconCash() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="2" y="6" width="20" height="12" rx="2" />
+      <circle cx="12" cy="12" r="2" />
+      <path d="M6 12h.01M18 12h.01" />
+    </svg>
   )
 }

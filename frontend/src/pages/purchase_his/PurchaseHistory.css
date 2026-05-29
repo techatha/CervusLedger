@@ -1,109 +1,146 @@
-/* Controls & Filters Container */
-.ph-controlscard {
-  padding: 20px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-}
-
-.ph-filters {
+/* ─── Stats Row ───────────────────────────────────────────────────── */
+.ph-stats-row {
   display: grid;
-  grid-template-columns: 2fr 1.5fr 1.5fr;
-  gap: 20px;
-  align-items: flex-end;
-  margin-bottom: 20px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 12px;
 }
 
-@media (max-width: 900px) {
-  .ph-filters {
+@media (max-width: 768px) {
+  .ph-stats-row {
     grid-template-columns: 1fr;
   }
 }
 
-.ph-search-group {
-  margin-bottom: 0;
+/* ─── Filters Card ────────────────────────────────────────────────── */
+.ph-filters-card {
+  padding: 14px 20px;
+  /* margin-bottom: 12px; */
+  border-radius: var(--radius-lg);
 }
 
-.ph-search-input {
-  width: 100%;
-}
-
-/* Tab/Chip Buttons row */
-.ph-tab-row {
+.ph-filters {
   display: flex;
-  background: rgba(0, 0, 0, 0.2);
-  padding: 4px;
-  border-radius: 8px;
-  border: 1px solid var(--border);
+  gap: 16px;
+  align-items: flex-end;
 }
 
-.ph-filter-btn {
+@media (max-width: 900px) {
+  .ph-filters { flex-direction: column; }
+}
+
+/* ─── Pill Filters ────────────────────────────────────────────────── */
+.ph-pill-row {
+  display: flex;
+  gap: 3px;
+  background: var(--bg-hover);
+  padding: 3px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  height: 36px;
+}
+
+.ph-pill {
   flex: 1;
-  background: none;
+  background: transparent;
   border: none;
   color: var(--text-muted);
-  font-size: 12.5px;
-  font-weight: 600;
-  padding: 8px 12px;
-  border-radius: 6px;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: calc(var(--radius-sm) - 2px);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--transition);
   white-space: nowrap;
 }
 
-.ph-filter-btn:hover {
+.ph-pill:hover {
   color: var(--text-primary);
 }
 
-.ph-filter-btn-active {
-  background: var(--bg-hover);
+.ph-pill-active {
+  background: var(--bg-surface);
   color: var(--gold) !important;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-}
-
-/* Summary metrics */
-.ph-summary-row {
-  display: flex;
-  gap: 24px;
-  border-top: 1px solid var(--border);
-  padding-top: 16px;
-  justify-content: flex-start;
-}
-
-.ph-summary-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.ph-summary-label {
-  font-size: 11px;
   font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+/* ─── Table cell styles ───────────────────────────────────────────── */
+.ph-col-idx {
   color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  text-align: center;
+  font-weight: 600;
 }
 
-.ph-summary-val {
-  font-size: 16px;
+.ph-col-date {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.ph-col-customer {
+  font-weight: 600;
+}
+
+.ph-col-weight {
+  text-align: right;
   font-weight: 700;
-  color: var(--text-primary);
-}
-
-.ph-val-gold {
+  font-variant-numeric: tabular-nums;
   color: var(--gold);
 }
 
-.ph-val-green {
-  color: var(--green);
+.ph-col-amount {
+  text-align: right;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--amber);
 }
 
-/* Switch styling */
+.ph-col-center {
+  text-align: center;
+}
+
+.ph-col-notes {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+
+.ph-col-notes-empty {
+  color: var(--text-disabled);
+}
+
+/* ─── Table: faded row for sold/melted ───────────────────────────── */
+.ph-row-faded td {
+  opacity: 0.45;
+}
+.ph-row-faded:hover td {
+  opacity: 0.75;
+}
+
+/* ─── Toggle cell ─────────────────────────────────────────────────── */
+.ph-toggle-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.ph-toggle-label {
+  font-size: 10px;
+  font-weight: 600;
+  transition: color var(--transition);
+}
+
+.ph-toggle-on  { color: var(--green); }
+.ph-toggle-off { color: var(--text-disabled); }
+
+/* ─── Toggle Switch ───────────────────────────────────────────────── */
 .ph-switch {
   position: relative;
   display: inline-block;
   width: 44px;
   height: 22px;
+  flex-shrink: 0;
 }
 
 .ph-switch input {
@@ -115,57 +152,72 @@
 .ph-slider {
   position: absolute;
   cursor: pointer;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: var(--border);
-  transition: .3s;
+  inset: 0;
+  background: var(--border-light);
   border-radius: 22px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.25s;
 }
 
-.ph-slider:before {
+.ph-slider::before {
+  content: '';
   position: absolute;
-  content: "";
-  height: 16px;
   width: 16px;
-  left: 2px;
-  bottom: 2px;
-  background-color: white;
-  transition: .3s;
+  height: 16px;
+  left: 3px;
+  top: 3px;
+  background: var(--white);
   border-radius: 50%;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+  transition: transform 0.25s;
 }
 
 .ph-switch input:checked + .ph-slider {
-  background-color: var(--green);
+  background: var(--green);
 }
 
-.ph-switch input:focus + .ph-slider {
-  box-shadow: 0 0 1px var(--green);
-}
-
-.ph-switch input:checked + .ph-slider:before {
+.ph-switch input:checked + .ph-slider::before {
   transform: translateX(22px);
 }
 
-/* Table refinements */
-.ph-table td {
-  vertical-align: middle;
+/* ─── Page layout ─────────────────────────────────────────────────── */
+.ph-page-view {
+  display: flex;
+  flex-direction: column;
 }
 
-.ph-index {
-  color: var(--text-muted);
-  font-weight: 600;
-  text-align: center;
+.ph-spacer {
+  flex: 1;
+  min-height: 16px;
 }
 
-.ph-cust-name {
-  font-weight: 600;
-  color: var(--text-primary);
+/* ─── Bottom Sticky ───────────────────────────────────────────────── */
+/* ─── Bottom Sticky ───────────────────────────────────────────────── */
+.ph-bottom-sticky {
+  position: sticky;
+  bottom: 0;
+  
+  /* 1. ใช้พื้นหลังสีทึบ เพื่อไม่ให้ตัวหนังสือของตารางที่เลื่อนลงมาซ้อนทับกัน */
+  background: var(--bg-base); 
+  
+  /* 2. เพิ่มเงาฟุ้งๆ ชี้ขึ้นด้านบน (สังเกตค่า y เป็น -8px) */
+  box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.04);
+  
+  /* 3. เพิ่มเส้นขอบบางๆ ด้านบนให้ดูคมชัดขึ้น (Optional) */
+  border-top: 1px solid var(--border-light, #eaecf0);
+  
+  padding: 16px 20px 20px 20px; /* เพิ่ม Padding ซ้ายขวาให้เงาดูเต็มพื้นที่ */
+  margin: 16px -20px -20px -20px; /* ดึงขอบออกไปให้สุดหน้าจอ (ขึ้นอยู่กับ Layout หน้าเว็บของคุณ) */
+  z-index: 10;
 }
 
-.ph-switch-label {
-  transition: color 0.2s ease;
+/* ─── Hover Toggle Button ────────────────────────────────────────── */
+.ph-btn-toggle {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition);
+}
+
+tr:hover .ph-btn-toggle {
+  opacity: 1;
+  pointer-events: auto;
 }

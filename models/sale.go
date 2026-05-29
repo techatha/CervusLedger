@@ -34,6 +34,7 @@ type SaleInput struct {
 	CustomerID   int     `json:"customer_id"`   // 0 = no customer
 	GoldItemID   int     `json:"gold_item_id"`  // sell: required; buy: 0
 	WeightBaht   float64 `json:"weight_baht"`
+	WeightGrams  float64 `json:"weight_grams"`
 	GoldPriceID  int     `json:"gold_price_id"`
 	PricePerBaht float64 `json:"price_per_baht"`
 	TotalAmount  float64 `json:"total_amount"`

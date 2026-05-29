@@ -444,3 +444,21 @@
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+.nsf-buy-price-group {
+  margin-top: 16px;
+}
+
+.nsf-buy-today-price-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 8px;
+}
+
+.nsf-buy-edit svg {
+  font-size: 12px;
+}
+
+.nsf-buy-reset svg {
+  font-size: 11px;
+}

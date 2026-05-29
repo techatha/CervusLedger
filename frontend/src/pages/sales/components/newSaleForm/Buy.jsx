@@ -125,7 +125,7 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
         }}
       />
 
-      <div className="form-group" style={{ marginTop: '16px' }}>
+      <div className="form-group nsf-buy-price-group">
         <label className="form-label form-label-required">ราคาทองแท่ง (บาท)</label>
         <input
           className="input"
@@ -137,7 +137,7 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
           disabled={!formData.gold_item_id}
         />
         {todayPrice && (
-          <span style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '8px' }}>
+          <span className="nsf-buy-today-price-hint">
             * ราคารับซื้อทองแท่งปัจจุบัน: {formatBaht(todayPrice.buy_price_per_baht)}
             <br />{toBE(todayPrice.date)} เวลา {todayPrice.update_time}
           </span>
@@ -146,14 +146,14 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
 
       {/* ─── Price Summary Card ─────────────────────────────────── */}
       {calculatedTotal > 0 && (
-        <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="nsf-price-summary">
 
           {/* Auto-calculated row */}
           <div className="nsf-total nsf-total-buy">
             <div>
               <div className="nsf-total-label">ราคาคำนวณอัตโนมัติ</div>
               {formData.weight_grams && formData.purity && (
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                <div className="nsf-total-breakdown">
                   {buyingDifference > 0 ? (
                     `(${formatNumberInput(formData.price_per_baht)} - ${formatNumberInput(buyingDifference)})`
                   ) : (
@@ -162,101 +162,59 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
                 </div>
               )}
             </div>
-            <span
-              className="nsf-total-amount"
-              style={{
-                fontSize: hasManualOverride ? '16px' : '24px',
-                opacity: hasManualOverride ? 0.4 : 1,
-                textDecoration: hasManualOverride ? 'line-through' : 'none',
-                transition: 'all 0.2s ease',
-              }}
-            >
+            <span className={`nsf-total-amount ${hasManualOverride ? 'nsf-total-amount--overridden' : ''}`}>
               {formatBaht(calculatedTotal)}
             </span>
           </div>
 
           {/* Actual buy price row */}
-          <div
-            className="nsf-total"
-            style={{
-              background: hasManualOverride ? 'var(--amber-bg)' : 'var(--bg-surface)',
-              border: hasManualOverride ? '1.5px solid var(--amber)' : '1px solid var(--border)',
-              transition: 'all 0.2s ease',
-            }}
-          >
+          <div className={`nsf-total nsf-total-buy ${hasManualOverride ? 'nsf-total-editable--active' : 'nsf-total-editable'}`}>
             <div>
-              <div className="nsf-total-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div className="nsf-total-label nsf-total-label--icon">
                 ราคารับซื้อจริง
                 {hasManualOverride && (
-                  <span style={{
-                    padding: '1px 7px',
-                    borderRadius: '99px',
-                    background: 'var(--amber-bg)',
-                    color: 'var(--amber)',
-                    fontSize: '11px',
-                    fontWeight: 600,
-                    border: '1px solid rgba(212,140,60,0.3)',
-                  }}>
+                  <span className="nsf-buy-diff-badge">
                     {priceDiff > 0 ? '+' : ''}{formatBaht(priceDiff)}
                   </span>
                 )}
               </div>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="nsf-total-actions">
               {isEditingTotal ? (
                 <>
                   <input
                     ref={totalInputRef}
-                    className="input"
+                    className="input nsf-buy-edit-input"
                     type="text"
                     value={editedTotal}
                     onChange={e => setEditedTotal(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleCommitTotal() } }}
                     placeholder={String(calculatedTotal)}
-                    style={{
-                      width: '140px', textAlign: 'right',
-                      fontSize: '18px', fontWeight: 700,
-                      color: 'var(--amber)',
-                      border: '1.5px solid var(--amber)',
-                    }}
                   />
                   {/* Solid amber confirm button */}
                   <button
                     type="button"
+                    className="nsf-buy-confirm"
                     onClick={handleCommitTotal}
                     title="ยืนยันราคา"
-                    style={{
-                      height: '40px', width: '40px', flexShrink: 0,
-                      background: 'var(--amber)',
-                      border: 'none',
-                      borderRadius: 'var(--radius-sm)',
-                      color: '#fff',
-                      fontSize: '15px',
-                      cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    }}
                   >
                     <FontAwesomeIcon icon={faCheck} />
                   </button>
                 </>
               ) : (
                 <>
-                  <span
-                    className="nsf-total-amount"
-                    style={{ color: hasManualOverride ? 'var(--amber)' : 'var(--amber)' }}
-                  >
+                  <span className="nsf-total-amount">
                     {formatBaht(currentTotal)}
                   </span>
                   {/* Edit button */}
                   <button
                     type="button"
-                    className="btn btn-ghost btn-sm"
+                    className="btn btn-ghost btn-sm nsf-buy-edit"
                     onClick={handleStartEditTotal}
                     title="แก้ไขราคา"
-                    style={{ color: 'var(--text-muted)', flexShrink: 0 }}
                   >
-                    <FontAwesomeIcon icon={faPen} style={{ fontSize: '12px' }} />
+                    <FontAwesomeIcon icon={faPen} />
                     แก้ไข
                   </button>
                 </>
@@ -268,11 +226,10 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
           {hasManualOverride && !isEditingTotal && (
             <button
               type="button"
-              className="btn btn-ghost btn-sm"
+              className="btn btn-ghost btn-sm nsf-buy-reset"
               onClick={handleResetToCalculated}
-              style={{ alignSelf: 'flex-end', color: 'var(--text-muted)', gap: '5px' }}
             >
-              <FontAwesomeIcon icon={faRotateLeft} style={{ fontSize: '11px' }} />
+              <FontAwesomeIcon icon={faRotateLeft} />
               คืนราคาคำนวณ
             </button>
           )}
@@ -280,27 +237,19 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
       )}
 
       {/* ─── Inventory checkbox ─────────────────────────────────── */}
-      <div style={{ marginTop: '16px' }}>
-        <label style={{
-          display: 'flex', alignItems: 'center', gap: '10px',
-          padding: '10px 14px',
-          background: formData.is_inventory === 1 ? 'var(--green-bg)' : 'var(--bg-surface)',
-          border: formData.is_inventory === 1 ? '1px solid rgba(91,175,130,0.35)' : '1px solid var(--border)',
-          borderRadius: 'var(--radius)',
-          cursor: 'pointer', userSelect: 'none',
-          transition: 'all 0.2s ease',
-        }}>
+      <div className="nsf-inventory">
+        <label className={`nsf-inventory-label ${formData.is_inventory === 1 ? 'nsf-inventory-label--active' : ''}`}>
           <input
             type="checkbox"
             checked={formData.is_inventory === 1}
             onChange={e => setBuyField('is_inventory', e.target.checked ? 1 : 0)}
-            style={{ transform: 'scale(1.2)', cursor: 'pointer', accentColor: 'var(--green)' }}
+            className="nsf-inventory-checkbox"
           />
           <div>
-            <div style={{ fontSize: '14px', color: formData.is_inventory === 1 ? 'var(--green)' : 'var(--text-secondary)', fontWeight: 500 }}>
+            <div className={`nsf-inventory-title ${formData.is_inventory === 1 ? 'nsf-inventory-title--active' : ''}`}>
               นำเข้าคลังสินค้าหลัก
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '1px' }}>
+            <div className="nsf-inventory-desc">
               บันทึกในคลังสำหรับนับสต็อกประจำเดือน
             </div>
           </div>

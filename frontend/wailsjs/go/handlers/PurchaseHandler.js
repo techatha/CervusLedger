@@ -17,3 +17,7 @@ export function Startup(arg1) {
 export function ToggleStillExists(arg1, arg2) {
   return window['go']['handlers']['PurchaseHandler']['ToggleStillExists'](arg1, arg2);
 }
+
+export function UpdateNotes(arg1, arg2) {
+  return window['go']['handlers']['PurchaseHandler']['UpdateNotes'](arg1, arg2);
+}

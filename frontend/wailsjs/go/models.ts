@@ -474,7 +474,9 @@ export namespace models {
 	    customer_id: number;
 	    customer_name: string;
 	    type: string;
+	    subtype: string;
 	    weight_baht: number;
+	    weight_grams: number;
 	    total_amount: number;
 	    notes: string;
 	    date: string;
@@ -492,7 +494,9 @@ export namespace models {
 	        this.customer_id = source["customer_id"];
 	        this.customer_name = source["customer_name"];
 	        this.type = source["type"];
+	        this.subtype = source["subtype"];
 	        this.weight_baht = source["weight_baht"];
+	        this.weight_grams = source["weight_grams"];
 	        this.total_amount = source["total_amount"];
 	        this.notes = source["notes"];
 	        this.date = source["date"];
@@ -542,6 +546,7 @@ export namespace models {
 	    customer_id: number;
 	    gold_item_id: number;
 	    weight_baht: number;
+	    weight_grams: number;
 	    gold_price_id: number;
 	    price_per_baht: number;
 	    total_amount: number;
@@ -561,6 +566,7 @@ export namespace models {
 	        this.customer_id = source["customer_id"];
 	        this.gold_item_id = source["gold_item_id"];
 	        this.weight_baht = source["weight_baht"];
+	        this.weight_grams = source["weight_grams"];
 	        this.gold_price_id = source["gold_price_id"];
 	        this.price_per_baht = source["price_per_baht"];
 	        this.total_amount = source["total_amount"];

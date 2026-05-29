@@ -5,7 +5,9 @@ type PurchasedGold struct {
 	CustomerID   int     `json:"customer_id"`
 	CustomerName string  `json:"customer_name"` // Joined
 	Type         string  `json:"type"`
+	Subtype      string  `json:"subtype"`
 	WeightBaht   float64 `json:"weight_baht"`
+	WeightGrams  float64 `json:"weight_grams"`
 	TotalAmount  float64 `json:"total_amount"`
 	Notes        string  `json:"notes"`
 	Date         string  `json:"date"`
@@ -17,7 +19,9 @@ type PurchasedGold struct {
 type PurchaseInput struct {
 	CustomerID   int     `json:"customer_id"`
 	Type         string  `json:"type"`
+	Subtype      string  `json:"subtype"`
 	WeightBaht   float64 `json:"weight_baht"`
+	WeightGrams  float64 `json:"weight_grams"`
 	TotalAmount  float64 `json:"total_amount"`
 	Notes        string  `json:"notes"`
 	Date         string  `json:"date"`
