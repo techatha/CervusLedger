@@ -1,11 +1,22 @@
-/* ─── Summary cards ───────────────────────────────────────── */
-.ip-summary {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1.2fr;
-  gap: 14px;
-  margin-bottom: 22px;
+/* ─── 70/30 Layout ────────────────────────────────────────── */
+.ip-layout {
+  display: flex;
+  gap: 28px;
+  align-items: flex-start;
 }
 
+.ip-calendar-area {
+  flex: 7;
+  min-width: 0;
+}
+
+.ip-sidebar {
+  flex: 3;
+  min-width: 240px;
+  max-width: 320px;
+}
+
+/* ─── Summary cards (shared by SummaryPanel) ──────────────── */
 .ip-stat {
   display: flex;
   align-items: center;
@@ -37,40 +48,7 @@
 }
 .ip-stat-large .ip-stat-value { font-size: 26px; }
 
-/* ─── Date controls ───────────────────────────────────────── */
-.ip-date-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.ip-quick-btns { display: flex; gap: 6px; }
-
-.ip-date-inputs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.ip-date-input {
-  width: 150px !important;
-  font-size: 13.5px !important;
-}
-
-.ip-date-sep {
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
-/* ─── Filter row ──────────────────────────────────────────── */
-.ip-filter-row {
-  display: flex;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-/* ─── Table cells ─────────────────────────────────────────── */
+/* ─── Table cells (shared by DailyView) ──────────────────── */
 .ip-date     { white-space: nowrap; color: var(--text-muted); font-size: 13px; }
 .ip-category { font-weight: 500; }
 .ip-notes    { color: var(--text-muted); font-size: 12.5px; max-width: 220px; }
