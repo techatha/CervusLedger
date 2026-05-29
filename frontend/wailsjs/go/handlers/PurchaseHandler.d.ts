@@ -9,6 +9,8 @@ export function ListPurchasedGold():Promise<Array<models.PurchasedGold>>;
 
 export function Startup(arg1:context.Context):Promise<void>;
 
+export function ToggleIsInventory(arg1:number,arg2:number):Promise<void>;
+
 export function ToggleStillExists(arg1:number,arg2:number):Promise<void>;
 
 export function UpdateNotes(arg1:number,arg2:string):Promise<void>;

@@ -14,6 +14,10 @@ export function Startup(arg1) {
   return window['go']['handlers']['PurchaseHandler']['Startup'](arg1);
 }
 
+export function ToggleIsInventory(arg1, arg2) {
+  return window['go']['handlers']['PurchaseHandler']['ToggleIsInventory'](arg1, arg2);
+}
+
 export function ToggleStillExists(arg1, arg2) {
   return window['go']['handlers']['PurchaseHandler']['ToggleStillExists'](arg1, arg2);
 }

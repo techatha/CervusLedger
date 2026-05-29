@@ -121,3 +121,13 @@ func (h *PurchaseHandler) UpdateNotes(id int, notes string) error {
 	return err
 }
 
+func (h *PurchaseHandler) ToggleIsInventory(id int, isInventory int) error {
+	_, err := db.DB.Exec(`
+		UPDATE purchased_gold
+		SET is_inventory = ?
+		WHERE id = ?
+	`, isInventory, id)
+	return err
+}
+
+
