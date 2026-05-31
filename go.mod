@@ -3,6 +3,7 @@ module CervusLedger
 go 1.25.0
 
 require (
+	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/PuerkitoBio/goquery v1.12.0
 	github.com/ebfe/scard v0.0.0-20241214075232-7af069cabc25
 	github.com/mattn/go-sqlite3 v1.14.44

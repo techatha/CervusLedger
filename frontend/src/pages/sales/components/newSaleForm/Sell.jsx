@@ -23,7 +23,7 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
   const discountAmount = hasDiscount ? sellTotal - parsedNegotiated : 0
 
   const handleApplyNegotiated = () => {
-    const cleanValue = parseFloat(negotiatedPrice)
+    const cleanValue = parseFloat(parsedNegotiated)
     if (!isNaN(cleanValue)) {
       setNegotiatedPrice(String(cleanValue))
       setFormData(prev => ({ ...prev, discount_amount: discountAmount }))
@@ -160,7 +160,9 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
                   inputMode="decimal"
                   placeholder="ราคาที่ตกลงกับลูกค้า..."
                   value={formatNumberInput(negotiatedPrice)}
-                  onChange={e => setNegotiatedPrice(e.target.value)}
+                  onChange={e => {
+                    console.log(e.target.value, "test input value")
+                    setNegotiatedPrice(e.target.value)}}
                   onKeyDown={e => {
                     if (e.key === 'Enter') { e.preventDefault(); handleApplyNegotiated(); setNegotiationMode('confirmed') }
                   }}

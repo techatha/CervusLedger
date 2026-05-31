@@ -36,6 +36,7 @@ func main() {
 	smartCardHandler := handlers.NewSmartCardHandler()
 	goldItemHandler := handlers.NewGoldItemHandler()
 	saleHandler := handlers.NewSaleHandler()
+	incomeExpenseHandler := handlers.NewIncomeExpenseHandler()
 	goldPriceHandler := handlers.NewGoldPriceHandler()
 	purchaseHandler := handlers.NewPurchaseHandler()
 	dashboardHandler := handlers.NewDashboardHandler()
@@ -56,6 +57,7 @@ func main() {
 			smartCardHandler.Startup(ctx)
 			goldItemHandler.Startup(ctx)
 			saleHandler.Startup(ctx)
+			incomeExpenseHandler.Startup(ctx)
 			goldPriceHandler.Startup(ctx)
 			purchaseHandler.Startup(ctx)
 			dashboardHandler.Startup(ctx)
@@ -71,6 +73,7 @@ func main() {
 			smartCardHandler,
 			goldItemHandler,
 			saleHandler,
+			incomeExpenseHandler,
 			goldPriceHandler,
 			purchaseHandler,
 			dashboardHandler,

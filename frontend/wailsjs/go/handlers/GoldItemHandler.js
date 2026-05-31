@@ -14,6 +14,14 @@ export function GetGoldItem(arg1) {
   return window['go']['handlers']['GoldItemHandler']['GetGoldItem'](arg1);
 }
 
+export function GetGoldMainTypes() {
+  return window['go']['handlers']['GoldItemHandler']['GetGoldMainTypes']();
+}
+
+export function GetGoldSubtypes(arg1) {
+  return window['go']['handlers']['GoldItemHandler']['GetGoldSubtypes'](arg1);
+}
+
 export function ListGoldItems(arg1) {
   return window['go']['handlers']['GoldItemHandler']['ListGoldItems'](arg1);
 }

@@ -71,7 +71,7 @@ func(h *DashboardHandler) GetDashboardStats() (models.DashboardStats, error) {
 		SELECT
 			COALESCE(SUM(CASE WHEN type='income'  THEN amount ELSE 0 END),0),
 			COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END),0)
-		FROM income_expense WHERE date = ?
+		FROM income_expenses WHERE date = ?
 	`, today).Scan(&s.TodayIncome, &s.TodayExpense)
 
 	// ── New pawns today ─────────────────────────────────────────────
@@ -80,7 +80,7 @@ func(h *DashboardHandler) GetDashboardStats() (models.DashboardStats, error) {
 
 	// ── Interest collected this month ───────────────────────────────
 	db.DB.QueryRow(`
-		SELECT COALESCE(SUM(amount),0) FROM income_expense
+		SELECT COALESCE(SUM(amount),0) FROM income_expenses
 		WHERE type='income' AND category='ดอกเบี้ยจำนำ'
 		  AND date >= ? AND date <= ?
 	`, monthStart, monthEnd).Scan(&s.MonthInterestCollected)
@@ -123,7 +123,7 @@ func(h *DashboardHandler) GetDashboardStats() (models.DashboardStats, error) {
 	// ── Recent 8 income/expense entries ────────────────────────────
 	rows2, err := db.DB.Query(`
 		SELECT id, type, category, amount, notes, source, date, created_at
-		FROM income_expense ORDER BY date DESC, id DESC LIMIT 8
+		FROM income_expenses ORDER BY date DESC, id DESC LIMIT 8
 	`)
 	if err == nil {
 		defer rows2.Close()

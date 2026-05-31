@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"time"
 
@@ -12,12 +12,24 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
+type IncomeExpenseHandler struct {
+	ctx context.Context
+}
+
+func NewIncomeExpenseHandler() *IncomeExpenseHandler {
+	return &IncomeExpenseHandler{}
+}
+
+func (h *IncomeExpenseHandler) Startup(ctx context.Context) {
+	h.ctx = ctx
+}
+
 // ─── List ──────────────────────────────────────────────────────────────────
 
-func (h *SaleHandler) ListIncomeExpense(db *sql.DB, f models.IncomeExpenseFilter) ([]models.IncomeExpense, error) {
+func (h *IncomeExpenseHandler) ListIncomeExpense(f models.IncomeExpenseFilter) ([]models.IncomeExpense, error) {
 	query := `
 		SELECT id, type, category, amount, notes, source, date, created_at
-		FROM income_expense
+		FROM income_expenses
 		WHERE 1=1
 	`
 	args := []interface{}{}
@@ -40,9 +52,9 @@ func (h *SaleHandler) ListIncomeExpense(db *sql.DB, f models.IncomeExpenseFilter
 	}
 	query += ` ORDER BY date DESC, id DESC`
 
-	rows, err := db.Query(query, args...)
+	rows, err := db.DB.Query(query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("list income_expense: %w", err)
+		return nil, fmt.Errorf("list income_expenses: %w", err)
 	}
 	defer rows.Close()
 
@@ -53,7 +65,7 @@ func (h *SaleHandler) ListIncomeExpense(db *sql.DB, f models.IncomeExpenseFilter
 			&e.ID, &e.Type, &e.Category, &e.Amount,
 			&e.Notes, &e.Source, &e.Date, &e.CreatedAt,
 		); err != nil {
-			return nil, fmt.Errorf("scan income_expense: %w", err)
+			return nil, fmt.Errorf("scan income_expenses: %w", err)
 		}
 		list = append(list, e)
 	}
@@ -62,20 +74,20 @@ func (h *SaleHandler) ListIncomeExpense(db *sql.DB, f models.IncomeExpenseFilter
 
 // ─── Create ────────────────────────────────────────────────────────────────
 
-func (h *SaleHandler) CreateIncomeExpense(db *sql.DB, input models.IncomeExpenseInput) (models.IncomeExpense, error) {
-	res, err := db.Exec(`
-		INSERT INTO income_expense (type, category, amount, notes, source, date)
+func (h *IncomeExpenseHandler) CreateIncomeExpense(input models.IncomeExpenseInput) (models.IncomeExpense, error) {
+	res, err := db.DB.Exec(`
+		INSERT INTO income_expenses (type, category, amount, notes, source, date)
 		VALUES (?, ?, ?, ?, 'manual', ?)
 	`, input.Type, input.Category, input.Amount, input.Notes, input.Date)
 	if err != nil {
-		return models.IncomeExpense{}, fmt.Errorf("create income_expense: %w", err)
+		return models.IncomeExpense{}, fmt.Errorf("create income_expenses: %w", err)
 	}
 	id, _ := res.LastInsertId()
 
 	var e models.IncomeExpense
-	db.QueryRow(`
+	db.DB.QueryRow(`
 		SELECT id, type, category, amount, notes, source, date, created_at
-		FROM income_expense WHERE id = ?
+		FROM income_expenses WHERE id = ?
 	`, id).Scan(
 		&e.ID, &e.Type, &e.Category, &e.Amount,
 		&e.Notes, &e.Source, &e.Date, &e.CreatedAt,
@@ -85,8 +97,8 @@ func (h *SaleHandler) CreateIncomeExpense(db *sql.DB, input models.IncomeExpense
 
 // ─── Delete ────────────────────────────────────────────────────────────────
 
-func (h *SaleHandler) DeleteIncomeExpense(db *sql.DB, id int) error {
-	res, err := db.Exec(`DELETE FROM income_expense WHERE id = ? AND source = 'manual'`, id)
+func (h *IncomeExpenseHandler) DeleteIncomeExpense(id int) error {
+	res, err := db.DB.Exec(`DELETE FROM income_expenses WHERE id = ? AND source = 'manual'`, id)
 	if err != nil {
 		return err
 	}
@@ -99,14 +111,14 @@ func (h *SaleHandler) DeleteIncomeExpense(db *sql.DB, id int) error {
 
 // ─── Summary ───────────────────────────────────────────────────────────────
 
-func (h *SaleHandler) GetIncomeExpenseSummary(db *sql.DB, startDate, endDate string) (models.IncomeExpenseSummary, error) {
+func (h *IncomeExpenseHandler) GetIncomeExpenseSummary(startDate, endDate string) (models.IncomeExpenseSummary, error) {
 	s := models.IncomeExpenseSummary{StartDate: startDate, EndDate: endDate}
 
 	query := `
 		SELECT
 			COALESCE(SUM(CASE WHEN type='income'  THEN amount ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0)
-		FROM income_expense
+		FROM income_expenses
 		WHERE 1=1
 	`
 	args := []interface{}{}
@@ -119,7 +131,7 @@ func (h *SaleHandler) GetIncomeExpenseSummary(db *sql.DB, startDate, endDate str
 		args = append(args, endDate)
 	}
 
-	if err := db.QueryRow(query, args...).Scan(&s.TotalIncome, &s.TotalExpense); err != nil {
+	if err := db.DB.QueryRow(query, args...).Scan(&s.TotalIncome, &s.TotalExpense); err != nil {
 		return s, fmt.Errorf("summary query: %w", err)
 	}
 	s.Net = s.TotalIncome - s.TotalExpense
@@ -127,7 +139,7 @@ func (h *SaleHandler) GetIncomeExpenseSummary(db *sql.DB, startDate, endDate str
 }
 
 // ─── Export ────────────────────────────────────────────────────────────────
-func (h *SaleHandler) ExportIncomeExpense(startDate string, endDate string) error {
+func (h *IncomeExpenseHandler) ExportIncomeExpense(startDate string, endDate string) error {
 	filePath, err := runtime.SaveFileDialog(h.ctx, runtime.SaveDialogOptions{
 		Title:           "ส่งออกรายรับ-รายจ่าย",
 		DefaultFilename: fmt.Sprintf("รายรับ-รายจ่าย_%s_%s.xlsx", startDate, endDate),
@@ -145,10 +157,10 @@ func (h *SaleHandler) ExportIncomeExpense(startDate string, endDate string) erro
 }
 
 // ExportToXlsx writes income/expense data to an xlsx file at filePath.
-func (h *SaleHandler) ExportToXlsx(startDate, endDate, filePath string) error {
+func (h *IncomeExpenseHandler) ExportToXlsx(startDate, endDate, filePath string) error {
 	rows, err := db.DB.Query(`
 		SELECT id, type, category, amount, notes, source, date
-		FROM income_expense
+		FROM income_expenses
 		WHERE date >= ? AND date <= ?
 		ORDER BY date ASC, id ASC
 	`, startDate, endDate)
@@ -194,7 +206,7 @@ func (h *SaleHandler) ExportToXlsx(startDate, endDate, filePath string) error {
 	f.SetCellStyle(sheet, "A1", "A1", title)
 	f.MergeCell(sheet, "A1", "G1")
 
-	beStart, beEnd := h.ceDateToBE(startDate), h.ceDateToBE(endDate)
+	beStart, beEnd := h.CeDateToBE(startDate), h.CeDateToBE(endDate)
 	f.SetCellValue(sheet, "A2", fmt.Sprintf("ช่วงวันที่: %s ถึง %s", beStart, beEnd))
 	f.MergeCell(sheet, "A2", "G2")
 
@@ -223,7 +235,7 @@ func (h *SaleHandler) ExportToXlsx(startDate, endDate, filePath string) error {
 			sourceLabel = "อัตโนมัติ"
 		}
 		f.SetCellValue(sheet, fmt.Sprintf("A%d", r), i+1)
-		f.SetCellValue(sheet, fmt.Sprintf("B%d", r), h.ceDateToBE(e.Date))
+		f.SetCellValue(sheet, fmt.Sprintf("B%d", r), h.CeDateToBE(e.Date))
 		f.SetCellValue(sheet, fmt.Sprintf("C%d", r), typeLabel)
 		f.SetCellValue(sheet, fmt.Sprintf("D%d", r), e.Category)
 		f.SetCellValue(sheet, fmt.Sprintf("E%d", r), e.Amount)
@@ -265,12 +277,190 @@ func (h *SaleHandler) ExportToXlsx(startDate, endDate, filePath string) error {
 	return f.SaveAs(filePath)
 }
 
-
-// ceDateToBE converts YYYY-MM-DD (CE) → DD/MM/BE display string.
-func (h *SaleHandler) ceDateToBE(s string) string {
+// CeDateToBE converts YYYY-MM-DD (CE) → DD/MM/BE display string.
+func (h *IncomeExpenseHandler) CeDateToBE(s string) string {
 	t, err := time.Parse("2006-01-02", s)
 	if err != nil {
 		return s
 	}
 	return fmt.Sprintf("%02d/%02d/%d", t.Day(), int(t.Month()), t.Year()+543)
+}
+
+// ─── Daily Cash ────────────────────────────────────────────────────────────
+
+func (h *IncomeExpenseHandler) GetDailyCash(date string) (models.DailyCash, error) {
+	var c models.DailyCash
+	c.Date = date
+
+	// 1. Try to fetch from daily_cash table
+	err := db.DB.QueryRow(`
+		SELECT date, amount_yesterday, expected_amount, actual_amount, notes, created_at
+		FROM daily_cash WHERE date = ?
+	`, date).Scan(&c.Date, &c.AmountYesterday, &c.ExpectedAmount, &c.ActualAmount, &c.Notes, &c.CreatedAt)
+
+	if err == nil {
+		c.IsSaved = true
+		return c, nil
+	}
+
+	// 2. If not found, compute draft values
+	// Get actual_amount of the latest daily_cash record before 'date'
+	var amountYesterday float64
+	err = db.DB.QueryRow(`
+		SELECT actual_amount FROM daily_cash
+		WHERE date < ?
+		ORDER BY date DESC LIMIT 1
+	`, date).Scan(&amountYesterday)
+	if err != nil {
+		amountYesterday = 0.0 // default
+	}
+
+	// Get sum of income and expense on 'date' from income_expenses
+	var totalIncome, totalExpense float64
+	err = db.DB.QueryRow(`
+		SELECT
+			COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0)
+		FROM income_expenses WHERE date = ?
+	`, date).Scan(&totalIncome, &totalExpense)
+	if err != nil {
+		totalIncome, totalExpense = 0.0, 0.0
+	}
+
+	c.AmountYesterday = amountYesterday
+	c.ExpectedAmount = amountYesterday + totalIncome - totalExpense
+	c.ActualAmount = c.ExpectedAmount // default to expected amount
+	c.IsSaved = false
+
+	return c, nil
+}
+
+func (h *IncomeExpenseHandler) SaveDailyCash(input models.DailyCashInput) (models.DailyCash, error) {
+	tx, err := db.DB.Begin()
+	if err != nil {
+		return models.DailyCash{}, err
+	}
+	defer tx.Rollback()
+
+	// 1. Get amount_yesterday for the date
+	var amountYesterday float64
+	err = tx.QueryRow(`
+		SELECT actual_amount FROM daily_cash
+		WHERE date < ?
+		ORDER BY date DESC LIMIT 1
+	`, input.Date).Scan(&amountYesterday)
+	if err != nil {
+		amountYesterday = 0.0
+	}
+
+	// 2. Get total income and expense on the date
+	var totalIncome, totalExpense float64
+	err = tx.QueryRow(`
+		SELECT
+			COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END), 0),
+			COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0)
+		FROM income_expenses WHERE date = ?
+	`, input.Date).Scan(&totalIncome, &totalExpense)
+	if err != nil {
+		totalIncome, totalExpense = 0.0, 0.0
+	}
+
+	expectedAmount := amountYesterday + totalIncome - totalExpense
+
+	// 3. Insert or update the daily_cash record
+	_, err = tx.Exec(`
+		INSERT INTO daily_cash (date, amount_yesterday, expected_amount, actual_amount, notes)
+		VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT(date) DO UPDATE SET
+			amount_yesterday = excluded.amount_yesterday,
+			expected_amount = excluded.expected_amount,
+			actual_amount = excluded.actual_amount,
+			notes = excluded.notes
+	`, input.Date, amountYesterday, expectedAmount, input.ActualAmount, input.Notes)
+	if err != nil {
+		return models.DailyCash{}, fmt.Errorf("upsert daily_cash: %w", err)
+	}
+
+	// 4. Cascade updates forward to subsequent dates
+	rows, err := tx.Query(`
+		SELECT date, actual_amount, notes
+		FROM daily_cash
+		WHERE date > ?
+		ORDER BY date ASC
+	`, input.Date)
+	if err != nil {
+		return models.DailyCash{}, fmt.Errorf("query subsequent daily_cash: %w", err)
+	}
+
+	type nextRecord struct {
+		date         string
+		actualAmount float64
+		notes        string
+	}
+	var nextRecs []nextRecord
+	for rows.Next() {
+		var r nextRecord
+		if err := rows.Scan(&r.date, &r.actualAmount, &r.notes); err == nil {
+			nextRecs = append(nextRecs, r)
+		}
+	}
+	rows.Close()
+
+	prevActual := input.ActualAmount
+	for _, r := range nextRecs {
+		var inc, exp float64
+		err = tx.QueryRow(`
+			SELECT
+				COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END), 0),
+				COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0)
+			FROM income_expenses WHERE date = ?
+		`, r.date).Scan(&inc, &exp)
+		if err != nil {
+			inc, exp = 0.0, 0.0
+		}
+
+		expected := prevActual + inc - exp
+
+		_, err = tx.Exec(`
+			UPDATE daily_cash
+			SET amount_yesterday = ?, expected_amount = ?
+			WHERE date = ?
+		`, prevActual, expected, r.date)
+		if err != nil {
+			return models.DailyCash{}, fmt.Errorf("cascade update daily_cash date %s: %w", r.date, err)
+		}
+
+		prevActual = r.actualAmount
+	}
+
+	if err := tx.Commit(); err != nil {
+		return models.DailyCash{}, err
+	}
+
+	// Return the saved record
+	return h.GetDailyCash(input.Date)
+}
+
+func (h *IncomeExpenseHandler) ListDailyCash(startDate, endDate string) ([]models.DailyCash, error) {
+	rows, err := db.DB.Query(`
+		SELECT date, amount_yesterday, expected_amount, actual_amount, notes, created_at
+		FROM daily_cash
+		WHERE date >= ? AND date <= ?
+		ORDER BY date ASC
+	`, startDate, endDate)
+	if err != nil {
+		return nil, fmt.Errorf("list daily_cash: %w", err)
+	}
+	defer rows.Close()
+
+	var list []models.DailyCash
+	for rows.Next() {
+		var c models.DailyCash
+		if err := rows.Scan(&c.Date, &c.AmountYesterday, &c.ExpectedAmount, &c.ActualAmount, &c.Notes, &c.CreatedAt); err != nil {
+			return nil, fmt.Errorf("scan daily_cash: %w", err)
+		}
+		c.IsSaved = true
+		list = append(list, c)
+	}
+	return list, nil
 }

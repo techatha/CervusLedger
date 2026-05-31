@@ -28,6 +28,18 @@ func Init(dbPath string) {
 
 
 func createTables() {
+	// Drop old income_expense table if it exists (one-time truncation/rename)
+	var oldTableExists bool
+	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='income_expense')").Scan(&oldTableExists)
+	if err == nil && oldTableExists {
+		_, err = DB.Exec("DROP TABLE income_expense")
+		if err != nil {
+			log.Println("Warning: Failed to drop old income_expense table:", err)
+		} else {
+			log.Println("Dropped old income_expense table successfully")
+		}
+	}
+
 	// Ensure tables exist
 	queries := []string{
 
@@ -142,7 +154,7 @@ func createTables() {
 		)`,
 
 		// Income and expenses
-		`CREATE TABLE IF NOT EXISTS income_expense (
+		`CREATE TABLE IF NOT EXISTS income_expenses (
 			id         INTEGER PRIMARY KEY AUTOINCREMENT,
 			type       TEXT NOT NULL,
 			category   TEXT,
@@ -151,6 +163,16 @@ func createTables() {
 			source     TEXT DEFAULT 'manual',
 			date       DATE NOT NULL,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+
+		// Daily in-store money balance logs
+		`CREATE TABLE IF NOT EXISTS daily_cash (
+			date             DATE PRIMARY KEY,
+			amount_yesterday REAL NOT NULL DEFAULT 0.0,
+			expected_amount  REAL NOT NULL DEFAULT 0.0,
+			actual_amount    REAL NOT NULL DEFAULT 0.0,
+			notes            TEXT,
+			created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 
 		// App settings (key-value)

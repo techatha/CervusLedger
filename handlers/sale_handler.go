@@ -109,11 +109,11 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 		incType, incCat = "expense", "ส่วนลด"
 	}
 	_, err = tx.Exec(`
-		INSERT INTO income_expense (type, category, amount, notes, source, date)
+		INSERT INTO income_expenses (type, category, amount, notes, source, date)
 		VALUES (?, ?, ?, ?, 'auto', ?)
 	`, incType, incCat, input.TotalAmount, input.Notes, input.Date)
 	if err != nil {
-		return models.Sale{}, fmt.Errorf("auto income_expense: %w", err)
+		return models.Sale{}, fmt.Errorf("auto income_expenses: %w", err)
 	}
 
 	if err := tx.Commit(); err != nil {

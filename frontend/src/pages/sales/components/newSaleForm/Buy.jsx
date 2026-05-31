@@ -130,7 +130,7 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
         <input
           className="input"
           type="text"
-          value={formatNumberInput(formData.price_per_baht)}
+          value={formatNumberInput(todayPrice.buy_price_per_baht)}
           onChange={e => updateBuyCalculation({ price_per_baht: e.target.value })}
           onBlur={e => updateBuyCalculation({ price_per_baht: formatCurrency(e.target.value) })}
           placeholder="0.00"

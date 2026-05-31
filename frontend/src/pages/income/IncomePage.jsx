@@ -4,7 +4,7 @@ import {
   GetIncomeExpenseSummary,
   DeleteIncomeExpense,
   ExportIncomeExpense,
-} from 'wailsjs/go/handlers/SaleHandler.js'
+} from 'wailsjs/go/handlers/IncomeExpenseHandler.js'
 import { formatBaht } from '@/utils/thai'
 import ManualEntryModal from './ManualEntryModal'
 import CalendarGrid from './components/incomePage/CalendarGrid'
@@ -60,6 +60,7 @@ export default function IncomePage() {
         ListIncomeExpense(filter),
         GetIncomeExpenseSummary(dr.start, dr.end),
       ])
+      console.log(data, sum)
       setEntries(data || [])
       setSummary(sum)
     } catch (e) {

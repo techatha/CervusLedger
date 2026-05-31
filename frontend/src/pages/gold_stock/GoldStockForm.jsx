@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
-import { CreateGoldItem, UpdateGoldItem } from 'wailsjs/go/handlers/GoldItemHandler'
-
-import { getGoldMainTypes, getGoldSubtypes } from '@/utils/constants.js'
+import {
+  CreateGoldItem,
+  UpdateGoldItem,
+  GetGoldMainTypes,
+  GetGoldSubtypes
+} from 'wailsjs/go/handlers/GoldItemHandler'
 
 const BLANK = {
   type: '',
@@ -19,8 +22,8 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    getGoldMainTypes().then(setMainTypes)
-    getGoldSubtypes().then(setSubtypes)
+    GetGoldMainTypes().then(setMainTypes)
+    GetGoldSubtypes('').then(setSubtypes)
     if (item) {
       setForm({
         type: item.type || '',
@@ -31,12 +34,12 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
     }
   }, [item])
 
-  // When type changes, we could re-fetch subtypes specific to that type
+  // When type changes, we re-fetch subtypes specific to that type
   useEffect(() => {
     if (form.type) {
-      getGoldSubtypes(form.type).then(setSubtypes)
+      GetGoldSubtypes(form.type).then(setSubtypes)
     } else {
-      getGoldSubtypes().then(setSubtypes)
+      GetGoldSubtypes('').then(setSubtypes)
     }
   }, [form.type])
 

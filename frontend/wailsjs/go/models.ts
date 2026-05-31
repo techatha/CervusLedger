@@ -38,6 +38,46 @@ export namespace models {
 	        this.created_at = source["created_at"];
 	    }
 	}
+	export class DailyCash {
+	    date: string;
+	    amount_yesterday: number;
+	    expected_amount: number;
+	    actual_amount: number;
+	    notes: string;
+	    is_saved: boolean;
+	    created_at: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DailyCash(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.date = source["date"];
+	        this.amount_yesterday = source["amount_yesterday"];
+	        this.expected_amount = source["expected_amount"];
+	        this.actual_amount = source["actual_amount"];
+	        this.notes = source["notes"];
+	        this.is_saved = source["is_saved"];
+	        this.created_at = source["created_at"];
+	    }
+	}
+	export class DailyCashInput {
+	    date: string;
+	    actual_amount: number;
+	    notes: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new DailyCashInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.date = source["date"];
+	        this.actual_amount = source["actual_amount"];
+	        this.notes = source["notes"];
+	    }
+	}
 	export class IncomeExpense {
 	    id: number;
 	    type: string;
@@ -575,23 +615,6 @@ export namespace models {
 	        this.item_type = source["item_type"];
 	        this.item_subtype = source["item_subtype"];
 	        this.is_inventory = source["is_inventory"];
-	    }
-	}
-
-}
-
-export namespace sql {
-	
-	export class DB {
-	
-	
-	    static createFrom(source: any = {}) {
-	        return new DB(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	
 	    }
 	}
 

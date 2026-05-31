@@ -9,6 +9,10 @@ export function DeleteGoldItem(arg1:number):Promise<void>;
 
 export function GetGoldItem(arg1:number):Promise<models.GoldItem>;
 
+export function GetGoldMainTypes():Promise<Array<string>>;
+
+export function GetGoldSubtypes(arg1:string):Promise<Array<string>>;
+
 export function ListGoldItems(arg1:string):Promise<Array<models.GoldItem>>;
 
 export function ListStockLogs(arg1:string):Promise<Array<models.GoldStockLog>>;

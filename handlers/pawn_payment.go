@@ -42,7 +42,7 @@ func (h *PawnHandler) RecordPayment(input models.PawnPaymentInput) error {
 	desc := fmt.Sprintf("ดอกเบี้ยจำนำ ตั๋ว %04d (%s) %s %d",
 		input.TicketNumber, input.CustomerName, thaiMonth, input.Year+543)
 	_, err = tx.Exec(`
-		INSERT INTO income_expense (type, category, amount, notes, source, date)
+		INSERT INTO income_expenses (type, category, amount, notes, source, date)
 		VALUES ('income', 'ดอกเบี้ยจำนำ', ?, ?, 'auto', ?)
 	`, input.InterestAmount, desc, input.PaidDate)
 	if err != nil {

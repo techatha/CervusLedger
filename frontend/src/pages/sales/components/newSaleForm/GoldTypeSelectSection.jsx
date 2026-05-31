@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ListGoldItems } from 'wailsjs/go/handlers/GoldItemHandler.js'
-import { getGoldMainTypes } from '@/utils/constants.js'
+import { ListGoldItems, GetGoldMainTypes } from 'wailsjs/go/handlers/GoldItemHandler.js'
 
 export default function GoldTypeSelectSection({
   goldItemId,    
@@ -18,7 +17,7 @@ export default function GoldTypeSelectSection({
   }, [])
 
   useEffect(() => {
-    getGoldMainTypes().then(setMainTypes)
+    GetGoldMainTypes().then(setMainTypes)
   }, [])
 
   const handleMainTypeChange = (val) => {

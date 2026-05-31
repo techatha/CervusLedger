@@ -174,3 +174,269 @@
   padding: 3px 4px;
   border-radius: var(--radius-sm);
 }
+
+/* ─── Daily Cash Drawer Reconciliation Card ────────────────── */
+.dv-cash-reconciliation {
+  padding: 12px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--divider);
+}
+
+.dv-cash-card {
+  background: rgba(162, 148, 117, 0.05);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  position: relative;
+}
+
+.dv-cash-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dv-cash-title {
+  font-family: var(--font);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+}
+
+/* ─── Summary row: 3 metric cards + reconcile button ──────── */
+.dv-cash-summary-row {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.dv-cash-metric {
+  flex: 1;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 58px;
+  transition: all var(--transition);
+}
+
+.dv-cash-metric.highlight {
+  background: rgba(162, 148, 117, 0.08);
+  border-color: rgba(162, 148, 117, 0.3);
+}
+
+.dv-cash-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dv-cash-val-display {
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.dv-cash-val-display.expected {
+  color: var(--text-primary);
+}
+
+/* Reconcile trigger button — sits inside the summary row */
+.dv-cash-reconcile-btn {
+  align-self: center;
+  flex-shrink: 0;
+  padding: 10px 20px;
+  font-size: 13px;
+  gap: 6px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+/* ─── Expandable Edit Panel ───────────────────────────────── */
+.dv-cash-edit-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid var(--divider);
+  padding-top: 14px;
+  animation: dv-panel-slide 0.2s ease-out;
+}
+
+@keyframes dv-panel-slide {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.dv-cash-edit-row {
+  display: flex;
+  gap: 12px;
+}
+
+.dv-cash-edit-field {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.dv-cash-edit-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--gold);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  display: flex;
+  align-items: center;
+}
+
+/* Styled input with ฿ prefix */
+.dv-cash-input-wrap {
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  padding: 0 12px;
+  height: 40px;
+  transition: all var(--transition);
+}
+
+.dv-cash-input-wrap:focus-within {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(200, 150, 60, 0.12);
+}
+
+.dv-cash-input-prefix {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-right: 6px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.dv-cash-input {
+  border: none;
+  background: transparent;
+  outline: none;
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  width: 100%;
+  padding: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Hide number arrows */
+.dv-cash-input::-webkit-outer-spin-button,
+.dv-cash-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.dv-cash-input[type=number] {
+  -moz-appearance: textfield;
+}
+
+/* Discrepancy display */
+.dv-cash-discrepancy-display {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: rgba(162, 148, 117, 0.06);
+  border: 1px solid var(--border);
+}
+
+.discrepancy-tag {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.dv-cash-discrepancy-display.ip-income .discrepancy-tag {
+  background: var(--green-bg);
+  color: var(--green);
+}
+
+.dv-cash-discrepancy-display.ip-expense .discrepancy-tag {
+  background: var(--red-bg);
+  color: var(--red);
+}
+
+/* Action row: notes + cancel + save */
+.dv-cash-edit-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.dv-cash-notes-wrap {
+  flex: 1;
+}
+
+.dv-cash-notes-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-family: var(--font);
+  font-size: 12.5px;
+  outline: none;
+  transition: all var(--transition);
+}
+
+.dv-cash-notes-input:focus {
+  border-color: var(--gold);
+}
+
+.dv-cash-cancel-btn {
+  flex-shrink: 0;
+  font-size: 13px;
+}
+
+.dv-cash-save-btn {
+  flex-shrink: 0;
+  font-size: 13px;
+  min-width: 130px;
+}
+
+.dv-cash-success-banner {
+  background: rgba(61, 154, 104, 0.12);
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  text-align: center;
+  animation: dv-fade-in 0.2s ease-out;
+}
+
+.font-bold {
+  font-weight: 700 !important;
+}
+

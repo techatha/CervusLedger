@@ -132,3 +132,71 @@ func (h *GoldItemHandler) RecordStockLog(input models.GoldStockLogInput) error {
 func (h *GoldItemHandler) SetGoldItemStatus(id int, status string) error {
 	return nil
 }
+
+func (h *GoldItemHandler) GetGoldMainTypes() ([]string, error) {
+	query := `
+		SELECT DISTINCT type
+		FROM gold_stock
+		WHERE type IS NOT NULL AND type != ''
+		ORDER BY type ASC
+	`
+	rows, err := db.DB.Query(query)
+	if err != nil {
+		return nil, fmt.Errorf("get gold main types: %w", err)
+	}
+	defer rows.Close()
+
+	var types []string
+	for rows.Next() {
+		var t string
+		if err := rows.Scan(&t); err != nil {
+			return nil, fmt.Errorf("scan gold main type: %w", err)
+		}
+		types = append(types, t)
+	}
+	if types == nil {
+		return []string{}, nil
+	}
+	return types, nil
+}
+
+func (h *GoldItemHandler) GetGoldSubtypes(mainType string) ([]string, error) {
+	var query string
+	var args []interface{}
+	if mainType != "" {
+		query = `
+			SELECT DISTINCT subtype
+			FROM gold_stock
+			WHERE type = ? AND subtype IS NOT NULL AND subtype != ''
+			ORDER BY subtype ASC
+		`
+		args = append(args, mainType)
+	} else {
+		query = `
+			SELECT DISTINCT subtype
+			FROM gold_stock
+			WHERE subtype IS NOT NULL AND subtype != ''
+			ORDER BY subtype ASC
+		`
+	}
+
+	rows, err := db.DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("get gold subtypes: %w", err)
+	}
+	defer rows.Close()
+
+	var subtypes []string
+	for rows.Next() {
+		var s string
+		if err := rows.Scan(&s); err != nil {
+			return nil, fmt.Errorf("scan gold subtype: %w", err)
+		}
+		subtypes = append(subtypes, s)
+	}
+	if subtypes == nil {
+		return []string{}, nil
+	}
+	return subtypes, nil
+}
+
