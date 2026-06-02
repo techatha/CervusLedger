@@ -51,13 +51,13 @@ func TestListIncomeExpense(t *testing.T) {
 	now := time.Now()
 
 	// 2. Set up the expected rows we want the mock DB to return
-	mockRows := sqlmock.NewRows([]string{"id", "type", "category", "amount", "notes", "source", "date", "created_at"}).
-		AddRow(1, "income", "Sales", 1500.50, "Sold goods", "manual", "2023-10-01", now).
-		AddRow(2, "expense", "Rent", 500.00, "Shop rent", "auto", "2023-10-02", now)
+	mockRows := sqlmock.NewRows([]string{"id", "type", "category", "amount", "notes", "source", "date", "color", "created_at"}).
+		AddRow(1, "income", "Sales", 1500.50, "Sold goods", "manual", "2023-10-01", "#2ecc71", now).
+		AddRow(2, "expense", "Rent", 500.00, "Shop rent", "auto", "2023-10-02", "#e74c3c", now)
 
 	// 3. Tell the mock what query to expect (using regex matching)
 	// Because your query builds dynamically, we match the core SELECT statement
-	mock.ExpectQuery(`SELECT id, type, category, amount, notes, source, date, created_at FROM income_expenses`).
+	mock.ExpectQuery(`SELECT id, type, category, amount, notes, source, date, color, created_at FROM income_expenses`).
 		WillReturnRows(mockRows)
 
 	// 4. Call the actual function
@@ -73,6 +73,9 @@ func TestListIncomeExpense(t *testing.T) {
 	}
 	if results[0].Amount != 1500.50 {
 		t.Errorf("expected amount 1500.50, got %f", results[0].Amount)
+	}
+	if results[0].Color != "#2ecc71" {
+		t.Errorf("expected color #2ecc71, got %s", results[0].Color)
 	}
 
 	// 6. Ensure all expectations were met
@@ -99,19 +102,20 @@ func TestCreateIncomeExpense(t *testing.T) {
 		Amount:   1000.0,
 		Notes:    "Consulting",
 		Date:     "2023-10-05",
+		Color:    "#3498db",
 	}
 
 	// 1. Expect the INSERT execution
 	// It expects the args exactly as they are passed to db.Exec
 	mock.ExpectExec(`INSERT INTO income_expenses`).
-		WithArgs(input.Type, input.Category, input.Amount, input.Notes, input.Date).
+		WithArgs(input.Type, input.Category, input.Amount, input.Notes, input.Date, input.Color).
 		WillReturnResult(sqlmock.NewResult(1, 1)) // LastInsertId = 1, RowsAffected = 1
 
 	// 2. Expect the SELECT query that fetches the newly created record
-	mockRows := sqlmock.NewRows([]string{"id", "type", "category", "amount", "notes", "source", "date", "created_at"}).
-		AddRow(1, input.Type, input.Category, input.Amount, input.Notes, "manual", input.Date, time.Now())
+	mockRows := sqlmock.NewRows([]string{"id", "type", "category", "amount", "notes", "source", "date", "color", "created_at"}).
+		AddRow(1, input.Type, input.Category, input.Amount, input.Notes, "manual", input.Date, input.Color, time.Now())
 
-	mock.ExpectQuery(`SELECT id, type, category, amount, notes, source, date, created_at FROM income_expenses WHERE id = \?`).
+	mock.ExpectQuery(`SELECT id, type, category, amount, notes, source, date, color, created_at FROM income_expenses WHERE id = \?`).
 		WithArgs(1).
 		WillReturnRows(mockRows)
 
@@ -127,6 +131,9 @@ func TestCreateIncomeExpense(t *testing.T) {
 	}
 	if result.Category != "Service" {
 		t.Errorf("expected Category 'Service', got %s", result.Category)
+	}
+	if result.Color != "#3498db" {
+		t.Errorf("expected Color '#3498db', got %s", result.Color)
 	}
 
 	// 5. Check expectations

@@ -11,6 +11,7 @@ import CalendarGrid from './components/incomePage/CalendarGrid'
 import DailyView from './components/incomePage/DailyView'
 import SummaryPanel from './components/incomePage/SummaryPanel'
 import './IncomePage.css'
+import './ManualEntryModal.css'
 
 const THAI_MONTHS = [
   'มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',

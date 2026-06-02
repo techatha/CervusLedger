@@ -8,6 +8,7 @@ type IncomeExpense struct {
 	Notes     string  `json:"notes"`
 	Source    string  `json:"source"` // manual / auto
 	Date      string  `json:"date"`
+	Color     string  `json:"color"`
 	CreatedAt string  `json:"created_at"`
 }
 
@@ -17,6 +18,7 @@ type IncomeExpenseInput struct {
 	Amount   float64 `json:"amount"`
 	Notes    string  `json:"notes"`
 	Date     string  `json:"date"`
+	Color    string  `json:"color"`
 }
 
 type IncomeExpenseFilter struct {

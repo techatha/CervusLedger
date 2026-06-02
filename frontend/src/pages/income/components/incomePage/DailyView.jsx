@@ -233,7 +233,21 @@ export default function DailyView({
                     {e.type === 'income' ? 'รายรับ' : 'รายจ่าย'}
                   </span>
                 </td>
-                <td className="ip-category">{e.category}</td>
+                <td className="ip-category">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        backgroundColor: e.color || '#cbd5e1',
+                        flexShrink: 0
+                      }}
+                    />
+                    <span>{e.category}</span>
+                  </div>
+                </td>
                 <td className={`ip-amount ${e.type === 'income' ? 'ip-income' : 'ip-expense'}`}>
                   {e.type === 'income' ? '+' : '−'}{formatBaht(e.amount)}
                 </td>

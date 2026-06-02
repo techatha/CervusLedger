@@ -88,6 +88,7 @@ export namespace models {
 	    notes: string;
 	    source: string;
 	    date: string;
+	    color: string;
 	    created_at: string;
 	
 	    static createFrom(source: any = {}) {
@@ -103,6 +104,7 @@ export namespace models {
 	        this.notes = source["notes"];
 	        this.source = source["source"];
 	        this.date = source["date"];
+	        this.color = source["color"];
 	        this.created_at = source["created_at"];
 	    }
 	}
@@ -332,6 +334,7 @@ export namespace models {
 	    amount: number;
 	    notes: string;
 	    date: string;
+	    color: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new IncomeExpenseInput(source);
@@ -344,6 +347,7 @@ export namespace models {
 	        this.amount = source["amount"];
 	        this.notes = source["notes"];
 	        this.date = source["date"];
+	        this.color = source["color"];
 	    }
 	}
 	export class IncomeExpenseSummary {

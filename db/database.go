@@ -188,6 +188,7 @@ func createTables() {
 			notes      TEXT,
 			source     TEXT DEFAULT 'manual',
 			date       DATE NOT NULL,
+			color      TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 
@@ -223,7 +224,8 @@ func createTables() {
 			('last_ticket_number',   '0'),
 			('promptpay_number',     ''),
 			('promptpay_name',       ''),
-			('pawn_legal_terms',     'ข้่าพเจ้าขอรับรองว่าทรัพย์สินดั่งกล่าวเป็นของข้าพเจ้าจริงไม่ใช่ทรัพย์สินที่ได้มาจากการกระทำผิดใดๆ ทั้งสิ้น และ <bold><underline> จะมาถอนภายในกำหนด หนึ่ง เดือน </underline></bold> หากพ้นกำหนดนี้แล้ว ข้าพเจ้ายินยอมให้กรรมสิทธิในทรัพสินดังกล่าวเป็นกรรมสิทธิของทางร้าน ข้าพเจ้าได้อ่านสัญญาดีแล้วจึงลงลายมือไว้เป็นหลักฐาน')
+			('pawn_legal_terms',     'ข้่าพเจ้าขอรับรองว่าทรัพย์สินดั่งกล่าวเป็นของข้าพเจ้าจริงไม่ใช่ทรัพย์สินที่ได้มาจากการกระทำผิดใดๆ ทั้งสิ้น และ <bold><underline> จะมาถอนภายในกำหนด หนึ่ง เดือน </underline></bold> หากพ้นกำหนดนี้แล้ว ข้าพเจ้ายินยอมให้กรรมสิทธิในทรัพสินดังกล่าวเป็นกรรมสิทธิของทางร้าน ข้าพเจ้าได้อ่านสัญญาดีแล้วจึงลงลายมือไว้เป็นหลักฐาน'),
+			('income_expense_presets', '[{"name":"ดอกเบี้ยจำนำ","type":"income","color":"#2ecc71"},{"name":"ขายทอง","type":"income","color":"#f1c40f"},{"name":"ค่าบริการ","type":"income","color":"#3498db"},{"name":"อื่นๆ","type":"income","color":"#95a5a6"},{"name":"รับซื้อทอง","type":"expense","color":"#e67e22"},{"name":"ค่าเช่า","type":"expense","color":"#e74c3c"},{"name":"ค่าสาธารณูปโภค","type":"expense","color":"#9b59b6"},{"name":"เงินเดือน","type":"expense","color":"#1abc9c"},{"name":"ค่าใช้จ่ายทั่วไป","type":"expense","color":"#34495e"},{"name":"อื่นๆ","type":"expense","color":"#7f8c8d"}]')
 		`,
 	}
 
@@ -238,6 +240,7 @@ func createTables() {
 	alterQueries := []string{
 		`ALTER TABLE purchased_gold ADD COLUMN subtype TEXT`,
 		`ALTER TABLE purchased_gold ADD COLUMN weight_grams REAL DEFAULT 0.0`,
+		`ALTER TABLE income_expenses ADD COLUMN color TEXT`,
 	}
 	for _, query := range alterQueries {
 		// Ignore error if column already exists

@@ -1,28 +1,89 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { CreateIncomeExpense } from 'wailsjs/go/handlers/IncomeExpenseHandler'
+import { GetAllSettings } from 'wailsjs/go/handlers/SettingsHandler'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faArrowTrendUp,faArrowTrendDown, faPlus } from '@fortawesome/free-solid-svg-icons'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
-const INCOME_CATS  = ['ดอกเบี้ยจำนำ', 'ขายทอง', 'ค่าบริการ', 'อื่นๆ']
-const EXPENSE_CATS = ['รับซื้อทอง', 'ค่าเช่า', 'ค่าสาธารณูปโภค', 'เงินเดือน', 'ค่าใช้จ่ายทั่วไป', 'อื่นๆ']
-
 export default function ManualEntryModal({ onSaved, onClose }) {
   const [form, setForm] = useState({
-    type:     'income',
+    type: 'income',
     category: '',
-    amount:   '',
-    notes:    '',
-    date:     today(),
+    amount: '',
+    notes: '',
+    date: today(),
+    color: '',
   })
+  const [presets, setPresets] = useState([])
+  const [selectedIdx, setSelectedIdx] = useState(null)
+  const [isManual, setIsManual] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [error,  setError]  = useState(null)
+  const [error, setError] = useState(null)
+  const amountRef = useRef(null)
+
+  useEffect(() => {
+    GetAllSettings()
+      .then(data => {
+        try {
+          if (data.income_expense_presets) {
+            setPresets(JSON.parse(data.income_expense_presets))
+          }
+        } catch (e) {
+          console.error("Failed to parse presets:", e)
+        }
+      })
+      .catch(console.error)
+  }, [])
+
+  // Focus amount input on mount
+  useEffect(() => {
+    if (amountRef.current) amountRef.current.focus()
+  }, [])
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
-  const cats = form.type === 'income' ? INCOME_CATS : EXPENSE_CATS
-
   const handleTypeChange = (t) => {
-    setForm(p => ({ ...p, type: t, category: '' }))
+    setForm(p => ({ ...p, type: t }))
+    // Deselect chip if its type doesn't match
+    if (selectedIdx !== null && !isManual) {
+      const preset = presets[selectedIdx]
+      if (preset && preset.type !== t) {
+        setSelectedIdx(null)
+        setForm(p => ({ ...p, type: t, category: '', color: '' }))
+      }
+    }
+  }
+
+  const handleChipClick = (idx) => {
+    if (selectedIdx === idx) {
+      // Deselect
+      setSelectedIdx(null)
+      setIsManual(false)
+      setForm(p => ({ ...p, category: '', color: '' }))
+    } else {
+      setSelectedIdx(idx)
+      setIsManual(false)
+      const preset = presets[idx]
+      setForm(p => ({
+        ...p,
+        category: preset.name,
+        type: preset.type,
+        color: preset.color,
+      }))
+      // Focus amount after selecting category
+      setTimeout(() => amountRef.current?.focus(), 50)
+    }
+  }
+
+  const handleManualToggle = () => {
+    setSelectedIdx(null)
+    setIsManual(!isManual)
+    if (!isManual) {
+      setForm(p => ({ ...p, category: '', color: '#95a5a6' }))
+    } else {
+      setForm(p => ({ ...p, category: '', color: '' }))
+    }
   }
 
   const validate = () => {
@@ -39,11 +100,12 @@ export default function ManualEntryModal({ onSaved, onClose }) {
     setError(null)
     try {
       await CreateIncomeExpense({
-        type:     form.type,
+        type: form.type,
         category: form.category,
-        amount:   parseFloat(form.amount),
-        notes:    form.notes,
-        date:     form.date,
+        amount: parseFloat(form.amount),
+        notes: form.notes,
+        date: form.date,
+        color: form.color,
       })
       onSaved()
     } catch (e) {
@@ -53,69 +115,152 @@ export default function ManualEntryModal({ onSaved, onClose }) {
     }
   }
 
+  // Handle Enter key to save
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !saving) handleSave()
+  }
+
   const isIncome = form.type === 'income'
 
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" style={{ width: 460 }} onClick={e => e.stopPropagation()}>
+  // Split presets by type
+  const incomePresets = presets.map((p, i) => ({ ...p, _idx: i })).filter(p => p.type === 'income')
+  const expensePresets = presets.map((p, i) => ({ ...p, _idx: i })).filter(p => p.type === 'expense')
+  const filteredPresets = isIncome ? incomePresets : expensePresets
 
-        {/* Type toggle header */}
+  return (
+    <div className="modal-backdrop mem-backdrop" onClick={onClose}>
+      <div className="modal mem-modal" onClick={e => e.stopPropagation()} onKeyDown={handleKeyDown}>
+
+        {/* ── Header ── */}
+        <div className="modal-header">
+          <div className="modal-title">
+            {isIncome ? <FontAwesomeIcon icon={faArrowTrendUp} /> : <FontAwesomeIcon icon={faArrowTrendDown} />}{' '}
+            {isIncome ? 'เพิ่มรายรับ' : 'เพิ่มรายจ่าย'}
+          </div>
+          <button className="modal-close" onClick={onClose} title="ปิด">✕</button>
+        </div>
+
+        {/* ── Type toggle (always visible) ── */}
         <div className="mem-type-header">
           <button
             className={`mem-type-btn ${isIncome ? 'mem-type-income' : ''}`}
+            type="button"
             onClick={() => handleTypeChange('income')}
           >
+            <span className="mem-type-icon">▲</span>
             รายรับ
           </button>
           <button
             className={`mem-type-btn ${!isIncome ? 'mem-type-expense' : ''}`}
+            type="button"
             onClick={() => handleTypeChange('expense')}
           >
+            <span className="mem-type-icon">▼</span>
             รายจ่าย
           </button>
         </div>
 
         <div className="modal-body">
-          {error && <div className="alert alert-error">{error}</div>}
+          {error && (
+            <div className="alert alert-error mem-error-shake">
+              <span>⚠</span> {error}
+            </div>
+          )}
 
-          {/* Category chips */}
+          {/* ── Category chips ── */}
           <div className="form-group">
             <label className="form-label form-label-required">หมวดหมู่</label>
-            <div className="mem-cat-chips">
-              {cats.map(c => (
+
+            {filteredPresets.length > 0 && (
+              <div className="mem-cat-chips">
+                {filteredPresets.map(p => (
+                  <button
+                    key={p._idx}
+                    type="button"
+                    className={`mem-chip ${selectedIdx === p._idx ? 'mem-chip-active' : ''}`}
+                    style={{
+                      '--chip-color': p.color,
+                      '--chip-bg': p.color + '1A',
+                    }}
+                    onClick={() => handleChipClick(p._idx)}
+                  >
+                    <span
+                      className="mem-chip-dot"
+                      style={{ background: p.color }}
+                    />
+                    {p.name}
+                  </button>
+                ))}
                 <button
-                  key={c}
                   type="button"
-                  className={`gf-type-chip ${form.category === c ? 'gf-type-chip-active' : ''}`}
-                  onClick={() => set('category', c)}
+                  className={`mem-chip mem-chip-manual ${isManual ? 'mem-chip-active' : ''}`}
+                  onClick={handleManualToggle}
                 >
-                  {c}
+                  ✏️ ระบุเอง
                 </button>
-              ))}
-            </div>
-            <input
-              className="input"
-              style={{ marginTop: 8 }}
-              placeholder="หรือพิมพ์หมวดหมู่เอง..."
-              value={form.category}
-              onChange={e => set('category', e.target.value)}
-            />
+              </div>
+            )}
+
+            {/* No presets for this type */}
+            {filteredPresets.length === 0 && !isManual && (
+              <div className="mem-no-presets">
+                <span className="mem-no-presets-text">
+                  ไม่มีหมวดหมู่สำหรับ{isIncome ? 'รายรับ' : 'รายจ่าย'}
+                </span>
+                <button
+                  type="button"
+                  className="mem-chip mem-chip-manual mem-chip-active"
+                  onClick={handleManualToggle}
+                >
+                  ✏️ ระบุเอง
+                </button>
+              </div>
+            )}
+
+            {/* Custom category input */}
+            {isManual && (
+              <div className="mem-manual-row">
+                <input
+                  className="input mem-manual-input"
+                  placeholder="พิมพ์ชื่อหมวดหมู่..."
+                  value={form.category}
+                  onChange={e => set('category', e.target.value)}
+                  autoFocus
+                />
+                <div className="mem-color-picker">
+                  <input
+                    type="color"
+                    value={form.color}
+                    onChange={e => set('color', e.target.value)}
+                    className="mem-color-input"
+                    title="เลือกสี"
+                  />
+                  <span className="mem-color-hex">{form.color.toUpperCase()}</span>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div className="form-row form-row-2">
-            <div className="form-group">
-              <label className="form-label form-label-required">จำนวนเงิน (บาท)</label>
+          {/* ── Amount (prominent) ── */}
+          <div className="form-group">
+            <label className="form-label form-label-required">จำนวนเงิน</label>
+            <div className="mem-amount-wrap">
               <input
-                className="input mem-amount"
+                ref={amountRef}
+                className={`input mem-amount ${isIncome ? 'mem-amount-income' : 'mem-amount-expense'}`}
                 type="number"
                 placeholder="0"
                 min="0"
                 step="1"
                 value={form.amount}
                 onChange={e => set('amount', e.target.value)}
-                autoFocus
               />
+              <span className="mem-amount-suffix">฿</span>
             </div>
+          </div>
+
+          {/* ── Date & Notes ── */}
+          <div className="form-row form-row-2">
             <div className="form-group">
               <label className="form-label">วันที่</label>
               <input
@@ -125,38 +270,49 @@ export default function ManualEntryModal({ onSaved, onClose }) {
                 onChange={e => set('date', e.target.value)}
               />
             </div>
+            <div className="form-group">
+              <label className="form-label">หมายเหตุ</label>
+              <input
+                className="input"
+                placeholder="(ไม่บังคับ)"
+                value={form.notes}
+                onChange={e => set('notes', e.target.value)}
+              />
+            </div>
           </div>
 
-          <div className="form-group">
-            <label className="form-label">หมายเหตุ</label>
-            <input
-              className="input"
-              placeholder="(ไม่บังคับ)"
-              value={form.notes}
-              onChange={e => set('notes', e.target.value)}
-            />
-          </div>
-
-          {/* Amount preview */}
-          {parseFloat(form.amount) > 0 && (
+          {/* ── Summary preview ── */}
+          {parseFloat(form.amount) > 0 && form.category.trim() && (
             <div className={`mem-preview ${isIncome ? 'mem-preview-income' : 'mem-preview-expense'}`}>
-              <span>{isIncome ? 'บันทึกรายรับ' : 'บันทึกรายจ่าย'}</span>
+              <div className="mem-preview-left">
+                <span className="mem-preview-label">{isIncome ? 'บันทึกรายรับ' : 'บันทึกรายจ่าย'}</span>
+                <span className="mem-preview-cat">
+                  {form.color && <span className="mem-preview-dot" style={{ background: form.color }} />}
+                  {form.category}
+                </span>
+              </div>
               <span className="mem-preview-amount">
-                {parseFloat(form.amount).toLocaleString('th-TH')} ฿
+                {isIncome ? '+' : '−'}{parseFloat(form.amount).toLocaleString('th-TH')} ฿
               </span>
             </div>
           )}
         </div>
 
+        {/* ── Footer ── */}
         <div className="modal-footer">
-          <button className="btn btn-ghost" onClick={onClose} disabled={saving}>ยกเลิก</button>
+          <button className="btn btn-ghost" onClick={onClose} disabled={saving}>
+            ยกเลิก
+          </button>
           <button
-            className="btn btn-primary"
-            style={!isIncome ? { background:'var(--red)', color:'#fff' } : {}}
+            className={`btn ${isIncome ? 'btn-primary' : 'mem-btn-expense'}`}
             onClick={handleSave}
             disabled={saving}
           >
-            {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+            {saving ? (
+              <><span className="mem-spinner" /> กำลังบันทึก...</>
+            ) : (
+              <><FontAwesomeIcon icon={faPlus} /> บันทึก</>
+            )}
           </button>
         </div>
       </div>

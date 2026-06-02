@@ -1,12 +1,49 @@
-/* ─── Type toggle ─────────────────────────────────────────── */
+/* ─── Modal entrance animation ────────────────────────────── */
+.mem-backdrop {
+  animation: mem-fade-in 0.2s ease;
+}
+
+.mem-modal {
+  width: 480px;
+  animation: mem-slide-up 0.25s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.mem-modal .modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px; /* Adjust vertical spacing between form fields */
+}
+
+@keyframes mem-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes mem-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ─── Type toggle (segmented control) ─────────────────────── */
 .mem-type-header {
   display: flex;
   border-bottom: 1px solid var(--divider);
+  background: var(--bg-base);
 }
 
 .mem-type-btn {
   flex: 1;
-  padding: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 12px;
   border: none;
   background: transparent;
   font-family: var(--font);
@@ -15,31 +52,208 @@
   color: var(--text-muted);
   cursor: pointer;
   transition: all var(--transition);
-  border-bottom: 2px solid transparent;
+  border-bottom: 2.5px solid transparent;
   margin-bottom: -1px;
+  position: relative;
 }
-.mem-type-btn:hover { background: var(--bg-hover); }
+
+.mem-type-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+}
+
+.mem-type-icon {
+  font-size: 10px;
+  transition: transform 0.2s ease;
+}
 
 .mem-type-income {
   color: var(--green) !important;
   border-bottom-color: var(--green) !important;
+  background: var(--green-bg);
 }
+
+.mem-type-income .mem-type-icon {
+  transform: translateY(-1px);
+}
+
 .mem-type-expense {
   color: var(--red) !important;
   border-bottom-color: var(--red) !important;
+  background: var(--red-bg);
+}
+
+.mem-type-expense .mem-type-icon {
+  transform: translateY(1px);
 }
 
 /* ─── Category chips ──────────────────────────────────────── */
 .mem-cat-chips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 8px;
 }
 
-/* ─── Amount input ────────────────────────────────────────── */
+.mem-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 99px;
+  border: 1.5px solid var(--border);
+  background: var(--bg-card);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.mem-chip:hover {
+  border-color: var(--border-light);
+  background: var(--bg-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+}
+
+.mem-chip-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+
+.mem-chip-active {
+  border-color: var(--chip-color, var(--gold));
+  background: var(--chip-bg, var(--gold-glow));
+  color: var(--text-primary);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.mem-chip-active .mem-chip-dot {
+  transform: scale(1.3);
+}
+
+.mem-chip-manual {
+  border-style: dashed;
+  color: var(--text-muted);
+}
+
+.mem-chip-manual.mem-chip-active {
+  --chip-color: var(--gold);
+  --chip-bg: var(--gold-glow);
+  border-style: solid;
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ─── No presets ──────────────────────────────────────────── */
+.mem-no-presets {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 0;
+}
+
+.mem-no-presets-text {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ─── Manual input row ────────────────────────────────────── */
+.mem-manual-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+  animation: mem-fade-in 0.2s ease;
+}
+
+.mem-manual-input {
+  flex: 1;
+}
+
+.mem-color-picker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.mem-color-input {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+  transition: border-color var(--transition);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.mem-color-input::-webkit-color-swatch-wrapper {
+  padding: 2px;
+}
+
+.mem-color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: 3px;
+}
+
+.mem-color-input:hover {
+  border-color: var(--gold);
+}
+
+.mem-color-hex {
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text-muted);
+  width: 58px;
+}
+
+/* ─── Amount input (prominent) ────────────────────────────── */
+.mem-amount-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
 .mem-amount {
-  font-size: 18px !important;
+  font-size: 22px !important;
   font-weight: 700 !important;
+  font-family: var(--font-display) !important;
+  height: 52px !important;
+  padding-right: 40px !important;
+  font-variant-numeric: tabular-nums;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.mem-amount:focus {
+  box-shadow: 0 0 0 3px rgba(200, 150, 60, 0.15);
+}
+
+.mem-amount-income:focus {
+  border-color: var(--green) !important;
+  box-shadow: 0 0 0 3px var(--green-bg) !important;
+}
+
+.mem-amount-expense:focus {
+  border-color: var(--red) !important;
+  box-shadow: 0 0 0 3px var(--red-bg) !important;
+}
+
+.mem-amount-suffix {
+  position: absolute;
+  right: 14px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-muted);
+  pointer-events: none;
+  font-family: var(--font-display);
 }
 
 /* ─── Preview ─────────────────────────────────────────────── */
@@ -47,24 +261,98 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 16px;
+  padding: 14px 18px;
   border-radius: var(--radius);
   margin-top: 4px;
   font-size: 13px;
+  animation: mem-fade-in 0.25s ease;
 }
+
 .mem-preview-income {
   background: var(--green-bg);
   color: var(--green);
-  border: 1px solid rgba(61,154,104,0.2);
+  border: 1px solid rgba(91, 175, 130, 0.2);
 }
+
 .mem-preview-expense {
   background: var(--red-bg);
   color: var(--red);
-  border: 1px solid rgba(192,72,72,0.2);
+  border: 1px solid rgba(212, 92, 92, 0.2);
 }
+
+.mem-preview-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mem-preview-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
+.mem-preview-cat {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.mem-preview-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
 .mem-preview-amount {
   font-family: var(--font-display);
-  font-size: 20px;
+  font-size: 22px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+/* ─── Expense save button ─────────────────────────────────── */
+.mem-btn-expense {
+  background: var(--red);
+  color: #fff;
+  border: none;
+}
+
+.mem-btn-expense:hover:not(:disabled) {
+  background: #c04848;
+}
+
+/* ─── Spinner ─────────────────────────────────────────────── */
+.mem-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: mem-spin 0.5s linear infinite;
+}
+
+@keyframes mem-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Error shake ─────────────────────────────────────────── */
+.mem-error-shake {
+  animation: mem-shake 0.4s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+@keyframes mem-shake {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-6px); }
+  40%      { transform: translateX(6px); }
+  60%      { transform: translateX(-4px); }
+  80%      { transform: translateX(4px); }
 }

@@ -15,6 +15,7 @@ const DEFAULTS = {
   min_interest_amount:  '20',
   last_ticket_number:   '0',
   pawn_legal_terms:     '',
+  income_expense_presets: '[]',
 }
 
 export default function SettingsPage() {
@@ -24,14 +25,52 @@ export default function SettingsPage() {
   const [saved,   setSaved]   = useState(false)
   const [error,   setError]   = useState(null)
 
+  const [presets, setPresets] = useState([])
+  const [newCatName, setNewCatName] = useState('')
+  const [newCatType, setNewCatType] = useState('income')
+  const [newCatColor, setNewCatColor] = useState('#2ecc71')
+
   useEffect(() => {
     GetAllSettings()
-      .then(data => setForm(prev => ({ ...prev, ...data })))
+      .then(data => {
+        setForm(prev => ({ ...prev, ...data }))
+        try {
+          if (data.income_expense_presets) {
+            setPresets(JSON.parse(data.income_expense_presets))
+          }
+        } catch (e) {
+          console.error("Failed to parse presets:", e)
+        }
+      })
       .catch(e => setError('โหลดการตั้งค่าไม่สำเร็จ: ' + e))
       .finally(() => setLoading(false))
   }, [])
 
+  // Sync presets state with the form state so it gets saved on handleSave
+  useEffect(() => {
+    setForm(p => ({ ...p, income_expense_presets: JSON.stringify(presets) }))
+  }, [presets])
+
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
+
+  const handleAddPreset = () => {
+    if (!newCatName.trim()) return
+    if (presets.some(p => p.name.trim() === newCatName.trim() && p.type === newCatType)) {
+      alert('มีหมวดหมู่นี้ในระบบแล้ว')
+      return
+    }
+    const newPreset = {
+      name: newCatName.trim(),
+      type: newCatType,
+      color: newCatColor
+    }
+    setPresets(p => [...p, newPreset])
+    setNewCatName('')
+  }
+
+  const handleRemovePreset = (index) => {
+    setPresets(p => p.filter((_, i) => i !== index))
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -236,6 +275,103 @@ export default function SettingsPage() {
                 </span>
               </div>
             </Field>
+          </div>
+        </section>
+
+        {/* ── Income/Expense Presets ── */}
+        <section className="card sp-section">
+          <div className="card-header">
+            <span className="card-title">หมวดหมู่รายรับ-รายจ่าย</span>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 400 }}>
+              ตั้งค่าหมวดหมู่และสีสำหรับบันทึกรายรับ-รายจ่าย
+            </span>
+          </div>
+          <div className="sp-fields">
+            {/* Presets List */}
+            <div className="sp-presets-list">
+              {presets.length === 0 ? (
+                <div className="sp-presets-empty">ยังไม่มีหมวดหมู่ที่ตั้งไว้</div>
+              ) : (
+                presets.map((p, idx) => (
+                  <div key={idx} className="sp-preset-item">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span 
+                        className="sp-preset-color-badge" 
+                        style={{ backgroundColor: p.color || '#95a5a6' }} 
+                      />
+                      <span className="sp-preset-name">{p.name}</span>
+                      <span className={`badge ${p.type === 'income' ? 'badge-green' : 'badge-red'}`}>
+                        {p.type === 'income' ? 'รายรับ' : 'รายจ่าย'}
+                      </span>
+                    </div>
+                    <button 
+                      type="button" 
+                      className="btn btn-xs btn-danger-ghost" 
+                      onClick={() => handleRemovePreset(idx)}
+                    >
+                      ลบ
+                    </button>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Add New Preset Row */}
+            <div className="sp-presets-add-form" style={{ marginTop: 10, paddingTop: 16, borderTop: '1px solid var(--divider)' }}>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                <div className="form-group" style={{ flex: 1, minWidth: 150 }}>
+                  <label className="form-label">ชื่อหมวดหมู่</label>
+                  <input
+                    className="input"
+                    placeholder="เช่น ค่าขนส่ง, ปันผล..."
+                    value={newCatName}
+                    onChange={e => setNewCatName(e.target.value)}
+                  />
+                </div>
+                <div className="form-group" style={{ width: 110 }}>
+                  <label className="form-label">ประเภท</label>
+                  <select
+                    className="input"
+                    value={newCatType}
+                    onChange={e => setNewCatType(e.target.value)}
+                  >
+                    <option value="income">รายรับ</option>
+                    <option value="expense">รายจ่าย</option>
+                  </select>
+                </div>
+                <div className="form-group" style={{ width: 110 }}>
+                  <label className="form-label">สี</label>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 40 }}>
+                    <input
+                      type="color"
+                      className="sp-color-input"
+                      value={newCatColor}
+                      onChange={e => setNewCatColor(e.target.value)}
+                      style={{
+                        border: '1px solid var(--border)',
+                        borderRadius: '4px',
+                        width: '34px',
+                        height: '34px',
+                        cursor: 'pointer',
+                        padding: 0,
+                        background: 'transparent'
+                      }}
+                    />
+                    <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-muted)' }}>
+                      {newCatColor.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ height: 40 }}
+                  onClick={handleAddPreset}
+                >
+                  เพิ่มหมวดหมู่
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 
