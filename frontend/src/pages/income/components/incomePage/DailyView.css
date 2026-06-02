@@ -647,8 +647,51 @@
   color: var(--red);
 }
 
+/* ─── Notes sub-row formatting ────────────────────────────── */
+/* Ensure all transaction rows default to showing borders since each is in its own tbody last-child */
+.dv-table-row-group tr td {
+  border-bottom: 1px solid var(--divider) !important;
+}
 
+.dv-table-row-group:hover tr {
+  background: color-mix(in srgb, var(--bg-hover) 45%, var(--bg-surface)) !important;
+}
 
+/* Ensure the delete icon stays visible when hovering over the notes sub-row */
+.dv-table-row-group:hover .ip-del {
+  opacity: 1;
+}
 
+.dv-table-row-group tr.dv-row-has-notes td {
+  border-bottom: none !important;
+  padding-bottom: 2px !important;
+}
 
+.dv-notes-row td {
+  border-bottom: 1px solid var(--divider) !important;
+  padding: 0px 16px 12px 16px !important;
+  background: transparent;
+  transition: background var(--transition);
+}
 
+.dv-notes-cell {
+  line-height: 1.4;
+  word-break: break-word;
+  padding-left: 0px !important; /* Naturally aligned to column 2 (Category) */
+}
+
+.dv-notes-label {
+  font-weight: 600;
+  font-size: 11.5px;
+  color: var(--text-disabled);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 6px;
+}
+
+.dv-notes-text {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  font-weight: 400;
+  white-space: pre-wrap; /* Support multi-line notes and spacing preservation */
+}

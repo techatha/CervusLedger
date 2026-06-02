@@ -59,8 +59,8 @@
   font-weight: 600;
   font-size: 14px;
 }
-.ip-income  { color: var(--green); }
-.ip-expense { color: var(--red); }
+.ip-income  { color: var(--green) !important; }
+.ip-expense { color: var(--red) !important; }
 
 .ip-del {
   opacity: 0;

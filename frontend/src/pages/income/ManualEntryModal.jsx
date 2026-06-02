@@ -6,13 +6,13 @@ import { faArrowTrendUp,faArrowTrendDown, faPlus } from '@fortawesome/free-solid
 
 const today = () => new Date().toISOString().slice(0, 10)
 
-export default function ManualEntryModal({ onSaved, onClose }) {
+export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
   const [form, setForm] = useState({
     type: 'income',
     category: '',
     amount: '',
     notes: '',
-    date: today(),
+    date: defaultDate || today(),
     color: '',
   })
   const [presets, setPresets] = useState([])

@@ -1,5 +1,7 @@
 import { useMemo } from 'react'
 import { formatBaht } from '@/utils/thai'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faAngleLeft, faAngleRight, } from '@fortawesome/free-solid-svg-icons'
 import './CalendarGrid.css'
 
 const DAY_LABELS = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']
@@ -20,27 +22,22 @@ const DAY_LABELS = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']
  * @param {Array}    thaiMonths   - Array of Thai month name strings
  */
 export default function CalendarGrid({
-  year, month, entries, selectedDate, onSelectDate,
+  year, month, selectedDate, onSelectDate,
   onPrevMonth, onNextMonth, onYearChange, onMonthChange,
   yearOptions, thaiMonths, onToday,
+  dailyCashList = [],
 }) {
   const now = new Date()
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
-  // Build a map: "YYYY-MM-DD" → { income, expense }
-  const dailyMap = useMemo(() => {
+  
+  // Build a map: "YYYY-MM-DD" → DailyCash object
+  const dailyCashMap = useMemo(() => {
     const map = {}
-      ; (entries || []).forEach(e => {
-        const key = e.date?.slice(0, 10)
-        if (!key) return
-        if (!map[key]) map[key] = { income: 0, expense: 0 }
-        if (e.type === 'income') {
-          map[key].income += e.amount || 0
-        } else {
-          map[key].expense += e.amount || 0
-        }
-      })
+    ;(dailyCashList || []).forEach(dc => {
+      map[dc.date?.slice(0, 10)] = dc
+    })
     return map
-  }, [entries])
+  }, [dailyCashList])
 
   // Calendar grid cells
   const cells = useMemo(() => {
@@ -58,12 +55,12 @@ export default function CalendarGrid({
       const mm = String(month + 1).padStart(2, '0')
       const dd = String(d).padStart(2, '0')
       const dateStr = `${year}-${mm}-${dd}`
-      const data = dailyMap[dateStr] || null
-      result.push({ blank: false, day: d, dateStr, data, key: dateStr })
+      const dc = dailyCashMap[dateStr] || null
+      result.push({ blank: false, day: d, dateStr, dc, key: dateStr })
     }
 
     return result
-  }, [year, month, dailyMap])
+  }, [year, month, dailyCashMap])
 
   const todayStr = useMemo(() => {
     const n = new Date()
@@ -75,7 +72,7 @@ export default function CalendarGrid({
       {/* Month navigation bar — integrated into the card */}
       <div className="cal-nav-bar">
         <button className="cal-nav-arrow" onClick={onPrevMonth}>
-          <IconChevLeft />
+        <FontAwesomeIcon icon={faAngleLeft} />
         </button>
 
         <div className="cal-nav-selectors">
@@ -107,7 +104,7 @@ export default function CalendarGrid({
         )}
 
         <button className="cal-nav-arrow" onClick={onNextMonth}>
-          <IconChevRight />
+        <FontAwesomeIcon icon={faAngleRight} />
         </button>
       </div>
 
@@ -127,7 +124,10 @@ export default function CalendarGrid({
 
           const isSelected = selectedDate === c.dateStr
           const isToday = todayStr === c.dateStr
-          const hasData = c.data !== null
+          const dc = c.dc
+          const hasRecord = dc && dc.is_saved
+
+          const diff = hasRecord ? (dc.actual_amount - dc.expected_amount) : 0
 
           return (
             <div
@@ -141,17 +141,21 @@ export default function CalendarGrid({
             >
               <span className="cal-day-num">{c.day}</span>
 
-              {hasData ? (
+              {hasRecord ? (
                 <div className="cal-cell-amounts">
-                  {c.data.income > 0 && (
-                    <span className="cal-amount cal-income">+{formatBaht(c.data.income)}</span>
-                  )}
-                  {c.data.expense > 0 && (
-                    <span className="cal-amount cal-expense">−{formatBaht(c.data.expense)}</span>
+    
+                  <span className='cal-ac'>ยอดเงินคงเหลือ</span>
+                  <span className="cal-actual">
+                    {formatBaht(dc.actual_amount)}
+                  </span>
+                  {diff !== 0 && (
+                    <span className={`cal-amount ${diff > 0 ? 'cal-income' : 'cal-expense'}`}>
+                      {diff > 0 ? 'เกิน +' : 'ขาด '}{formatBaht(diff)}
+                    </span>
                   )}
                 </div>
               ) : (
-                <span className="cal-no-record">ไม่มีรายการ</span>
+                <span className="cal-no-record">ยังไม่ได้สรุปยอด</span>
               )}
             </div>
           )
@@ -160,7 +164,3 @@ export default function CalendarGrid({
     </div>
   )
 }
-
-/* ─── Icons ───────────────────────────────────────────────────────── */
-function IconChevLeft() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg> }
-function IconChevRight() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 6 15 12 9 18" /></svg> }

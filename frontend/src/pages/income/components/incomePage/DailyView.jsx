@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Fragment } from 'react'
 import { toBE, formatBaht } from '@/utils/thai'
 import { GetDailyCash, SaveDailyCash } from 'wailsjs/go/handlers/IncomeExpenseHandler.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faAngleLeft, faAngleRight, faPenToSquare, faCircleCheck, faCircleXmark } from '@fortawesome/free-solid-svg-icons'
-import { faCalendarDays, faClipboard, } from '@fortawesome/free-regular-svg-icons'
+import { faAngleLeft, faAngleRight, faPenToSquare, faCircleCheck, faCircleXmark, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faCalendarDays, faClipboard, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import './DailyView.css'
 
 const TYPE_TABS = [
@@ -34,6 +34,7 @@ const DAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังค�
  * @param {Function} onDelete        - Callback to request delete (receives entry)
  * @param {Function} onDateChange    - Callback(newDateStr) to navigate to another day
  * @param {Function} onBack          - Callback to return to calendar/month view
+ * @param {Function} onAddEntry      - Callback when user clicks 'เพิ่มรายการ'
  */
 export default function DailyView({
   allEntries,
@@ -46,6 +47,7 @@ export default function DailyView({
   onDelete,
   onDateChange,
   onBack,
+  onAddEntry,
 }) {
   const [dailyCash, setDailyCash] = useState(null)
   const [actualVal, setActualVal] = useState('')
@@ -204,6 +206,14 @@ export default function DailyView({
             </button>
           ))}
         </div>
+
+        <button
+          className="btn btn-primary btn-sm"
+          style={{ marginLeft: 'auto' }}
+          onClick={onAddEntry}
+        >
+          <FontAwesomeIcon icon={faPlus} /> เพิ่มรายการ
+        </button>
       </div>
 
       {/* Table */}
@@ -211,23 +221,24 @@ export default function DailyView({
         <table className="table">
           <thead>
             <tr>
-              <th>วันที่</th>
               <th>ประเภท</th>
               <th>หมวดหมู่</th>
               <th style={{ textAlign: 'right' }}>จำนวนเงิน</th>
               <th>แหล่งที่มา</th>
-              <th>หมายเหตุ</th>
               <th style={{ width: 60 }}></th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr className="loading-row"><td colSpan={7}>กำลังโหลด...</td></tr>
+              <tr className="loading-row"><td colSpan={5}>กำลังโหลด...</td></tr>
             ) : entries.length === 0 ? (
-              <tr className="loading-row"><td colSpan={7}>ไม่มีรายการในวันนี้</td></tr>
-            ) : entries.map(e => (
-              <tr key={e.id} style={{ cursor: 'default' }}>
-                <td className="ip-date">{toBE(e.date)}</td>
+              <tr className="loading-row"><td colSpan={5}>ไม่มีรายการในวันนี้</td></tr>
+            ) : null}
+          </tbody>
+
+          {entries.length > 0 && !loading && entries.map(e => (
+            <tbody key={e.id} className="dv-table-row-group">
+              <tr className={e.notes ? 'dv-row-has-notes' : ''} style={{ cursor: 'default' }}>
                 <td>
                   <span className={`badge ${e.type === 'income' ? 'badge-green' : 'badge-red'}`}>
                     {e.type === 'income' ? 'รายรับ' : 'รายจ่าย'}
@@ -251,31 +262,44 @@ export default function DailyView({
                 <td className={`ip-amount ${e.type === 'income' ? 'ip-income' : 'ip-expense'}`}>
                   {e.type === 'income' ? '+' : '−'}{formatBaht(e.amount)}
                 </td>
-                <td>
-                  <span className={`badge ${e.source === 'auto' ? 'badge-blue' : 'badge-muted'}`}>
+                 <td>
+                  <span className={`badge ${e.source === 'auto' ? 'badge-blue' : 'badge-amber'}`}>
                     {e.source === 'auto' ? 'อัตโนมัติ' : 'บันทึกเอง'}
                   </span>
                 </td>
-                <td className="ip-notes">{e.notes || '—'}</td>
                 <td className="ip-del">
-                  {e.source === 'manual' && (
-                    <button
-                      className="btn btn-danger-ghost btn-xs"
-                      onClick={() => onDelete(e)}
-                    >
-                      ลบ
-                    </button>
-                  )}
+                  <button
+                    className="btn btn-danger-ghost btn-xs"
+                    onClick={() => onDelete(e)}
+                    title="ลบ"
+                  >
+                    <FontAwesomeIcon icon={faTrashCan} />
+                  </button>
                 </td>
               </tr>
-            ))}
-          </tbody>
+              {e.notes && (
+                <tr className="dv-notes-row">
+                  <td></td>
+                  <td colSpan={4} className="dv-notes-cell">
+                    <span className="dv-notes-label">หมายเหตุ:</span>
+                    <span className="dv-notes-text">{e.notes}</span>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          ))}
         </table>
       </div>
 
       {/* Running total footer */}
       {entries.length > 0 && !loading && (
-        <div className="ip-table-footer">
+        <div
+          className="ip-table-footer"
+          style={{
+            backgroundColor: 'var(--bg-hover)',
+            borderTop: '1px solid var(--border)',
+          }}
+        >
           <span>แสดง {entries.length} รายการ</span>
           <span className="ip-footer-net">
             สุทธิ:{' '}

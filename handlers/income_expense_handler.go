@@ -102,15 +102,8 @@ func (h *IncomeExpenseHandler) CreateIncomeExpense(input models.IncomeExpenseInp
 // ─── Delete ────────────────────────────────────────────────────────────────
 
 func (h *IncomeExpenseHandler) DeleteIncomeExpense(id int) error {
-	res, err := db.DB.Exec(`DELETE FROM income_expenses WHERE id = ? AND source = 'manual'`, id)
-	if err != nil {
-		return err
-	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return fmt.Errorf("ลบได้เฉพาะรายการที่บันทึกเอง (รายการอัตโนมัติไม่สามารถลบได้)")
-	}
-	return nil
+	_, err := db.DB.Exec(`DELETE FROM income_expenses WHERE id = ?`, id)
+	return err
 }
 
 // ─── Summary ───────────────────────────────────────────────────────────────
