@@ -40,6 +40,32 @@ func createTables() {
 		}
 	}
 
+	// Drop old daily_cash table if it has amount_yesterday
+	var hasAmountYesterday bool
+	rows, err := DB.Query("PRAGMA table_info(daily_cash)")
+	if err == nil {
+		for rows.Next() {
+			var cid int
+			var name, ctype string
+			var notnull, pk int
+			var dfltVal interface{}
+			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dfltVal, &pk); err == nil {
+				if name == "amount_yesterday" {
+					hasAmountYesterday = true
+				}
+			}
+		}
+		rows.Close()
+	}
+	if hasAmountYesterday {
+		_, err = DB.Exec("DROP TABLE daily_cash")
+		if err != nil {
+			log.Println("Warning: Failed to drop old daily_cash table:", err)
+		} else {
+			log.Println("Dropped old daily_cash table successfully")
+		}
+	}
+
 	// Ensure tables exist
 	queries := []string{
 
@@ -167,12 +193,13 @@ func createTables() {
 
 		// Daily in-store money balance logs
 		`CREATE TABLE IF NOT EXISTS daily_cash (
-			date             DATE PRIMARY KEY,
-			amount_yesterday REAL NOT NULL DEFAULT 0.0,
-			expected_amount  REAL NOT NULL DEFAULT 0.0,
-			actual_amount    REAL NOT NULL DEFAULT 0.0,
-			notes            TEXT,
-			created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
+			date               DATE PRIMARY KEY,
+			last_record_date   DATE,
+			amount_last_record REAL NOT NULL DEFAULT 0.0,
+			expected_amount    REAL NOT NULL DEFAULT 0.0,
+			actual_amount      REAL NOT NULL DEFAULT 0.0,
+			notes              TEXT,
+			created_at         DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 
 		// App settings (key-value)

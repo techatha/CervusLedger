@@ -218,15 +218,14 @@ func TestGetDailyCash(t *testing.T) {
 	defer dbMock.Close()
 	db.DB = dbMock
 
-	// Assign the mock DB to our global DB variable
 	h := &handlers.IncomeExpenseHandler{}
 	date := "2026-05-31"
 
 	t.Run("Found in DB", func(t *testing.T) {
-		mockRow := sqlmock.NewRows([]string{"date", "amount_yesterday", "expected_amount", "actual_amount", "notes", "created_at"}).
-			AddRow(date, 5000.0, 6000.0, 5950.0, "Discrepancy test", "2026-05-31 10:00:00")
+		mockRow := sqlmock.NewRows([]string{"date", "last_record_date", "amount_last_record", "expected_amount", "actual_amount", "notes", "created_at"}).
+			AddRow(date, "2026-05-30", 5000.0, 6000.0, 5950.0, "Discrepancy test", "2026-05-31 10:00:00")
 
-		mock.ExpectQuery(`SELECT date, amount_yesterday, expected_amount, actual_amount, notes, created_at FROM daily_cash WHERE date = \?`).
+		mock.ExpectQuery(`SELECT date, last_record_date, amount_last_record, expected_amount, actual_amount, notes, created_at FROM daily_cash WHERE date = \?`).
 			WithArgs(date).
 			WillReturnRows(mockRow)
 
@@ -240,17 +239,23 @@ func TestGetDailyCash(t *testing.T) {
 		if res.ActualAmount != 5950.0 {
 			t.Errorf("expected actual amount 5950, got %f", res.ActualAmount)
 		}
+		if res.AmountLastRecord != 5000.0 {
+			t.Errorf("expected amount_last_record 5000, got %f", res.AmountLastRecord)
+		}
+		if res.LastRecordDate != "2026-05-30" {
+			t.Errorf("expected last_record_date '2026-05-30', got %q", res.LastRecordDate)
+		}
 	})
 
 	t.Run("Not Found in DB - Compute Draft", func(t *testing.T) {
-		mock.ExpectQuery(`SELECT date, amount_yesterday, expected_amount, actual_amount, notes, created_at FROM daily_cash WHERE date = \?`).
+		mock.ExpectQuery(`SELECT date, last_record_date, amount_last_record, expected_amount, actual_amount, notes, created_at FROM daily_cash WHERE date = \?`).
 			WithArgs(date).
 			WillReturnError(fmt.Errorf("sql: no rows in result set"))
 
-		// Mock fetching amount_yesterday
-		mock.ExpectQuery(`SELECT actual_amount FROM daily_cash WHERE date < \? ORDER BY date DESC LIMIT 1`).
+		// Mock fetching last record
+		mock.ExpectQuery(`SELECT date, actual_amount FROM daily_cash WHERE date < \? ORDER BY date DESC LIMIT 1`).
 			WithArgs(date).
-			WillReturnRows(sqlmock.NewRows([]string{"actual_amount"}).AddRow(4000.0))
+			WillReturnRows(sqlmock.NewRows([]string{"date", "actual_amount"}).AddRow("2026-05-30", 4000.0))
 
 		// Mock fetching today's income/expense
 		mock.ExpectQuery(`SELECT(.*)FROM income_expenses WHERE date = \?`).
@@ -264,8 +269,11 @@ func TestGetDailyCash(t *testing.T) {
 		if res.IsSaved {
 			t.Error("expected IsSaved to be false")
 		}
-		if res.AmountYesterday != 4000.0 {
-			t.Errorf("expected AmountYesterday 4000, got %f", res.AmountYesterday)
+		if res.AmountLastRecord != 4000.0 {
+			t.Errorf("expected AmountLastRecord 4000, got %f", res.AmountLastRecord)
+		}
+		if res.LastRecordDate != "2026-05-30" {
+			t.Errorf("expected LastRecordDate '2026-05-30', got %q", res.LastRecordDate)
 		}
 		if res.ExpectedAmount != 5200.0 { // 4000 + 1500 - 300
 			t.Errorf("expected ExpectedAmount 5200, got %f", res.ExpectedAmount)
@@ -297,10 +305,10 @@ func TestSaveDailyCash(t *testing.T) {
 
 	mock.ExpectBegin()
 
-	// 1. Get amount_yesterday
-	mock.ExpectQuery(`SELECT actual_amount FROM daily_cash WHERE date < \? ORDER BY date DESC LIMIT 1`).
+	// 1. Get predecessor
+	mock.ExpectQuery(`SELECT date, actual_amount FROM daily_cash WHERE date < \? ORDER BY date DESC LIMIT 1`).
 		WithArgs(input.Date).
-		WillReturnRows(sqlmock.NewRows([]string{"actual_amount"}).AddRow(5000.0))
+		WillReturnRows(sqlmock.NewRows([]string{"date", "actual_amount"}).AddRow("2026-05-30", 5000.0))
 
 	// 2. Get total income/expense
 	mock.ExpectQuery(`SELECT(.*)FROM income_expenses WHERE date = \?`).
@@ -309,20 +317,20 @@ func TestSaveDailyCash(t *testing.T) {
 
 	// 3. Upsert
 	mock.ExpectExec(`INSERT INTO daily_cash`).
-		WithArgs(input.Date, 5000.0, 5800.0, input.ActualAmount, input.Notes).
+		WithArgs(input.Date, "2026-05-30", 5000.0, 5800.0, input.ActualAmount, input.Notes).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	// 4. Cascade updates forward (mock no subsequent records)
-	mock.ExpectQuery(`SELECT date, actual_amount, notes FROM daily_cash WHERE date > \? ORDER BY date ASC`).
+	// 4. Cascade updates forward: check for successor (mock no subsequent records)
+	mock.ExpectQuery(`SELECT date FROM daily_cash WHERE date > \? ORDER BY date ASC LIMIT 1`).
 		WithArgs(input.Date).
-		WillReturnRows(sqlmock.NewRows([]string{"date", "actual_amount", "notes"}))
+		WillReturnError(fmt.Errorf("sql: no rows in result set"))
 
 	mock.ExpectCommit()
 
 	// 5. GetDailyCash call after saving (inside SaveDailyCash return statement)
-	mockRow := sqlmock.NewRows([]string{"date", "amount_yesterday", "expected_amount", "actual_amount", "notes", "created_at"}).
-		AddRow(input.Date, 5000.0, 5800.0, input.ActualAmount, input.Notes, "2026-05-31 10:00:00")
-	mock.ExpectQuery(`SELECT date, amount_yesterday, expected_amount, actual_amount, notes, created_at FROM daily_cash WHERE date = \?`).
+	mockRow := sqlmock.NewRows([]string{"date", "last_record_date", "amount_last_record", "expected_amount", "actual_amount", "notes", "created_at"}).
+		AddRow(input.Date, "2026-05-30", 5000.0, 5800.0, input.ActualAmount, input.Notes, "2026-05-31 10:00:00")
+	mock.ExpectQuery(`SELECT date, last_record_date, amount_last_record, expected_amount, actual_amount, notes, created_at FROM daily_cash WHERE date = \?`).
 		WithArgs(input.Date).
 		WillReturnRows(mockRow)
 

@@ -40,7 +40,8 @@ export namespace models {
 	}
 	export class DailyCash {
 	    date: string;
-	    amount_yesterday: number;
+	    last_record_date: string;
+	    amount_last_record: number;
 	    expected_amount: number;
 	    actual_amount: number;
 	    notes: string;
@@ -54,7 +55,8 @@ export namespace models {
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.date = source["date"];
-	        this.amount_yesterday = source["amount_yesterday"];
+	        this.last_record_date = source["last_record_date"];
+	        this.amount_last_record = source["amount_last_record"];
 	        this.expected_amount = source["expected_amount"];
 	        this.actual_amount = source["actual_amount"];
 	        this.notes = source["notes"];

@@ -1,18 +1,21 @@
 import { useState, useEffect, useMemo } from 'react'
 import { toBE, formatBaht } from '@/utils/thai'
 import { GetDailyCash, SaveDailyCash } from 'wailsjs/go/handlers/IncomeExpenseHandler.js'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faAngleLeft, faAngleRight, faPenToSquare, faCircleCheck, faCircleXmark } from '@fortawesome/free-solid-svg-icons'
+import { faCalendarDays, faClipboard, } from '@fortawesome/free-regular-svg-icons'
 import './DailyView.css'
 
 const TYPE_TABS = [
-  { value: '',         label: 'ทั้งหมด' },
-  { value: 'income',   label: 'รายรับ'  },
-  { value: 'expense',  label: 'รายจ่าย' },
+  { value: '', label: 'ทั้งหมด' },
+  { value: 'income', label: 'รายรับ' },
+  { value: 'expense', label: 'รายจ่าย' },
 ]
 
 const SOURCE_TABS = [
-  { value: '',        label: 'ทุกแหล่ง'   },
-  { value: 'auto',    label: 'อัตโนมัติ' },
-  { value: 'manual',  label: 'บันทึกเอง' },
+  { value: '', label: 'ทุกแหล่ง' },
+  { value: 'auto', label: 'อัตโนมัติ' },
+  { value: 'manual', label: 'บันทึกเอง' },
 ]
 
 const DAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์']
@@ -59,7 +62,7 @@ export default function DailyView({
       setActualVal(String(res.actual_amount))
       setNotesVal(res.notes || '')
       // Auto-expand if already saved (user likely wants to review/edit)
-      setIsReconciling(res.is_saved)
+      setIsReconciling(false)
     } catch (e) {
       console.error("Failed to load daily cash:", e)
     }
@@ -85,6 +88,7 @@ export default function DailyView({
       setActualVal(String(res.actual_amount))
       setNotesVal(res.notes || '')
       setSaveSuccess(true)
+      setIsReconciling(false)
       setTimeout(() => setSaveSuccess(false), 3000)
     } catch (e) {
       alert("ไม่สามารถบันทึกยอดเงินได้: " + e)
@@ -110,8 +114,8 @@ export default function DailyView({
   const entries = useMemo(() => {
     if (!date) return []
     return (allEntries || []).filter(e => {
-      const matchDate   = e.date?.slice(0, 10) === date
-      const matchType   = !typeFilter   || e.type === typeFilter
+      const matchDate = e.date?.slice(0, 10) === date
+      const matchType = !typeFilter || e.type === typeFilter
       const matchSource = !sourceFilter || e.source === sourceFilter
       return matchDate && matchType && matchSource
     })
@@ -153,16 +157,16 @@ export default function DailyView({
       {/* Navigation header — styled like cal-nav-bar */}
       <div className="dv-nav-bar">
         <button className="dv-back-btn" onClick={onBack}>
-          <IconChevLeft /> กลับไปปฏิทิน
+          <FontAwesomeIcon icon={faCalendarDays} /> กลับไปที่ปฏิทิน
         </button>
 
         <div className="dv-day-nav">
           <button className="dv-nav-arrow" onClick={goToPrevDay}>
-            <IconChevLeft />
+            <FontAwesomeIcon icon={faAngleLeft} />
           </button>
           <span className="dv-nav-title">{formattedDate}</span>
           <button className="dv-nav-arrow" onClick={goToNextDay}>
-            <IconChevRight />
+            <FontAwesomeIcon icon={faAngleRight} />
           </button>
         </div>
 
@@ -210,10 +214,10 @@ export default function DailyView({
               <th>วันที่</th>
               <th>ประเภท</th>
               <th>หมวดหมู่</th>
-              <th style={{ textAlign:'right' }}>จำนวนเงิน</th>
+              <th style={{ textAlign: 'right' }}>จำนวนเงิน</th>
               <th>แหล่งที่มา</th>
               <th>หมายเหตุ</th>
-              <th style={{ width:60 }}></th>
+              <th style={{ width: 60 }}></th>
             </tr>
           </thead>
           <tbody>
@@ -222,7 +226,7 @@ export default function DailyView({
             ) : entries.length === 0 ? (
               <tr className="loading-row"><td colSpan={7}>ไม่มีรายการในวันนี้</td></tr>
             ) : entries.map(e => (
-              <tr key={e.id} style={{ cursor:'default' }}>
+              <tr key={e.id} style={{ cursor: 'default' }}>
                 <td className="ip-date">{toBE(e.date)}</td>
                 <td>
                   <span className={`badge ${e.type === 'income' ? 'badge-green' : 'badge-red'}`}>
@@ -261,119 +265,172 @@ export default function DailyView({
           <span>แสดง {entries.length} รายการ</span>
           <span className="ip-footer-net">
             สุทธิ:{' '}
-            <span style={{ color: netTotal >= 0 ? 'var(--green)' : 'var(--red)', fontWeight:700 }}>
+            <span style={{ color: netTotal >= 0 ? 'var(--green)' : 'var(--red)', fontWeight: 700 }}>
               {formatBaht(netTotal)}
             </span>
           </span>
         </div>
       )}
 
-      {/* ─── Daily Cash Reconciliation Card ─── */}
+      {/* ─── Daily Cash Reconciliation ─── */}
       {dailyCash && (
-        <div className="dv-cash-reconciliation">
-          <div className="dv-cash-card">
-            {/* Header row */}
-            <div className="dv-cash-header">
-              <span className="dv-cash-title">
-                <IconCash /> ยอดเงินสดในร้านวันนี้
-              </span>
-              <span className={`badge ${dailyCash.is_saved ? 'badge-green' : 'badge-muted'}`}>
-                {dailyCash.is_saved ? 'สรุปยอดแล้ว' : 'ฉบับร่าง'}
-              </span>
-            </div>
+        <div className="dv-cash-section">
+          <div className="dv-cash-section-divider" />
 
-            {/* Summary metrics — always visible */}
-            <div className="dv-cash-summary-row">
-              <div className="dv-cash-metric">
-                <div className="dv-cash-label">ยอดยกมา (เมื่อวาน)</div>
-                <div className="dv-cash-val-display">{formatBaht(dailyCash.amount_yesterday)}</div>
+          {/* Always-visible summary row */}
+          <div className="dv-cash-summary-row">
+            <div className="dv-cash-metric">
+              <div className="dv-cash-label">
+                {dailyCash.last_record_date 
+                  ? `ยอดยกมา (จากวันที่ ${toBE(dailyCash.last_record_date)})` 
+                  : 'ยอดยกมา (ไม่มีบันทึกก่อนหน้า)'}
               </div>
-              <div className="dv-cash-metric">
-                <div className="dv-cash-label">เข้า/ออกวันนี้ (สุทธิ)</div>
-                <div className={`dv-cash-val-display ${todayNet >= 0 ? 'ip-income' : 'ip-expense'}`}>
-                  {todayNet >= 0 ? '+' : ''}{formatBaht(todayNet)}
+              <div className="dv-cash-val">{formatBaht(dailyCash.amount_last_record)}</div>
+            </div>
+            <div className="dv-cash-sep" />
+            <div className="dv-cash-metric">
+              <div className="dv-cash-label">เข้า/ออกวันนี้ (สุทธิ)</div>
+              <div className={`dv-cash-val ${todayNet >= 0 ? 'ip-income' : 'ip-expense'}`}>
+                {todayNet >= 0 ? '+' : ''}{formatBaht(todayNet)}
+              </div>
+            </div>
+            <div className="dv-cash-sep" />
+            <div className="dv-cash-metric">
+              <div className="dv-cash-label">ยอดที่ควรมีในร้าน</div>
+              <div className="dv-cash-val dv-cash-expected">{formatBaht(dailyCash.expected_amount)}</div>
+            </div>
+          </div>
+
+          {/* Centered actions section below metrics */}
+          <div className="dv-cash-actions-centered">
+            {dailyCash.is_saved && !isReconciling ? (
+              <>
+                <span className="badge badge-green">
+                  <FontAwesomeIcon icon={faCircleCheck} /> สรุปยอดแล้ว
+                </span>
+
+                <div className="dv-cash-status-line">
+                  <span className="dv-cash-status-time">
+                    บันทึกแล้วเมื่อ: {formatDateTimeThai(dailyCash.created_at)}
+                  </span>
+                  <button
+                    className="btn btn-ghost btn-xs dv-cash-edit-icon-btn"
+                    onClick={() => setIsReconciling(true)}
+                    title="แก้ไขยอด"
+                    style={{ justifySelf: 'end' }}
+                  >
+                    <FontAwesomeIcon icon={faPenToSquare} /> แก้ไข
+                  </button>
                 </div>
-              </div>
-              <div className="dv-cash-metric highlight">
-                <div className="dv-cash-label font-bold">ยอดที่ควรมีในร้าน</div>
-                <div className="dv-cash-val-display expected font-bold">{formatBaht(dailyCash.expected_amount)}</div>
-              </div>
 
-              {/* Reconcile toggle button — visible when panel is collapsed */}
-              {!isReconciling && (
-                <button
-                  className="btn btn-primary dv-cash-reconcile-btn"
-                  onClick={() => setIsReconciling(true)}
-                >
-                  <IconClipboard /> ตรวจนับยอด
-                </button>
-              )}
-            </div>
-
-            {/* ─── Expandable reconciliation panel ─── */}
-            {isReconciling && (
-              <div className="dv-cash-edit-panel">
-                <div className="dv-cash-edit-row">
-                  <div className="dv-cash-edit-field">
-                    <label className="dv-cash-edit-label">
-                      <IconEdit /> ยอดที่มีอยู่จริง (นับจริง)
-                    </label>
-                    <div className="dv-cash-input-wrap">
-                      <span className="dv-cash-input-prefix">฿</span>
-                      <input
-                        type="number"
-                        step="any"
-                        className="dv-cash-input"
-                        placeholder="0.00"
-                        value={actualVal}
-                        onChange={(e) => setActualVal(e.target.value)}
-                        autoFocus
-                      />
-                    </div>
-                  </div>
-
-                  <div className="dv-cash-edit-field">
-                    <label className="dv-cash-edit-label">ผลต่าง (ขาด/เกิน)</label>
-                    <div className={`dv-cash-discrepancy-display ${discrepancy >= 0 ? 'ip-income' : 'ip-expense'}`}>
-                      {discrepancy > 0 ? '+' : ''}{formatBaht(discrepancy)}
-                      <span className="discrepancy-tag">
-                        {discrepancy === 0 ? 'พอดี' : discrepancy > 0 ? 'เงินเกิน' : 'เงินขาด'}
+                  <div className="dv-cash-result-row">
+                    <div className="dv-cash-result-metric">
+                      <span className="dv-cash-result-label">ยอดนับจริง</span>
+                      <span className="dv-cash-result-val">
+                        {formatBaht(parseFloat(actualVal) || 0)}
                       </span>
                     </div>
+                    <div className="dv-cash-result-sep" />
+                    <div className="dv-cash-result-metric">
+                      <span className="dv-cash-result-label">ผลต่าง</span>
+                      {discrepancy === 0 ? (
+                        <span className="dv-cash-result-val is-zero">ตรงตามยอดที่คาดไว้</span>
+                      ) : (
+                        <span className={`dv-cash-result-val ${discrepancy > 0 ? 'ip-income' : 'ip-expense'}`}>
+                          {discrepancy > 0 ? '+' : ''}{formatBaht(discrepancy)}
+                          <span className={`discrepancy-tag-lg ${discrepancy > 0 ? 'tag-green' : 'tag-red'}`}>
+                            {discrepancy > 0 ? 'เกิน' : 'ขาด'}
+                          </span>
+            
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
 
-                <div className="dv-cash-edit-actions">
-                  <div className="dv-cash-notes-wrap">
+                {dailyCash.notes && (
+                  <p className="dv-cash-notes-display">หมายเหตุ: {dailyCash.notes}</p>
+                )}
+              </>
+            ) : !isReconciling ? (
+              <>
+                <span className="badge badge-red">
+                  <FontAwesomeIcon icon={faCircleXmark} />  ยังไม่ได้สรุปยอด
+                </span>
+
+                <button
+                  className="btn btn-primary dv-btn-large"
+                  onClick={() => setIsReconciling(true)}
+                >
+                  <FontAwesomeIcon icon={faClipboard} /> ตรวจนับยอด
+                </button>
+              </>
+
+            ) : null}
+          </div>
+
+          {/* Expandable edit panel */}
+          {isReconciling && (
+            <div className="dv-cash-edit-panel">
+              <div className="dv-cash-edit-row">
+                <div className="dv-cash-edit-field">
+                  <label className="dv-cash-edit-label">
+                    <FontAwesomeIcon icon={faPenToSquare} /> ยอดที่มีอยู่จริง (นับจริง)
+                  </label>
+                  <div className="dv-cash-input-wrap">
+                    <span className="dv-cash-input-prefix">฿</span>
                     <input
                       type="text"
-                      className="dv-cash-notes-input"
-                      placeholder="ระบุหมายเหตุการตรวจนับยอดเงินวันนี้..."
-                      value={notesVal}
-                      onChange={(e) => setNotesVal(e.target.value)}
+                      inputMode="decimal"
+                      className="dv-cash-input"
+                      placeholder="0.00"
+                      value={actualVal}
+                      onChange={e => setActualVal(e.target.value)}
+                      autoFocus
                     />
                   </div>
-                  <button
-                    className="btn btn-ghost dv-cash-cancel-btn"
-                    onClick={() => setIsReconciling(false)}
-                  >
-                    ยกเลิก
-                  </button>
-                  <button
-                    className={`btn ${dailyCash.is_saved ? 'btn-ghost' : 'btn-primary'} dv-cash-save-btn`}
-                    onClick={handleSaveDailyCash}
-                    disabled={isSaving}
-                  >
-                    {isSaving ? 'กำลังบันทึก...' : dailyCash.is_saved ? 'อัปเดตยอด' : 'สรุปยอดวันนี้'}
-                  </button>
                 </div>
 
-                {saveSuccess && (
-                  <div className="dv-cash-success-banner">✓ บันทึกยอดเงินสดประจำวันสำเร็จ</div>
-                )}
+                <div className="dv-cash-edit-field">
+                  <label className="dv-cash-edit-label">ผลต่าง (ขาด/เกิน)</label>
+                  <div className={`dv-cash-discrepancy-display ${discrepancy >= 0 ? 'ip-income' : 'ip-expense'}`}>
+                    <span className="discrepancy-tag">
+                      {discrepancy === 0 ? 'พอดี' : discrepancy > 0 ? 'เงินเกิน' : 'เงินขาด'}
+                    </span>
+                    {discrepancy > 0 ? '+' : ''}{formatBaht(discrepancy)}
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
+
+              <div className="dv-cash-edit-actions">
+                <input
+                  type="text"
+                  className="dv-cash-notes-input"
+                  placeholder="ระบุหมายเหตุ..."
+                  value={notesVal}
+                  onChange={e => setNotesVal(e.target.value)}
+                />
+                <button
+                  className="btn btn-ghost dv-btn-large"
+                  onClick={() => setIsReconciling(false)}
+                >
+                  ยกเลิก
+                </button>
+                <button
+                  className="btn btn-primary dv-btn-large"
+                  onClick={handleSaveDailyCash}
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'กำลังบันทึก...' : dailyCash.is_saved ? 'อัปเดตยอด' : 'สรุปยอดวันนี้'}
+                </button>
+              </div>
+
+              {saveSuccess && (
+                <div className="alert alert-success dv-cash-success">
+                  ✓ บันทึกยอดเงินสดประจำวันสำเร็จ
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -385,30 +442,17 @@ function formatDateStr(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-/* ─── Icons ───────────────────────────────────────────────────────── */
-function IconChevLeft()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"/></svg> }
-function IconChevRight() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 6 15 12 9 18"/></svg> }
-function IconCash() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign:'middle', marginRight: 4 }}>
-      <line x1="12" y1="1" x2="12" y2="23" />
-      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-    </svg>
-  )
+function formatDateTimeThai(dtStr) {
+  if (!dtStr) return '—'
+  // SQLite format can be YYYY-MM-DD HH:MM:SS, let's parse it safely
+  const formatted = dtStr.replace(' ', 'T')
+  const d = new Date(formatted)
+  if (isNaN(d)) return dtStr
+  const day = d.getDate().toString().padStart(2, '0')
+  const month = (d.getMonth() + 1).toString().padStart(2, '0')
+  const year = d.getFullYear() + 543
+  const hours = d.getHours().toString().padStart(2, '0')
+  const minutes = d.getMinutes().toString().padStart(2, '0')
+  return `${day}/${month}/${year} เวลา ${hours}:${minutes} น.`
 }
-function IconClipboard() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-      <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
-    </svg>
-  )
-}
-function IconEdit() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" style={{ verticalAlign:'middle', marginRight: 3 }}>
-      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-    </svg>
-  )
-}
+

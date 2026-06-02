@@ -625,3 +625,7 @@ textarea.input {
   /* This CSS trick forces the cell to respect the width of its <th> */
   max-width: 1px;
 }
+
+.green-check-circle {
+  color: var(--green);
+}
