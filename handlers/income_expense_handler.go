@@ -43,11 +43,11 @@ func (h *IncomeExpenseHandler) ListIncomeExpense(f models.IncomeExpenseFilter) (
 		args = append(args, f.Source)
 	}
 	if f.StartDate != "" {
-		query += ` AND date >= ?`
+		query += ` AND date(date) >= ?`
 		args = append(args, f.StartDate)
 	}
 	if f.EndDate != "" {
-		query += ` AND date <= ?`
+		query += ` AND date(date) <= ?`
 		args = append(args, f.EndDate)
 	}
 	query += ` ORDER BY date DESC, id DESC`
@@ -77,10 +77,14 @@ func (h *IncomeExpenseHandler) ListIncomeExpense(f models.IncomeExpenseFilter) (
 // ─── Create ────────────────────────────────────────────────────────────────
 
 func (h *IncomeExpenseHandler) CreateIncomeExpense(input models.IncomeExpenseInput) (models.IncomeExpense, error) {
+	dateVal := input.Date
+	if len(dateVal) == 10 {
+		dateVal = dateVal + " " + time.Now().Format("15:04:05")
+	}
 	res, err := db.DB.Exec(`
 		INSERT INTO income_expenses (type, category, amount, notes, source, date, color)
 		VALUES (?, ?, ?, ?, 'manual', ?, ?)
-	`, input.Type, input.Category, input.Amount, input.Notes, input.Date, input.Color)
+	`, input.Type, input.Category, input.Amount, input.Notes, dateVal, input.Color)
 	if err != nil {
 		return models.IncomeExpense{}, fmt.Errorf("create income_expenses: %w", err)
 	}
@@ -120,11 +124,11 @@ func (h *IncomeExpenseHandler) GetIncomeExpenseSummary(startDate, endDate string
 	`
 	args := []interface{}{}
 	if startDate != "" {
-		query += ` AND date >= ?`
+		query += ` AND date(date) >= ?`
 		args = append(args, startDate)
 	}
 	if endDate != "" {
-		query += ` AND date <= ?`
+		query += ` AND date(date) <= ?`
 		args = append(args, endDate)
 	}
 
@@ -155,7 +159,11 @@ func (h *IncomeExpenseHandler) ExportIncomeExpense(startDate string, endDate str
 
 // CeDateToBE converts YYYY-MM-DD (CE) → DD/MM/BE display string.
 func (h *IncomeExpenseHandler) CeDateToBE(s string) string {
-	t, err := time.Parse("2006-01-02", s)
+	datePart := s
+	if len(s) > 10 {
+		datePart = s[:10]
+	}
+	t, err := time.Parse("2006-01-02", datePart)
 	if err != nil {
 		return s
 	}
@@ -203,7 +211,7 @@ func (h *IncomeExpenseHandler) GetDailyCash(date string) (models.DailyCash, erro
 		SELECT
 			COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0)
-		FROM income_expenses WHERE date = ?
+		FROM income_expenses WHERE date(date) = ?
 	`, date).Scan(&totalIncome, &totalExpense)
 	if err != nil {
 		totalIncome, totalExpense = 0.0, 0.0
@@ -242,7 +250,7 @@ func (h *IncomeExpenseHandler) SaveDailyCash(input models.DailyCashInput) (model
 		SELECT
 			COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0)
-		FROM income_expenses WHERE date = ?
+		FROM income_expenses WHERE date(date) = ?
 	`, input.Date).Scan(&totalIncome, &totalExpense)
 	if err != nil {
 		totalIncome, totalExpense = 0.0, 0.0
@@ -287,7 +295,7 @@ func (h *IncomeExpenseHandler) SaveDailyCash(input models.DailyCashInput) (model
 			SELECT
 				COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END), 0),
 				COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0)
-			FROM income_expenses WHERE date = ?
+			FROM income_expenses WHERE date(date) = ?
 		`, successorDate).Scan(&inc, &exp)
 		if err != nil {
 			inc, exp = 0.0, 0.0
@@ -332,7 +340,7 @@ func (h *IncomeExpenseHandler) SaveDailyCash(input models.DailyCashInput) (model
 				SELECT
 					COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END), 0),
 					COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0)
-				FROM income_expenses WHERE date = ?
+				FROM income_expenses WHERE date(date) = ?
 			`, nextDate).Scan(&nInc, &nExp)
 			if err != nil {
 				nInc, nExp = 0.0, 0.0

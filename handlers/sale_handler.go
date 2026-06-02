@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"CervusLedger/db"
 	"CervusLedger/models"
@@ -67,11 +68,16 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 			goldItemID = int(id)
 		}
 
+		dateVal := input.Date
+		if len(dateVal) == 10 {
+			dateVal = dateVal + " " + time.Now().Format("15:04:05")
+		}
+
 		// Insert record into purchased_gold ledger
 		_, err = tx.Exec(`
 			INSERT INTO purchased_gold (customer_id, type, subtype, weight_baht, weight_grams, total_amount, notes, date, is_inventory, still_exists)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-		`, input.CustomerID, input.ItemType, input.ItemSubtype, input.WeightBaht, input.WeightGrams, input.TotalAmount, input.Notes, input.Date, input.IsInventory)
+		`, input.CustomerID, input.ItemType, input.ItemSubtype, input.WeightBaht, input.WeightGrams, input.TotalAmount, input.Notes, dateVal, input.IsInventory)
 		if err != nil {
 			return models.Sale{}, fmt.Errorf("insert purchased_gold: %w", err)
 		}
@@ -108,10 +114,14 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 	} else if input.Type == "discount" {
 		incType, incCat = "expense", "ส่วนลด"
 	}
+	dateVal := input.Date
+	if len(dateVal) == 10 {
+		dateVal = dateVal + " " + time.Now().Format("15:04:05")
+	}
 	_, err = tx.Exec(`
 		INSERT INTO income_expenses (type, category, amount, notes, source, date)
 		VALUES (?, ?, ?, ?, 'auto', ?)
-	`, incType, incCat, input.TotalAmount, input.Notes, input.Date)
+	`, incType, incCat, input.TotalAmount, input.Notes, dateVal)
 	if err != nil {
 		return models.Sale{}, fmt.Errorf("auto income_expenses: %w", err)
 	}

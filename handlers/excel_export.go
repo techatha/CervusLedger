@@ -14,7 +14,7 @@ func (h *IncomeExpenseHandler) ExportToXlsx(startDate, endDate, filePath string)
 	rows, err := db.DB.Query(`
 		SELECT id, type, category, amount, notes, source, date
 		FROM income_expenses
-		WHERE date >= ? AND date <= ?
+		WHERE date(date) >= ? AND date(date) <= ?
 		ORDER BY date ASC, id ASC
 	`, startDate, endDate)
 	if err != nil {

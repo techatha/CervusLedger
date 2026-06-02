@@ -23,6 +23,7 @@ func TestCeDateToBE(t *testing.T) {
 		expected string
 	}{
 		{"Valid Date", "2023-05-30", "30/05/2566"},
+		{"Valid Datetime", "2023-05-30 15:30:21", "30/05/2566"},
 		{"Invalid Date", "invalid-date", "invalid-date"},
 	}
 
@@ -108,7 +109,7 @@ func TestCreateIncomeExpense(t *testing.T) {
 	// 1. Expect the INSERT execution
 	// It expects the args exactly as they are passed to db.Exec
 	mock.ExpectExec(`INSERT INTO income_expenses`).
-		WithArgs(input.Type, input.Category, input.Amount, input.Notes, input.Date, input.Color).
+		WithArgs(input.Type, input.Category, input.Amount, input.Notes, sqlmock.AnyArg(), input.Color).
 		WillReturnResult(sqlmock.NewResult(1, 1)) // LastInsertId = 1, RowsAffected = 1
 
 	// 2. Expect the SELECT query that fetches the newly created record
@@ -161,9 +162,9 @@ func TestGetIncomeExpenseSummary(t *testing.T) {
 		mockRow := sqlmock.NewRows([]string{"total_income", "total_expense"}).
 			AddRow(5000.00, 2000.00)
 
-		// 2. We expect the query to include the 'AND date >= ? AND date <= ?' clauses
+		// 2. We expect the query to include the 'AND date(date) >= ? AND date(date) <= ?' clauses
 		// Note: We use .* in the regex to account for the spaces and newlines in your raw SQL string
-		mock.ExpectQuery(`SELECT(.*)FROM income_expenses WHERE 1=1 AND date >= \? AND date <= \?`).
+		mock.ExpectQuery(`SELECT(.*)FROM income_expenses WHERE 1=1 AND date\(date\) >= \? AND date\(date\) <= \?`).
 			WithArgs(startDate, endDate).
 			WillReturnRows(mockRow)
 
@@ -265,7 +266,7 @@ func TestGetDailyCash(t *testing.T) {
 			WillReturnRows(sqlmock.NewRows([]string{"date", "actual_amount"}).AddRow("2026-05-30", 4000.0))
 
 		// Mock fetching today's income/expense
-		mock.ExpectQuery(`SELECT(.*)FROM income_expenses WHERE date = \?`).
+		mock.ExpectQuery(`SELECT(.*)FROM income_expenses WHERE date\(date\) = \?`).
 			WithArgs(date).
 			WillReturnRows(sqlmock.NewRows([]string{"income", "expense"}).AddRow(1500.0, 300.0))
 
@@ -318,7 +319,7 @@ func TestSaveDailyCash(t *testing.T) {
 		WillReturnRows(sqlmock.NewRows([]string{"date", "actual_amount"}).AddRow("2026-05-30", 5000.0))
 
 	// 2. Get total income/expense
-	mock.ExpectQuery(`SELECT(.*)FROM income_expenses WHERE date = \?`).
+	mock.ExpectQuery(`SELECT(.*)FROM income_expenses WHERE date\(date\) = \?`).
 		WithArgs(input.Date).
 		WillReturnRows(sqlmock.NewRows([]string{"income", "expense"}).AddRow(1000.0, 200.0)) // expected expected_amount = 5000 + 1000 - 200 = 5800
 

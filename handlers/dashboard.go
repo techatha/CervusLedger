@@ -71,7 +71,7 @@ func(h *DashboardHandler) GetDashboardStats() (models.DashboardStats, error) {
 		SELECT
 			COALESCE(SUM(CASE WHEN type='income'  THEN amount ELSE 0 END),0),
 			COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END),0)
-		FROM income_expenses WHERE date = ?
+		FROM income_expenses WHERE date(date) = ?
 	`, today).Scan(&s.TodayIncome, &s.TodayExpense)
 
 	// ── New pawns today ─────────────────────────────────────────────
@@ -82,7 +82,7 @@ func(h *DashboardHandler) GetDashboardStats() (models.DashboardStats, error) {
 	db.DB.QueryRow(`
 		SELECT COALESCE(SUM(amount),0) FROM income_expenses
 		WHERE type='income' AND category='ดอกเบี้ยจำนำ'
-		  AND date >= ? AND date <= ?
+		  AND date(date) >= ? AND date(date) <= ?
 	`, monthStart, monthEnd).Scan(&s.MonthInterestCollected)
 
 	// ── Recent 5 active pawns ───────────────────────────────────────

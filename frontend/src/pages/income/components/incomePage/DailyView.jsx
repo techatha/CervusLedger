@@ -245,18 +245,25 @@ export default function DailyView({
                   </span>
                 </td>
                 <td className="ip-category">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span
-                      style={{
-                        display: 'inline-block',
-                        width: '8px',
-                        height: '8px',
-                        borderRadius: '50%',
-                        backgroundColor: e.color || '#cbd5e1',
-                        flexShrink: 0
-                      }}
-                    />
-                    <span>{e.category}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          width: '8px',
+                          height: '8px',
+                          borderRadius: '50%',
+                          backgroundColor: e.color || '#cbd5e1',
+                          flexShrink: 0
+                        }}
+                      />
+                      <span>{e.category}</span>
+                    </div>
+                    {e.date && e.date.length > 10 && (
+                      <span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginLeft: '16px', marginTop: '2px' }}>
+                        เวลา {e.date.slice(11, 16)} น.
+                      </span>
+                    )}
                   </div>
                 </td>
                 <td className={`ip-amount ${e.type === 'income' ? 'ip-income' : 'ip-expense'}`}>

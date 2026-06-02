@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"time"
 
 	"CervusLedger/db"
 	"CervusLedger/models"
@@ -28,11 +29,16 @@ func (h *PawnHandler) RecordPayment(input models.PawnPaymentInput) error {
 	}
 	defer tx.Rollback()
 
+	paidDateVal := input.PaidDate
+	if len(paidDateVal) == 10 {
+		paidDateVal = paidDateVal + " " + time.Now().Format("15:04:05")
+	}
+
 	// 1. Insert payment record
 	_, err = tx.Exec(`
 		INSERT INTO pawn_payments (pawn_record_id, month, year, paid_date, notes)
 		VALUES (?, ?, ?, ?, ?)
-	`, input.PawnRecordID, input.Month, input.Year, input.PaidDate, input.Notes)
+	`, input.PawnRecordID, input.Month, input.Year, paidDateVal, input.Notes)
 	if err != nil {
 		return fmt.Errorf("insert payment: %w", err)
 	}
@@ -44,7 +50,7 @@ func (h *PawnHandler) RecordPayment(input models.PawnPaymentInput) error {
 	_, err = tx.Exec(`
 		INSERT INTO income_expenses (type, category, amount, notes, source, date)
 		VALUES ('income', 'ดอกเบี้ยจำนำ', ?, ?, 'auto', ?)
-	`, input.InterestAmount, desc, input.PaidDate)
+	`, input.InterestAmount, desc, paidDateVal)
 	if err != nil {
 		return fmt.Errorf("auto income: %w", err)
 	}

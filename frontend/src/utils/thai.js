@@ -4,7 +4,8 @@
  */
 export function toBE(dateStr) {
   if (!dateStr) return '—'
-  const d = new Date(dateStr)
+  const part = dateStr.length > 10 ? dateStr.slice(0, 10) : dateStr
+  const d = new Date(part)
   if (isNaN(d)) return '—'
   const day   = d.getDate().toString().padStart(2, '0')
   const month = (d.getMonth() + 1).toString().padStart(2, '0')
@@ -49,7 +50,8 @@ export function formatCustomerAddress(c) {
  */
 export function formatFullThaiDate(dateStr) {
   if (!dateStr) return '—';
-  const d = new Date(dateStr);
+  const part = dateStr.length > 10 ? dateStr.slice(0, 10) : dateStr;
+  const d = new Date(part);
   if (isNaN(d.getTime())) return dateStr;
   
   const day = d.getDate();

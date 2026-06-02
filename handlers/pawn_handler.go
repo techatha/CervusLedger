@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"time"
 )
 
 type PawnHandler struct {
@@ -118,6 +119,11 @@ func (h *PawnHandler) CreatePawn(input models.PawnInput) (models.PawnRecord, err
 		return models.PawnRecord{}, fmt.Errorf("ticket number: %w", err)
 	}
 
+	pawnedDateVal := input.PawnedDate
+	if len(pawnedDateVal) == 10 {
+		pawnedDateVal = pawnedDateVal + " " + time.Now().Format("15:04:05")
+	}
+
 	res, err := db.DB.Exec(`
 		INSERT INTO pawn_records
 		  (ticket_number, customer_id, item_type, weight_grams, description,
@@ -130,7 +136,7 @@ func (h *PawnHandler) CreatePawn(input models.PawnInput) (models.PawnRecord, err
 		input.ItemType,
 		input.WeightGrams,
 		input.Description,
-		input.PawnedDate,
+		pawnedDateVal,
 		input.InitialPrincipal,
 		input.MonthlyInterestRate,
 		input.InterestAmount,
@@ -256,6 +262,11 @@ func (h *PawnHandler) AddPrincipalChange(input models.PrincipalChangeInput) erro
 	}
 	defer tx.Rollback()
 
+	dateVal := input.Date
+	if len(dateVal) == 10 {
+		dateVal = dateVal + " " + time.Now().Format("15:04:05")
+	}
+
 	// 1. Insert the change record
 	_, err = tx.Exec(`
 		INSERT INTO principal_changes
@@ -263,7 +274,7 @@ func (h *PawnHandler) AddPrincipalChange(input models.PrincipalChangeInput) erro
 		VALUES (?, ?, ?, ?, ?, ?)
 	`,
 		input.PawnRecordID,
-		input.Date,
+		dateVal,
 		input.ChangeType,
 		input.Amount,
 		input.NewPrincipal,
