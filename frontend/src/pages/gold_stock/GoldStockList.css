@@ -1,127 +1,297 @@
-/* ─── Summary ─────────────────────────────────────────────── */
+/* ─── Summary Strip ───────────────────────────────────────── */
 .gl-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .gl-stat {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid;
   border-radius: var(--radius);
-  padding: 16px 18px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
+
+.gl-stat-green { border-left-color: var(--green); }
+.gl-stat-gold  { border-left-color: var(--gold); }
+.gl-stat-muted { border-left-color: var(--text-disabled); }
+
 .gl-stat-value {
   font-family: var(--font-display);
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
   line-height: 1;
 }
+
+.gl-stat-green .gl-stat-value { color: var(--green); }
+.gl-stat-gold  .gl-stat-value { color: var(--gold); }
+.gl-stat-muted .gl-stat-value { color: var(--text-muted); }
+
 .gl-stat-label {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-muted);
-  margin-top: 4px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-.gl-stat-sub {
-  font-size: 13px;
-  color: var(--text-secondary);
+  letter-spacing: 0.06em;
   margin-top: 2px;
-  font-variant-numeric: tabular-nums;
 }
 
-/* ─── Table cells ─────────────────────────────────────────── */
-.gl-index { width: 40px; color: var(--text-muted); font-size: 13px; }
-
-.gl-type  { font-weight: 500; }
-
-.gl-weight {
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  font-size: 15px;
-  padding-right: 8px !important;
-}
-
-.gl-desc {
+.gl-stat-sub {
+  font-size: 12px;
   color: var(--text-secondary);
-  font-size: 13px;
-  max-width: 200px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
 }
 
-.gl-date {
-  color: var(--text-muted);
-  font-size: 13px;
-  white-space: nowrap;
-}
-
-.gl-actions {
-  display: flex;
-  gap: 4px;
-  opacity: 0;
-  transition: opacity var(--transition);
-}
-tr:hover .gl-actions { opacity: 1; }
-
-/* Sold rows are dimmed */
-.gl-row-sold td { opacity: 0.5; }
-
-/* Gold purity badge */
-.badge-gold {
-  background: var(--gold-dim);
-  color: var(--gold);
-  border: 1px solid rgba(200, 150, 60, 0.3);
-}
-
-/* Tabs for Gold Stock page */
-.gl-tabs-container {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: 8px;
-}
-.gl-tab-btn {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  font-size: 15px;
-  font-weight: 600;
-  padding: 8px 16px;
-  cursor: pointer;
-  border-radius: var(--radius);
-  transition: all var(--transition);
-}
-.gl-tab-btn:hover {
-  color: var(--text-primary);
-  background: var(--bg-hover);
-}
-.gl-tab-btn-active {
-  color: var(--gold) !important;
-  background: var(--bg-active) !important;
-  border: 1px solid var(--gold-dim);
-}
-
-.gl-audit-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  margin-bottom: 20px;
-}
-.gl-audit-controls {
+/* ─── Audit Toolbar ───────────────────────────────────────── */
+.gl-audit-toolbar {
   display: flex;
   align-items: center;
   gap: 12px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 16px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
 }
+
+.gl-audit-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.gl-audit-month-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ─── Audit Amount Input ──────────────────────────────────── */
 .gl-audit-input-amount {
-  width: 100px;
+  width: 80px !important;
+  height: 32px !important;
+  padding: 0 8px !important;
   text-align: right;
-  font-weight: bold;
+  font-weight: 700;
+  font-size: 14px !important;
+  font-variant-numeric: tabular-nums;
+  background: var(--bg-base) !important;
+}
+
+.gl-audit-input-amount:focus {
+  border-color: var(--gold);
+  background: var(--bg-surface) !important;
+}
+
+/* ─── Type Section (editorial) ───────────────────────────── */
+.gl-type-section {
+  margin-bottom: 44px;
+}
+
+/* The key change: type name is a freestanding heading, no card */
+.gl-type-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1.5px solid var(--gold-pale, #F5E9CC);
+}
+
+.gl-type-heading-name {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+.gl-type-heading-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 10px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--bg-base);
+  flex-shrink: 0;
+}
+
+.gl-type-heading-summary {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* ─── Table Cell Styles ──────────────────────────────────── */
+.gl-index {
+  width: 48px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.gl-subtype {
+  font-weight: 500;
+}
+
+.gl-unit-weight {
+  text-align: right;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+}
+
+.gl-amount {
+  text-align: right;
+}
+
+.gl-total-weight {
+  text-align: right;
+  font-weight: 700;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.gl-history {
+  white-space: nowrap;
+}
+
+/* ─── Row Actions (hover reveal) ─────────────────────────── */
+.gl-row-actions {
+  text-align: right;
+  opacity: 0;
+  transition: opacity 0.13s;
+  white-space: nowrap;
+}
+
+.gl-row-actions button {
+  margin-left: 4px;
+}
+
+tr:hover .gl-row-actions {
+  opacity: 1;
+}
+
+/* ─── History Mini Chips ──────────────────────────────────── */
+.gl-history-chips {
+  display: flex;
+  gap: 3px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.gl-history-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border-radius: 4px;
+  padding: 2px 5px;
+  min-width: 34px;
+  border: 1px solid transparent;
+  font-variant-numeric: tabular-nums;
+  transition: transform var(--transition);
+}
+
+.gl-history-chip:hover {
+  transform: translateY(-1px);
+}
+
+.gl-history-chip-date {
+  font-size: 9px;
+  color: var(--text-disabled);
+  white-space: nowrap;
+  line-height: 1;
+  margin-bottom: 2px;
+}
+
+.gl-history-chip-val {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.gl-history-chip-up {
+  background: var(--green-bg);
+  border-color: rgba(91, 175, 130, 0.2);
+}
+.gl-history-chip-up .gl-history-chip-val { color: var(--green); }
+
+.gl-history-chip-down {
+  background: var(--red-bg);
+  border-color: rgba(212, 92, 92, 0.2);
+}
+.gl-history-chip-down .gl-history-chip-val { color: var(--red); }
+
+.gl-history-chip-neutral {
+  background: var(--bg-hover);
+  border-color: var(--border-light);
+}
+.gl-history-chip-neutral .gl-history-chip-val { color: var(--text-secondary); }
+
+.gl-history-empty {
+  font-size: 12px;
+  color: var(--text-disabled);
+}
+
+/* ─── Wizard Modal ────────────────────────────────────────── */
+.gl-wizard-modal {
+  width: 540px !important;
+}
+
+.gl-wizard-progress-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 3px;
+}
+
+.gl-wizard-progress-bar {
+  display: flex;
+  gap: 4px;
+  padding: 0 24px 16px;
+  background: var(--bg-surface);
+}
+
+.gl-wizard-progress-seg {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  cursor: pointer;
+  transition: background var(--transition);
+}
+
+.gl-wizard-progress-seg.done   { background: var(--green); }
+.gl-wizard-progress-seg.active { background: var(--gold); }
+
+/* Editorial type title inside wizard — matches page heading style */
+.gl-wizard-type-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1.5px solid var(--gold-pale, #F5E9CC);
+}
+
+/* Save (final step) button — green accent */
+.gl-btn-save {
+  background: var(--green) !important;
+  border-color: var(--green) !important;
+}
+
+.gl-btn-save:hover:not(:disabled) {
+  filter: brightness(1.08);
 }

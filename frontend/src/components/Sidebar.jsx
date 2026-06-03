@@ -31,17 +31,17 @@ const NAV = [
     ],
   },
   {
-    group: 'ทอง & ขาย',
+    group: 'การเงิน',
     items: [
-      { to: '/gold', icon: <FontAwesomeIcon icon={faBoxesStacked} />, label: 'สต็อกทอง' },
-      { to: '/sales', icon: <FontAwesomeIcon icon={faSackDollar} />, label: 'ซื้อ-ขาย' },
-      { to: '/buy', icon: <FontAwesomeIcon icon={faHandHoldingDollar} />, label: 'รับซื้อของเก่า' },
+      { to: '/sales', icon: <FontAwesomeIcon icon={faSackDollar} />, label: 'บันทึก ซื้อ-ขาย' },
+      { to: '/income', icon: <FontAwesomeIcon icon={faPiggyBank} />, label: 'รายรับ-รายจ่าย' },
     ],
   },
   {
-    group: 'การเงิน',
+    group: 'สต็อกทอง',
     items: [
-      { to: '/income', icon: <FontAwesomeIcon icon={faPiggyBank} />, label: 'รายรับ-รายจ่าย' },
+      { to: '/buy', icon: <FontAwesomeIcon icon={faHandHoldingDollar} />, label: 'สต็อกของเก่า' },
+      { to: '/gold', icon: <FontAwesomeIcon icon={faBoxesStacked} />, label: 'สต็อกทองในร้าน' },
     ],
   },
   {
@@ -111,8 +111,8 @@ export default function Sidebar() {
       {/* Footer */}
       <div className="sidebar-footer">
         <div className="sidebar-version">v0.1.0</div>
-        <div 
-          className="sidebar-reader-status" 
+        <div
+          className="sidebar-reader-status"
           title={readerConnected ? "เครื่องอ่านบัตร: เชื่อมต่ออยู่" : "เครื่องอ่านบัตร: ไม่พบอุปกรณ์"}
         >
           <FontAwesomeIcon icon={faHardDrive} className="status-icon" />

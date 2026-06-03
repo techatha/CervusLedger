@@ -1,65 +1,70 @@
-import { useState, useEffect, useCallback, Fragment } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   ListGoldItems,
   DeleteGoldItem,
   ListStockLogs,
-  RecordStockLog,
 } from 'wailsjs/go/handlers/GoldItemHandler'
-import { toBE } from '@/utils/thai'
 import { parseWeightToBaht } from '@/utils/number'
 import GoldStockForm from './GoldStockForm'
+import GoldStockWizard from './component/GoldStockWizard'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faArrowUpFromBracket, faPlus } from '@fortawesome/free-solid-svg-icons'
 import './GoldStockList.css'
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function groupBy(arr, key) {
+  return arr.reduce((acc, item) => {
+    const k = item[key] || 'อื่นๆ'
+    if (!acc[k]) acc[k] = []
+    acc[k].push(item)
+    return acc
+  }, {})
+}
+
+function amountDelta(current, previous) {
+  if (previous == null) return 'neutral'
+  if (current > previous) return 'up'
+  if (current < previous) return 'down'
+  return 'neutral'
+}
+
+// ─── Main Component ───────────────────────────────────────────────────────────
 export default function GoldStockList() {
-  const [activeTab, setActiveTab] = useState('catalog') // 'catalog' | 'audit'
-  
-  // Catalog states
-  const [items,   setItems]   = useState([])
+  const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
-  const [error,   setError]   = useState(null)
-  const [modal,   setModal]   = useState(null) // null | 'new' | GoldItem (edit)
+  const [error, setError] = useState(null)
+  const [modal, setModal] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
 
-  // Audit states
   const [selectedMonth, setSelectedMonth] = useState(() => {
     const d = new Date()
-    const month = String(d.getMonth() + 1).padStart(2, '0')
-    return `${d.getFullYear()}-${month}` // e.g. "2026-05"
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
   })
   const [stockLogs, setStockLogs] = useState([])
   const [auditLoading, setAuditLoading] = useState(false)
-  const [editedAmounts, setEditedAmounts] = useState({}) // { gold_item_id: amountStr }
-  const [savingAudit, setSavingAudit] = useState(false)
+  const [editedAmounts, setEditedAmounts] = useState({})
+  const [exporting, setExporting] = useState(false)
 
-  // Load catalog items
+  const [wizardOpen, setWizardOpen] = useState(false)
+
   const loadCatalog = useCallback(async () => {
-    setLoading(true)
-    setError(null)
     try {
       const data = await ListGoldItems('')
       setItems(data || [])
     } catch (e) {
       setError('โหลดรายการสินค้าไม่สำเร็จ: ' + e)
-    } finally {
-      setLoading(false)
     }
   }, [])
 
-  // Load stock logs for selected month
   const loadStockLogsData = useCallback(async (monthStr) => {
     setAuditLoading(true)
     setError(null)
     try {
-      const logDate = `${monthStr}-01` // standard first day of month
+      const logDate = `${monthStr}-01`
       const data = await ListStockLogs(logDate)
       setStockLogs(data || [])
-      
       const amounts = {}
-      if (data) {
-        data.forEach(log => {
-          amounts[log.gold_item_id] = String(log.amount)
-        })
-      }
+      if (data) data.forEach(log => { amounts[log.gold_item_id] = String(log.amount) })
       setEditedAmounts(amounts)
     } catch (e) {
       setError('โหลดข้อมูลสต็อกไม่สำเร็จ: ' + e)
@@ -68,21 +73,28 @@ export default function GoldStockList() {
     }
   }, [])
 
-  // Trigger loads on mount or dependency changes
   useEffect(() => {
-    if (activeTab === 'catalog') {
-      loadCatalog()
-    } else {
-      loadStockLogsData(selectedMonth)
+    const loadAll = async () => {
+      setLoading(true)
+      await Promise.all([loadCatalog(), loadStockLogsData(selectedMonth)])
+      setLoading(false)
     }
-  }, [activeTab, selectedMonth, loadCatalog, loadStockLogsData])
+    loadAll()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    loadStockLogsData(selectedMonth)
+  }, [selectedMonth, loadStockLogsData])
+
+  const itemById = {}
+  items.forEach(item => { itemById[item.id] = item })
 
   const handleDelete = async () => {
     if (!confirmDelete) return
     try {
       await DeleteGoldItem(confirmDelete.id)
       setConfirmDelete(null)
-      loadCatalog()
+      await Promise.all([loadCatalog(), loadStockLogsData(selectedMonth)])
     } catch (e) {
       setError(String(e))
       setConfirmDelete(null)
@@ -90,262 +102,219 @@ export default function GoldStockList() {
   }
 
   const handleAmountChange = (goldItemId, val) => {
-    setEditedAmounts(p => ({
-      ...p,
-      [goldItemId]: val
-    }))
+    setEditedAmounts(p => ({ ...p, [goldItemId]: val }))
   }
 
-  const handleSaveAudit = async () => {
-    setSavingAudit(true)
-    setError(null)
-    try {
-      const logDate = `${selectedMonth}-01`
-      for (const log of stockLogs) {
-        const amtStr = editedAmounts[log.gold_item_id]
-        const amount = parseInt(amtStr) || 0
-        await RecordStockLog({
-          gold_item_id: log.gold_item_id,
-          amount: amount,
-          log_date: logDate,
-        })
-      }
-      // Reload updated records
-      await loadStockLogsData(selectedMonth)
-      alert('บันทึกสต็อกสินค้าประจำเดือนเสร็จเรียบร้อยแล้ว!')
-    } catch (e) {
-      setError('บันทึกสต็อกไม่สำเร็จ: ' + e)
-    } finally {
-      setSavingAudit(false)
-    }
+  const handleExport = async () => {
+    setExporting(true)
+    // TODO: implement export
+    setTimeout(() => setExporting(false), 1500)
   }
 
-  // Summary stats calculations
-  // Catalog tab: unique specifications
-  const totalUniqueSpecs = items.length
+  // ── Wizard ────────────────────────────────────────────────────────────────
+  const auditGroups = groupBy(stockLogs, 'type')
+  const typeKeys = Object.keys(auditGroups)
 
-  // Audit tab: live sums from input states
+  const openWizard = () => {
+    setWizardOpen(true)
+  }
+
+  // ── Summary stats ─────────────────────────────────────────────────────────
   const totalQuantity = stockLogs.reduce((s, log) => s + (parseInt(editedAmounts[log.gold_item_id]) || 0), 0)
-  const totalWeight = stockLogs.reduce((s, log) => s + (parseWeightToBaht(log.subtype) * (parseInt(editedAmounts[log.gold_item_id]) || 0)), 0)
+  const totalWeight = stockLogs.reduce((s, log) => {
+    return s + (parseWeightToBaht(log.subtype) * (parseInt(editedAmounts[log.gold_item_id]) || 0))
+  }, 0)
 
   return (
     <div className="page-view">
+
+      {/* ── Page Header ──────────────────────────────────────────── */}
       <div className="page-header">
         <div>
-          <div className="page-title">สต็อกทองคำ</div>
+          <div className="page-title">สต็อกทองในร้าน</div>
           <div className="page-meta">
-            {activeTab === 'catalog' 
-              ? `ทะเบียนสินค้าที่ไม่ซ้ำทั้งหมด ${totalUniqueSpecs} รายการ`
-              : `ตรวจนับประจำเดือน ${selectedMonth} · จำนวนรวม ${totalQuantity} ชิ้น · น้ำหนักรวม ${totalWeight.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 4 })} บาททอง`
-            }
+            {`ตรวจนับประจำเดือน ${selectedMonth} · ${totalQuantity} ชิ้น · ${totalWeight.toFixed(2)} บาททอง · ${stockLogs.length} SKU`}
           </div>
         </div>
-        {activeTab === 'catalog' && (
-          <button className="btn btn-primary" onClick={() => setModal('new')}>
-            <IconPlus /> เพิ่มทะเบียนทองใหม่
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-ghost" onClick={handleExport} disabled={exporting}>
+            <FontAwesomeIcon icon={faArrowUpFromBracket} />
+            {exporting ? 'กำลังส่งออก...' : 'ส่งออก Excel'}
           </button>
-        )}
-      </div>
-
-      {/* Tab Switcher */}
-      <div className="gl-tabs-container">
-        <button 
-          className={`gl-tab-btn ${activeTab === 'catalog' ? 'gl-tab-btn-active' : ''}`}
-          onClick={() => setActiveTab('catalog')}
-        >
-          ทะเบียนทองคำ (SKUs)
-        </button>
-        <button 
-          className={`gl-tab-btn ${activeTab === 'audit' ? 'gl-tab-btn-active' : ''}`}
-          onClick={() => setActiveTab('audit')}
-        >
-          ตรวจนับสต็อกประจำเดือน
-        </button>
-      </div>
-
-      {/* Summary cards */}
-      {activeTab === 'catalog' ? (
-        <div className="gl-summary">
-          <SummaryCard
-            label="ชนิดสินค้าทั้งหมด"
-            value={totalUniqueSpecs}
-            sub="รายการที่ลงทะเบียนไว้"
-            color="gold"
-          />
+          <button className="btn btn-primary" onClick={() => setModal('new')}>
+            <FontAwesomeIcon icon={faPlus} /> เพิ่มทะเบียนทองใหม่
+          </button>
         </div>
-      ) : (
-        <div className="gl-summary">
-          <SummaryCard
-            label="จำนวนชิ้นทั้งหมด"
-            value={totalQuantity}
-            sub="ชิ้น/อัน"
-            color="green"
-          />
-          <SummaryCard
-            label="น้ำหนักทองรวม"
-            value={`${totalWeight.toFixed(2)} บาท`}
-            sub="คำนวณจากน้ำหนัก × จำนวน"
-            color="gold"
-          />
-        </div>
-      )}
+      </div>
 
       {error && <div className="alert alert-error">{error}</div>}
 
-      {activeTab === 'catalog' ? (
-        // CATALOG VIEW
-        <div className="card" style={{ marginTop: 20 }}>
-          <div className="table-wrap">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>ประเภทหลัก</th>
-                  <th>รุ่น / น้ำหนัก (Subtype)</th>
-                  <th>วันที่เพิ่ม</th>
-                  <th style={{ width: 110 }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr className="loading-row"><td colSpan={5}>กำลังโหลด...</td></tr>
-                ) : items.length === 0 ? (
-                  <tr className="loading-row">
-                    <td colSpan={5}>
-                      ยังไม่มีรายการทองในระบบทะเบียน
-                    </td>
-                  </tr>
-                ) : items.map((item, i) => (
-                  <tr
-                    key={item.id}
-                    onClick={() => setModal(item)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <td className="gl-index">{i + 1}</td>
-                    <td className="gl-type">{item.type}</td>
-                    <td className="gl-subtype">{item.subtype}</td>
-                    <td className="gl-date">{toBE(item.created_at)}</td>
-                    <td className="gl-actions" onClick={e => e.stopPropagation()}>
-                      <button className="btn btn-ghost btn-xs" onClick={() => setModal(item)}>แก้ไข</button>
-                      <button className="btn btn-danger-ghost btn-xs" onClick={() => setConfirmDelete(item)}>ลบ</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+      {/* ── Summary Strip ────────────────────────────────────────── */}
+      <div className="gl-summary">
+        <StatCard label="จำนวนชิ้นทั้งหมด" value={totalQuantity} sub="ชิ้น / อัน" color="green" />
+        <StatCard label="น้ำหนักทองรวม" value={totalWeight.toFixed(2)} sub="บาททอง" color="gold" />
+        <StatCard label="จำนวน SKU" value={stockLogs.length} sub="รายการที่ตรวจนับ" color="muted" />
+      </div>
+
+      {/* ── Toolbar ──────────────────────────────────────────────── */}
+      <div className="gl-audit-toolbar">
+        <div className="gl-audit-controls">
+          <span className="gl-audit-month-label">เดือน</span>
+          <input
+            type="month"
+            className="input"
+            value={selectedMonth}
+            onChange={e => setSelectedMonth(e.target.value)}
+            style={{ width: 170 }}
+          />
+        </div>
+        <div style={{ flex: 1 }} />
+        <button
+          className="btn btn-primary"
+          onClick={openWizard}
+          disabled={auditLoading || stockLogs.length === 0}
+        >
+          บันทึกสต็อกประจำเดือน
+        </button>
+      </div>
+
+      {/* ── Per-Type Sections ────────────────────────────────────── */}
+      {(loading || auditLoading) ? (
+        <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+          กำลังโหลดข้อมูลสต็อก...
+        </div>
+      ) : stockLogs.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-state-icon">📦</div>
+          <div className="empty-state-text">ยังไม่มีสินค้าในทะเบียนให้ตรวจนับ</div>
+          <button className="btn btn-primary" style={{ marginTop: 12 }} onClick={() => setModal('new')}>
+            <FontAwesomeIcon icon={faPlus} /> เพิ่มทะเบียนทองใหม่
+          </button>
         </div>
       ) : (
-        // AUDIT VIEW (Grouped by Type)
-        <div>
-          <div className="gl-audit-header">
-            <div className="gl-audit-controls">
-              <span style={{ fontWeight: '600', color: 'var(--text-secondary)' }}>เลือกเดือนประจำสต็อก:</span>
-              <input 
-                type="month" 
-                className="input" 
-                value={selectedMonth} 
-                onChange={e => setSelectedMonth(e.target.value)} 
-                style={{ width: 180 }}
-              />
-            </div>
-            <button 
-              className="btn btn-primary" 
-              onClick={handleSaveAudit} 
-              disabled={savingAudit || auditLoading}
-            >
-              {savingAudit ? 'กำลังบันทึก...' : 'บันทึกสต็อกประจำเดือน'}
-            </button>
-          </div>
+        typeKeys.map(mainType => {
+          const logs = auditGroups[mainType]
+          const groupQty = logs.reduce((s, log) => s + (parseInt(editedAmounts[log.gold_item_id]) || 0), 0)
+          const groupWeight = logs.reduce((s, log) => {
+            return s + (parseWeightToBaht(log.subtype) * (parseInt(editedAmounts[log.gold_item_id]) || 0))
+          }, 0)
 
-          <div className="card">
-            <div className="table-wrap">
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th style={{ width: 60 }}>#</th>
-                    <th>รุ่น / น้ำหนัก (Subtype)</th>
-                    <th style={{ textAlign: 'right', width: 180 }}>น้ำหนักเดี่ยวโดยประมาณ (บาท)</th>
-                    <th style={{ textAlign: 'right', width: 180 }}>จำนวนคงเหลือ (ชิ้น)</th>
-                    <th style={{ textAlign: 'right', width: 180 }}>น้ำหนักรวมโดยประมาณ (บาท)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {auditLoading ? (
-                    <tr className="loading-row"><td colSpan={5}>กำลังโหลดข้อมูลสต็อก...</td></tr>
-                  ) : stockLogs.length === 0 ? (
-                    <tr className="loading-row">
-                      <td colSpan={5}>
-                        ไม่มีสินค้าในทะเบียนให้ตรวจนับ (กรุณาลงทะเบียนทองที่แท็บทะเบียนสินค้าก่อน)
-                      </td>
-                    </tr>
-                  ) : (
-                    (() => {
-                      // Group stock logs by main type
-                      const groups = {}
-                      stockLogs.forEach(log => {
-                        if (!groups[log.type]) groups[log.type] = []
-                        groups[log.type].push(log)
-                      })
+          return (
+            <div key={mainType} className="gl-type-section">
+              {/* Editorial type heading — no card/box */}
+              <div className="gl-type-heading">
+                <span className="gl-type-heading-name">{mainType}</span>
+                <span className="gl-type-heading-count">{logs.length} รายการ</span>
+                <span className="gl-type-heading-summary">
+                  {groupQty} ชิ้น · {groupWeight.toFixed(2)} บาททอง
+                </span>
+              </div>
 
-                      return Object.keys(groups).map(mainType => (
-                        <Fragment key={mainType}>
-                          <tr className="gl-group-header-row" style={{ backgroundColor: 'var(--bg-hover)', fontWeight: 'bold' }}>
-                            <td colSpan={5} style={{ padding: '12px 16px', color: 'var(--gold)', fontSize: '15px' }}>
-                              📁 {mainType} ({groups[mainType].length} รายการ)
+              <div className="card">
+                <div className="table-wrap">
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>รุ่น / น้ำหนัก (Subtype)</th>
+                        <th>น้ำหนักเดี่ยว (บาท)</th>
+                        <th>คงเหลือ (ชิ้น)</th>
+                        <th>น้ำหนักรวม (บาท)</th>
+                        <th>บันทึกล่าสุด</th>
+                        <th style={{ width: 100 }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {logs.map((log, index) => {
+                        const amtStr = editedAmounts[log.gold_item_id] || ''
+                        const amtInt = parseInt(amtStr) || 0
+                        const estWeight = parseWeightToBaht(log.subtype)
+                        const totalWeightRow = estWeight * amtInt
+                        const history = log.history || []
+                        const catalogItem = itemById[log.gold_item_id]
+
+                        return (
+                          <tr key={log.gold_item_id}>
+                            <td className="gl-index">{index + 1}</td>
+                            <td className="gl-subtype">{log.subtype}</td>
+                            <td className="gl-unit-weight">
+                              {estWeight > 0 ? estWeight.toFixed(4) : '—'}
+                            </td>
+                            <td className="gl-amount">
+                              <input
+                                type="number"
+                                min="0"
+                                className="input gl-audit-input-amount"
+                                value={amtStr}
+                                placeholder="0"
+                                onChange={e => handleAmountChange(log.gold_item_id, e.target.value)}
+                              />
+                            </td>
+                            <td className="gl-total-weight">
+                              {totalWeightRow > 0 ? totalWeightRow.toFixed(4) : '—'}
+                            </td>
+                            <td className="gl-history">
+                              <HistoryMiniChart history={history} />
+                            </td>
+                            <td className="gl-row-actions" onClick={e => e.stopPropagation()}>
+                              {catalogItem && (
+                                <>
+                                  <button
+                                    className="btn btn-ghost btn-xs"
+                                    onClick={() => setModal(catalogItem)}
+                                    title="แก้ไข"
+                                  >
+                                    แก้ไข
+                                  </button>
+                                  <button
+                                    className="btn btn-danger-ghost btn-xs"
+                                    onClick={() => setConfirmDelete(catalogItem)}
+                                    title="ลบ"
+                                  >
+                                    ลบ
+                                  </button>
+                                </>
+                              )}
                             </td>
                           </tr>
-                          {groups[mainType].map((log, index) => {
-                            const amtStr = editedAmounts[log.gold_item_id] || ''
-                            const amtInt = parseInt(amtStr) || 0
-                            const estWeight = parseWeightToBaht(log.subtype)
-                            const totalWeightRow = estWeight * amtInt
-
-                            return (
-                              <tr key={log.gold_item_id}>
-                                <td className="gl-index">{index + 1}</td>
-                                <td className="gl-subtype" style={{ fontWeight: '500' }}>{log.subtype}</td>
-                                <td className="gl-weight" style={{ textAlign: 'right', color: 'var(--text-secondary)' }}>
-                                  {estWeight > 0 ? `${estWeight.toFixed(4)} บาท` : '—'}
-                                </td>
-                                <td style={{ textAlign: 'right' }}>
-                                  <input 
-                                    type="number" 
-                                    min="0" 
-                                    className="input gl-audit-input-amount" 
-                                    value={amtStr}
-                                    placeholder="0"
-                                    onChange={e => handleAmountChange(log.gold_item_id, e.target.value)}
-                                    style={{ width: '100px', textAlign: 'right' }}
-                                  />
-                                </td>
-                                <td style={{ textAlign: 'right', fontWeight: 'bold', color: 'var(--gold)', fontSize: '15px' }}>
-                                  {totalWeightRow > 0 ? `${totalWeightRow.toFixed(4)} บาท` : '—'}
-                                </td>
-                              </tr>
-                            )
-                          })}
-                        </Fragment>
-                      ))
-                    })()
-                  )}
-                </tbody>
-              </table>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          )
+        })
       )}
 
-      {/* Form modal */}
+      {wizardOpen && (
+        <GoldStockWizard
+          selectedMonth={selectedMonth}
+          stockLogs={stockLogs}
+          editedAmounts={editedAmounts}
+          onClose={() => setWizardOpen(false)}
+          onSaved={(newAmounts) => {
+            setEditedAmounts(newAmounts)
+            setWizardOpen(false)
+            loadStockLogsData(selectedMonth)
+          }}
+        />
+      )}
+
+      {/* ── Form Modal ───────────────────────────────────────────── */}
       {modal !== null && (
         <GoldStockForm
           item={modal === 'new' ? null : modal}
-          onSaved={() => { setModal(null); loadCatalog() }}
+          onSaved={async () => {
+            setModal(null)
+            await Promise.all([loadCatalog(), loadStockLogsData(selectedMonth)])
+          }}
           onClose={() => setModal(null)}
         />
       )}
 
-      {/* Confirm delete */}
+      {/* ── Confirm Delete ───────────────────────────────────────── */}
       {confirmDelete && (
         <div className="modal-backdrop" onClick={() => setConfirmDelete(null)}>
           <div className="modal" style={{ width: 400 }} onClick={e => e.stopPropagation()}>
@@ -355,12 +324,22 @@ export default function GoldStockList() {
             </div>
             <div className="modal-body">
               <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-                ต้องการลบ <strong style={{ color: 'var(--text-primary)' }}>{confirmDelete.type} {confirmDelete.subtype}</strong> ออกจากทะเบียนสินค้า?
+                ต้องการลบ{' '}
+                <strong style={{ color: 'var(--text-primary)' }}>
+                  {confirmDelete.type} {confirmDelete.subtype}
+                </strong>{' '}
+                ออกจากทะเบียนสินค้า?
               </p>
             </div>
             <div className="modal-footer">
               <button className="btn btn-ghost" onClick={() => setConfirmDelete(null)}>ยกเลิก</button>
-              <button className="btn" style={{ background: 'var(--red)', color: '#fff', border: 'none' }} onClick={handleDelete}>ลบ</button>
+              <button
+                className="btn"
+                style={{ background: 'var(--red)', color: '#fff', border: 'none' }}
+                onClick={handleDelete}
+              >
+                ลบ
+              </button>
             </div>
           </div>
         </div>
@@ -369,22 +348,37 @@ export default function GoldStockList() {
   )
 }
 
-function SummaryCard({ label, value, sub, color }) {
-  const colors = {
-    green: { bg: 'var(--green-bg)',  text: 'var(--green)'  },
-    gold:  { bg: 'var(--bg-hover)', text: 'var(--gold)'   },
-    muted: { bg: 'var(--bg-hover)', text: 'var(--text-muted)' },
+// ─── History Mini Chart ───────────────────────────────────────────────────────
+function HistoryMiniChart({ history }) {
+  if (!history || history.length === 0) {
+    return <span className="gl-history-empty">ยังไม่มีบันทึก</span>
   }
-  const c = colors[color] || colors.muted
+
+  const recent = [...history].slice(-6).reverse()
+
   return (
-    <div className="gl-stat" style={{ background: c.bg, border: '1px solid var(--border)' }}>
-      <div className="gl-stat-value" style={{ color: c.text }}>{value}</div>
-      <div className="gl-stat-label">{label}</div>
-      {sub && <div className="gl-stat-sub">{sub}</div>}
+    <div className="gl-history-chips">
+      {recent.map((entry, i) => {
+        const prev = recent[i + 1]
+        const delta = amountDelta(entry.amount, prev?.amount)
+        return (
+          <div key={i} className={`gl-history-chip gl-history-chip-${delta}`} title={entry.log_date}>
+            <span className="gl-history-chip-date">{entry.log_date?.slice(0, 7)}</span>
+            <span className="gl-history-chip-val">{entry.amount}</span>
+          </div>
+        )
+      })}
     </div>
   )
 }
 
-function IconPlus() {
-  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+// ─── Stat Card ────────────────────────────────────────────────────────────────
+function StatCard({ label, value, sub, color }) {
+  return (
+    <div className={`gl-stat gl-stat-${color}`}>
+      <div className="gl-stat-value">{value}</div>
+      <div className="gl-stat-label">{label}</div>
+      {sub && <div className="gl-stat-sub">{sub}</div>}
+    </div>
+  )
 }

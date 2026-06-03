@@ -67,7 +67,7 @@ export default function PurchaseHistory() {
     <div className="page-view ph-page-view">
       <div className="page-header">
         <div>
-          <div className="page-title">รับซื้อของเก่า</div>
+          <div className="page-title">สต็อกของเก่า</div>
           <div className="page-meta">ดูและจัดการประวัติการรับซื้อทองคำจากลูกค้า</div>
         </div>
         <button className="btn btn-primary" onClick={() => setShowNewPurchaseModal(true)}>
