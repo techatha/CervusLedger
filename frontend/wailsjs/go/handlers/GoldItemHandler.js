@@ -10,6 +10,10 @@ export function DeleteGoldItem(arg1) {
   return window['go']['handlers']['GoldItemHandler']['DeleteGoldItem'](arg1);
 }
 
+export function DeleteStockLog(arg1) {
+  return window['go']['handlers']['GoldItemHandler']['DeleteStockLog'](arg1);
+}
+
 export function GetGoldItem(arg1) {
   return window['go']['handlers']['GoldItemHandler']['GetGoldItem'](arg1);
 }
@@ -20,6 +24,10 @@ export function GetGoldMainTypes() {
 
 export function GetGoldSubtypes(arg1) {
   return window['go']['handlers']['GoldItemHandler']['GetGoldSubtypes'](arg1);
+}
+
+export function GetStockLog(arg1) {
+  return window['go']['handlers']['GoldItemHandler']['GetStockLog'](arg1);
 }
 
 export function ListGoldItems(arg1) {
@@ -44,4 +52,8 @@ export function Startup(arg1) {
 
 export function UpdateGoldItem(arg1) {
   return window['go']['handlers']['GoldItemHandler']['UpdateGoldItem'](arg1);
+}
+
+export function UpdateStockLog(arg1, arg2) {
+  return window['go']['handlers']['GoldItemHandler']['UpdateStockLog'](arg1, arg2);
 }

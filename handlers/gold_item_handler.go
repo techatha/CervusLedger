@@ -20,6 +20,10 @@ func (h *GoldItemHandler) Startup(ctx context.Context) {
 	h.ctx = ctx
 }
 
+// ---------------------------------------------------------------------------
+// gold_stock CRUD
+// ---------------------------------------------------------------------------
+
 func (h *GoldItemHandler) ListGoldItems(status string) ([]models.GoldItem, error) {
 	query := `
 		SELECT id, type, subtype, purity, weight_grams, created_at
@@ -85,21 +89,54 @@ func (h *GoldItemHandler) DeleteGoldItem(id int) error {
 	return err
 }
 
+// ---------------------------------------------------------------------------
+// gold_stock_logs CRUD
+// ---------------------------------------------------------------------------
+
 func (h *GoldItemHandler) ListStockLogs(logDate string) ([]models.GoldStockLog, error) {
-	query := `
-		SELECT 
-			COALESCE(l.id, 0) as log_id,
-			g.id as gold_item_id,
-			g.type,
-			g.subtype,
-			COALESCE(l.amount, 0) as amount,
-			COALESCE(l.log_date, ?) as log_date,
-			COALESCE(l.created_at, '') as created_at
-		FROM gold_stock g
-		LEFT JOIN gold_stock_logs l ON g.id = l.gold_item_id AND l.log_date = ?
-		ORDER BY g.type ASC, g.subtype ASC
-	`
-	rows, err := db.DB.Query(query, logDate, logDate)
+	var query string
+	var args []interface{}
+
+	if logDate == "" {
+		query = `
+			SELECT 
+				l.id,
+				l.gold_item_id,
+				g.type,
+				g.subtype,
+				l.amount,
+				l.log_date,
+				l.created_at
+			FROM gold_stock_logs l
+			JOIN gold_stock g ON l.gold_item_id = g.id
+			ORDER BY l.log_date DESC, g.type ASC, g.subtype ASC
+		`
+	} else {
+		// Standardize the date input
+		if len(logDate) == 10 {
+			logDate = logDate + " 00:00:00"
+		} else if len(logDate) > 10 {
+			logDate = logDate[:10] + " 00:00:00"
+		}
+
+		query = `
+			SELECT 
+				l.id,
+				l.gold_item_id,
+				g.type,
+				g.subtype,
+				l.amount,
+				l.log_date,
+				l.created_at
+			FROM gold_stock_logs l
+			JOIN gold_stock g ON l.gold_item_id = g.id
+			WHERE date(l.log_date) = date(?)
+			ORDER BY g.type ASC, g.subtype ASC
+		`
+		args = append(args, logDate)
+	}
+
+	rows, err := db.DB.Query(query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("list stock logs: %w", err)
 	}
@@ -116,17 +153,77 @@ func (h *GoldItemHandler) ListStockLogs(logDate string) ([]models.GoldStockLog, 
 		}
 		logs = append(logs, l)
 	}
+	
+	if logs == nil {
+		return []models.GoldStockLog{}, nil
+	}
+	
 	return logs, nil
 }
 
 func (h *GoldItemHandler) RecordStockLog(input models.GoldStockLogInput) error {
+	logDate := input.LogDate
+	if len(logDate) == 10 {
+		logDate = logDate + " 00:00:00"
+	} else if len(logDate) > 10 {
+		logDate = logDate[:10] + " 00:00:00"
+	}
 	_, err := db.DB.Exec(`
 		INSERT INTO gold_stock_logs (gold_item_id, amount, log_date)
 		VALUES (?, ?, ?)
 		ON CONFLICT(gold_item_id, log_date) DO UPDATE SET amount = excluded.amount
-	`, input.GoldItemID, input.Amount, input.LogDate)
+	`, input.GoldItemID, input.Amount, logDate)
 	return err
 }
+
+func (h *GoldItemHandler) GetStockLog(id int) (models.GoldStockLog, error) {
+	var l models.GoldStockLog
+	err := db.DB.QueryRow(`
+		SELECT 
+			l.id, l.gold_item_id, g.type, g.subtype,
+			l.amount, l.log_date, l.created_at
+		FROM gold_stock_logs l
+		JOIN gold_stock g ON l.gold_item_id = g.id
+		WHERE l.id = ?
+	`, id).Scan(
+		&l.ID, &l.GoldItemID, &l.Type, &l.Subtype,
+		&l.Amount, &l.LogDate, &l.CreatedAt,
+	)
+	if err != nil {
+		return l, fmt.Errorf("get stock log %d: %w", id, err)
+	}
+	return l, nil
+}
+
+func (h *GoldItemHandler) UpdateStockLog(id int, input models.GoldStockLogInput) error {
+	logDate := input.LogDate
+	if len(logDate) == 10 {
+		logDate = logDate + " 00:00:00"
+	} else if len(logDate) > 10 {
+		logDate = logDate[:10] + " 00:00:00"
+	}
+	_, err := db.DB.Exec(`
+		UPDATE gold_stock_logs
+		SET gold_item_id = ?, amount = ?, log_date = ?
+		WHERE id = ?
+	`, input.GoldItemID, input.Amount, logDate, id)
+	if err != nil {
+		return fmt.Errorf("update stock log %d: %w", id, err)
+	}
+	return nil
+}
+
+func (h *GoldItemHandler) DeleteStockLog(id int) error {
+	_, err := db.DB.Exec(`DELETE FROM gold_stock_logs WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("delete stock log %d: %w", id, err)
+	}
+	return nil
+}
+
+// ---------------------------------------------------------------------------
+// Other handlers
+// ---------------------------------------------------------------------------
 
 // SetGoldItemStatus is deprecated but kept for backwards compatibility.
 func (h *GoldItemHandler) SetGoldItemStatus(id int, status string) error {

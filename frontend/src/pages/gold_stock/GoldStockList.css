@@ -157,10 +157,10 @@
   text-align: right;
 }
 
-.gl-total-weight {
+.gl-purity {
   text-align: right;
-  font-weight: 700;
-  color: var(--gold);
+  font-weight: 600;
+  color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
 

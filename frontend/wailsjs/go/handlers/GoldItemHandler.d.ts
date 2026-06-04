@@ -7,11 +7,15 @@ export function CreateGoldItem(arg1:models.GoldItemInput):Promise<models.GoldIte
 
 export function DeleteGoldItem(arg1:number):Promise<void>;
 
+export function DeleteStockLog(arg1:number):Promise<void>;
+
 export function GetGoldItem(arg1:number):Promise<models.GoldItem>;
 
 export function GetGoldMainTypes():Promise<Array<string>>;
 
 export function GetGoldSubtypes(arg1:string):Promise<Array<string>>;
+
+export function GetStockLog(arg1:number):Promise<models.GoldStockLog>;
 
 export function ListGoldItems(arg1:string):Promise<Array<models.GoldItem>>;
 
@@ -24,3 +28,5 @@ export function SetGoldItemStatus(arg1:number,arg2:string):Promise<void>;
 export function Startup(arg1:context.Context):Promise<void>;
 
 export function UpdateGoldItem(arg1:models.GoldItemInput):Promise<void>;
+
+export function UpdateStockLog(arg1:number,arg2:models.GoldStockLogInput):Promise<void>;

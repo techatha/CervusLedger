@@ -86,9 +86,9 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 		if input.IsInventory == 1 {
 			var logDate string
 			if len(input.Date) >= 7 {
-				logDate = input.Date[:7] + "-01"
+				logDate = input.Date[:7] + "-01 00:00:00"
 			} else {
-				logDate = "2026-05-01"
+				logDate = "2026-05-01 00:00:00"
 			}
 			_, err = tx.Exec(`
 				INSERT INTO gold_stock_logs (gold_item_id, amount, log_date)

@@ -14,7 +14,7 @@ function groupBy(arr, key) {
 
 export default function GoldStockWizard({
   selectedMonth,
-  stockLogs,
+  items,
   editedAmounts,
   onClose,
   onSaved,
@@ -24,11 +24,11 @@ export default function GoldStockWizard({
   const [savingAudit, setSavingAudit] = useState(false)
   const [error, setError] = useState(null)
 
-  const auditGroups = groupBy(stockLogs, 'type')
+  const auditGroups = groupBy(items, 'type')
   const typeKeys = Object.keys(auditGroups)
 
   const wizardCurrentType = typeKeys[wizardStep]
-  const wizardCurrentLogs = wizardCurrentType ? auditGroups[wizardCurrentType] : []
+  const wizardCurrentItems = wizardCurrentType ? auditGroups[wizardCurrentType] : []
   const isLastStep = wizardStep === typeKeys.length - 1
 
   const handleWizardAmountChange = (goldItemId, val) => {
@@ -40,9 +40,9 @@ export default function GoldStockWizard({
     setError(null)
     try {
       const logDate = `${selectedMonth}-01`
-      for (const log of stockLogs) {
-        const amount = parseInt(wizardAmounts[log.gold_item_id] ?? editedAmounts[log.gold_item_id]) || 0
-        await RecordStockLog({ gold_item_id: log.gold_item_id, amount, log_date: logDate })
+      for (const item of items) {
+        const amount = parseInt(wizardAmounts[item.id] ?? editedAmounts[item.id]) || 0
+        await RecordStockLog({ gold_item_id: item.id, amount, log_date: logDate })
       }
       onSaved(wizardAmounts)
     } catch (e) {
@@ -99,11 +99,11 @@ export default function GoldStockWizard({
                 </tr>
               </thead>
               <tbody>
-                {wizardCurrentLogs.map(log => {
-                  const amtStr = wizardAmounts[log.gold_item_id] ?? '0'
+                {wizardCurrentItems.map(item => {
+                  const amtStr = wizardAmounts[item.id] ?? '0'
                   return (
-                    <tr key={log.gold_item_id}>
-                      <td style={{ fontWeight: 600 }}>{log.subtype}</td>
+                    <tr key={item.id}>
+                      <td style={{ fontWeight: 600 }}>{item.subtype}</td>
                       <td style={{ textAlign: 'right' }}>
                         <input
                           type="number"
@@ -111,7 +111,7 @@ export default function GoldStockWizard({
                           className="input gl-audit-input-amount"
                           value={amtStr}
                           placeholder="0"
-                          onChange={e => handleWizardAmountChange(log.gold_item_id, e.target.value)}
+                          onChange={e => handleWizardAmountChange(item.id, e.target.value)}
                         />
                       </td>
                     </tr>
