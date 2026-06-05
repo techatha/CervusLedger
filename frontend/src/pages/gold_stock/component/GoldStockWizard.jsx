@@ -9,7 +9,7 @@ import {
   faXmark,
 } from '@fortawesome/free-solid-svg-icons'
 import { RecordStockLog } from 'wailsjs/go/handlers/GoldItemHandler'
-import { formatDate } from '@/utils/date'
+import { formatShortThaiDate } from '@/utils/thai'
 import './GoldStockWizard.css'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -24,18 +24,18 @@ function groupBy(arr, key) {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export default function GoldStockWizard({ items, editedAmounts, onClose, onSaved }) {
-  const [wizardStep, setWizardStep]     = useState(0)
+  const [wizardStep, setWizardStep] = useState(0)
   const [wizardAmounts, setWizardAmounts] = useState(() => ({ ...editedAmounts }))
-  const [savingAudit, setSavingAudit]   = useState(false)
-  const [error, setError]               = useState(null)
+  const [savingAudit, setSavingAudit] = useState(false)
+  const [error, setError] = useState(null)
 
-  const auditGroups     = groupBy(items, 'type')
-  const typeKeys        = Object.keys(auditGroups)
-  const today           = new Date().toISOString()
+  const auditGroups = groupBy(items, 'type')
+  const typeKeys = Object.keys(auditGroups)
+  const today = new Date().toISOString()
 
-  const wizardCurrentType  = typeKeys[wizardStep]
+  const wizardCurrentType = typeKeys[wizardStep]
   const wizardCurrentItems = wizardCurrentType ? auditGroups[wizardCurrentType] : []
-  const isLastStep         = wizardStep === typeKeys.length - 1
+  const isLastStep = wizardStep === typeKeys.length - 1
 
   // ── Amount helpers ──────────────────────────────────────────────────────────
   const getAmount = (id) => parseInt(wizardAmounts[id] ?? '0') || 0
@@ -81,8 +81,11 @@ export default function GoldStockWizard({ items, editedAmounts, onClose, onSaved
         {/* ── Header ────────────────────────────────────────────── */}
         <div className="gsw-header">
           <div className="gsw-header-left">
-            <div className="gsw-date-label">บันทึกสต็อก</div>
-            <div className="gsw-date-value">{formatDate(today)}</div>
+            <div className="gsw-date-label">บันทึกสต็อกประจำวันที่ {formatShortThaiDate(today)}</div>
+            <div className="gsw-type-title">{wizardCurrentType}</div>
+            <div className="gsw-type-meta">
+              {wizardCurrentItems.length} รายการ · รวม {stepTotal} ชิ้น
+            </div>
           </div>
           <button className="gsw-close" onClick={onClose}>
             <FontAwesomeIcon icon={faXmark} />
@@ -95,31 +98,6 @@ export default function GoldStockWizard({ items, editedAmounts, onClose, onSaved
             className="gsw-progress-fill"
             style={{ width: `${((wizardStep + 1) / typeKeys.length) * 100}%` }}
           />
-        </div>
-
-        <div className="gsw-step-dots">
-          {typeKeys.map((k, i) => (
-            <button
-              key={k}
-              className={`gsw-dot ${i < wizardStep ? 'done' : i === wizardStep ? 'active' : ''}`}
-              onClick={() => setWizardStep(i)}
-              title={k}
-            >
-              {i < wizardStep
-                ? <FontAwesomeIcon icon={faCheck} style={{ fontSize: 8 }} />
-                : <span className="gsw-dot-num">{i + 1}</span>
-              }
-            </button>
-          ))}
-        </div>
-
-        {/* ── Type title ────────────────────────────────────────── */}
-        <div className="gsw-type-section">
-          <div className="gsw-type-eyebrow">ประเภท {wizardStep + 1} / {typeKeys.length}</div>
-          <div className="gsw-type-title">{wizardCurrentType}</div>
-          <div className="gsw-type-meta">
-            {wizardCurrentItems.length} รายการ · รวม {stepTotal} ชิ้น
-          </div>
         </div>
 
         {/* ── Item rows ─────────────────────────────────────────── */}
@@ -192,12 +170,26 @@ export default function GoldStockWizard({ items, editedAmounts, onClose, onSaved
           </button>
 
           <div className="gsw-footer-center">
-            {typeKeys.map((_, i) => (
-              <span
-                key={i}
-                className={`gsw-pip ${i === wizardStep ? 'active' : i < wizardStep ? 'done' : ''}`}
-              />
-            ))}
+            <div className="gsw-step-dots">
+              {typeKeys.map((k, i) => (
+                <button
+                  key={k}
+                  className={`gsw-dot ${i < wizardStep ? 'done' : i === wizardStep ? 'active' : ''}`}
+                  onClick={() => setWizardStep(i)}
+                  title={k}
+                >
+                  {i < wizardStep
+                    ? <FontAwesomeIcon icon={faCheck} style={{ fontSize: 8 }} />
+                    : <span className="gsw-dot-num">{i + 1}</span>
+                  }
+                </button>
+              ))}
+            </div>
+
+            {/* ── Type title ────────────────────────────────────────── */}
+            <div className="gsw-type-section">
+              <div className="gsw-type-eyebrow">ประเภท {wizardStep + 1} / {typeKeys.length}</div>
+            </div>
           </div>
 
           {isLastStep ? (

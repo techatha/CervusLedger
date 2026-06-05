@@ -110,6 +110,8 @@ tr:hover .gl-row-actions {
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
+  align-items: center;
+  height: 48px;
 }
 
 .gl-history-chips::-webkit-scrollbar {
@@ -126,13 +128,7 @@ tr:hover .gl-row-actions {
   min-width: 72px;
   border: 1px solid transparent;
   font-variant-numeric: tabular-nums;
-  transition: transform var(--transition), box-shadow var(--transition);
   cursor: default;
-}
-
-.gl-history-chip:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .gl-history-chip-date {

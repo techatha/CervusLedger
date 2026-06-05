@@ -181,7 +181,7 @@ export default function SalesList() {
       {/* Header */}
       <div className="page-header">
         <div>
-          <div className="page-title">ทำรายการขาย</div>
+          <div className="page-title">ทำรายการ ซื้อ-ขาย</div>
           <div className="page-meta">
             ทำรายการขายทอง และชำระดอกเบี้ย
           </div>

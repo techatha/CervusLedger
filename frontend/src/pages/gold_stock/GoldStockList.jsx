@@ -30,7 +30,7 @@ export default function GoldStockList() {
   const [modal, setModal] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [exporting, setExporting] = useState(false)
-  const [wizardOpen, setWizardOpen] = useState(false)
+  const [wizardOpen, setWizardOpen] = useState(null)
 
   // History overlay state — which type is open
   const [historyType, setHistoryType] = useState(null) // null = closed, string = type name
@@ -197,6 +197,15 @@ export default function GoldStockList() {
                 {group.groupQty} ชิ้น · {group.groupWeight.toFixed(2)} กรัม
               </span>
               <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setWizardOpen(group.mainType)}
+                disabled={auditLoading || group.rows.length === 0}
+                title={`ตรวจนับสต็อก ${group.mainType}`}
+              >
+                <FontAwesomeIcon icon={faFilePen} />
+                ตรวจนับ
+              </button>
+              <button
                 className="btn btn-ghost btn-sm gl-history-btn"
                 onClick={() => setHistoryType(group.mainType)}
                 title={`ดูประวัติสต็อก ${group.mainType}`}
@@ -277,12 +286,12 @@ export default function GoldStockList() {
       {/* ── Wizard ───────────────────────────────────────────────── */}
       {wizardOpen && (
         <GoldStockWizard
-          items={items}
+          items={wizardOpen === true ? items : items.filter(i => i.type === wizardOpen)}
           editedAmounts={editedAmounts}
-          onClose={() => setWizardOpen(false)}
+          onClose={() => setWizardOpen(null)}
           onSaved={(newAmounts) => {
             setEditedAmounts(prev => ({ ...prev, ...newAmounts }))
-            setWizardOpen(false)
+            setWizardOpen(null)
             loadAllStockLogs()
           }}
         />

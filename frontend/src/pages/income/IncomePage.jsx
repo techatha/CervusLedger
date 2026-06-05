@@ -151,7 +151,7 @@ export default function IncomePage() {
       {/* Header */}
       <div className="page-header">
         <div>
-          <div className="page-title">รายรับ-รายจ่าย</div>
+          <div className="page-title">บันทึกรายรับ-รายจ่าย</div>
           <div className="page-meta">
             {!loading && `${entries.length} รายการ — ${THAI_MONTHS[month]} ${year + 543}`}
           </div>

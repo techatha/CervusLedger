@@ -9,7 +9,11 @@ export function amountDelta(current, previous) {
 
 export default function HistoryMiniChart({ history }) {
   if (!history || history.length === 0) {
-    return <span className="gl-history-empty">ยังไม่มีบันทึก</span>
+    return (
+      <div className="gl-history-chips">
+        <span className="gl-history-empty">ยังไม่มีบันทึก</span>
+      </div>
+    )
   }
 
   const recent = [...history].slice(-4)
