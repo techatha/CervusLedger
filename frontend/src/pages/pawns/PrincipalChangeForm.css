@@ -1,0 +1,30 @@
+/* ─── Principal Change Form Styles ────────────────────────────────── */
+
+.pm-payment-modal {
+  width: 420px;
+}
+
+.pm-change-modal {
+  width: 460px;
+}
+
+.pm-gold-text {
+  color: var(--gold);
+}
+
+.pm-mt-16 {
+  margin-top: 16px;
+}
+
+.pm-preview-row-border {
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.pm-fw-600 {
+  font-weight: 600;
+}
+
+.pm-modal-error {
+  margin: 16px 24px 0;
+}

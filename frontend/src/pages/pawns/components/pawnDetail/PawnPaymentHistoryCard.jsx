@@ -22,28 +22,34 @@ export default function PawnPaymentHistoryCard({ payments }) {
         <span className="card-title">ประวัติการจ่ายดอกเบี้ย</span>
       </div>
       <div className="table-wrap">
-        <table className="table">
-          <thead>
-            <tr>
-              <th width="40"></th>
-              <th>งวดเดือน</th>
-              <th>วันที่จ่าย</th>
-              <th className="col-250">หมายเหตุ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payments.map(p => (
-              <tr key={p.id}>
-                <td><IconCheckCircle /></td>
-                <td style={{ fontWeight: 500 }}>{thaiMonthShort(p.month)} {p.year}</td>
-                <td>{toBE(p.paid_date)}</td>
-                <td className="truncate-cell" style={{ color: 'var(--text-muted)', fontSize: 13 }} title={p.notes}>
-                  {p.notes || '—'}
-                </td>
+        {!payments || payments.length === 0 ? (
+          <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13.5 }}>
+            ยังไม่มีประวัติการจ่ายดอกเบี้ย
+          </div>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th width="40"></th>
+                <th>งวดเดือน</th>
+                <th>วันที่จ่าย</th>
+                <th className="col-250">หมายเหตุ</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {payments.map(p => (
+                <tr key={p.id}>
+                  <td><IconCheckCircle /></td>
+                  <td style={{ fontWeight: 500 }}>{thaiMonthShort(p.month)} {p.year}</td>
+                  <td>{toBE(p.paid_date)}</td>
+                  <td className="truncate-cell" style={{ color: 'var(--text-muted)', fontSize: 13 }} title={p.notes}>
+                    {p.notes || '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   )

@@ -22,6 +22,10 @@ export function SaveAllSettings(arg1) {
   return window['go']['handlers']['SettingsHandler']['SaveAllSettings'](arg1);
 }
 
+export function SetLastTicketNumber(arg1) {
+  return window['go']['handlers']['SettingsHandler']['SetLastTicketNumber'](arg1);
+}
+
 export function Startup(arg1) {
   return window['go']['handlers']['SettingsHandler']['Startup'](arg1);
 }

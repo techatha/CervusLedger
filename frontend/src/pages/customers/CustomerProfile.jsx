@@ -70,9 +70,9 @@ export default function CustomerProfile() {
       {/* Back + Header */}
       <div className="page-header">
         <div className="cp-title-row">
-          <button className="btn btn-ghost btn-sm cp-back" onClick={() => navigate('/customers')}>
+          <button className="btn btn-ghost btn-sm cp-back" onClick={() => navigate(-1)}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
-            รายชื่อลูกค้า
+            ย้อนกลับ
           </button>
           <div>
             <div className="page-title">{fullName(customer)}</div>

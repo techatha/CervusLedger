@@ -12,4 +12,6 @@ export function PrintWindow():Promise<void>;
 
 export function SaveAllSettings(arg1:Record<string, string>):Promise<void>;
 
+export function SetLastTicketNumber(arg1:number):Promise<void>;
+
 export function Startup(arg1:context.Context):Promise<void>;

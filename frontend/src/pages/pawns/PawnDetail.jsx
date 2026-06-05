@@ -19,9 +19,9 @@ import PawnPendingInterestCard from './components/pawnDetail/PawnPendingInterest
 import PawnPrincipalChangesCard from './components/pawnDetail/PawnPrincipalChangesCard'
 import { formatTicket, pawnStatusBadge } from '@/utils/thai'
 import { getPendingMonths, thaiMonthShort } from '@/utils/pawn'
-import { RecordPaymentModal, PrincipalChangeModal } from './PawnModals'
+import { RecordPaymentModal, PrincipalChangeForm } from './PrincipalChangeForm'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPrint } from '@fortawesome/free-solid-svg-icons'
+import { faPrint, faHandshakeSlash } from '@fortawesome/free-solid-svg-icons'
 import './PawnDetail.css'
 
 export default function PawnDetail() {
@@ -143,9 +143,9 @@ export default function PawnDetail() {
       {/* Header */}
       <div className="page-header">
         <div className="pd-title-row">
-          <button className="btn btn-ghost btn-sm pd-back" onClick={() => navigate('/pawns')}>
+          <button className="btn btn-ghost btn-sm pd-back" onClick={() => navigate(-1)}>
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><polyline points="15 18 9 12 15 6" /></svg>
-            รายการจำนำ
+            ย้อนกลับ
           </button>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -220,6 +220,17 @@ export default function PawnDetail() {
         </div>
 
         <div className="pd-right">
+          {pawn.status === 'ขาด' && (
+            <div className="pd-forfeited-banner">
+              <div className="pd-forfeited-banner-icon">
+              <FontAwesomeIcon icon={faHandshakeSlash} />
+              </div>
+              <div className="pd-forfeited-banner-text">
+                <strong>ทรัพย์สินหลุดจำนำแล้ว</strong>
+                <span>รายการจำนำนี้ขาดส่งดอกเบี้ยและได้เปลี่ยนสถานะเป็นหลุดจำนำแล้ว</span>
+              </div>
+            </div>
+          )}
           <PawnPaymentHistoryCard payments={payments} />
 
           <PawnPendingInterestCard
@@ -246,7 +257,7 @@ export default function PawnDetail() {
       }
       {
         modal === 'principal' && (
-          <PrincipalChangeModal
+          <PrincipalChangeForm
             pawn={{ ...pawn, current_principal: current }}
             onSaved={() => { setModal(null); load() }}
             onClose={() => setModal(null)}

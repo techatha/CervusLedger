@@ -5,6 +5,7 @@ import { RecordPayment } from 'wailsjs/go/handlers/PawnHandler'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCartArrowDown } from '@fortawesome/free-solid-svg-icons'
 import { formatBaht } from '@/utils/thai'
+import './PrincipalChangeForm.css'
 
 const THAI_MONTHS = [
   '','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
@@ -59,13 +60,13 @@ export function RecordPaymentModal({ pawn, customerName, onSaved, onClose }) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" style={{ width: 420 }} onClick={e => e.stopPropagation()}>
+      <div className="modal pm-payment-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-title">บันทึกการจ่ายดอกเบี้ย</div>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
+        {error && <div className="alert alert-error pm-modal-error">{error}</div>}
         <div className="modal-body">
-          {error && <div className="alert alert-error">{error}</div>}
 
           {/* Info strip */}
           <div className="pm-info-strip ">
@@ -75,12 +76,12 @@ export function RecordPaymentModal({ pawn, customerName, onSaved, onClose }) {
             </div>
             <div className="pm-info-row">
               <span>ดอกเบี้ย</span>
-              <strong style={{ color: 'var(--gold)' }}>{formatBaht(pawn.interest_amount)}</strong>
+              <strong className="pm-gold-text">{formatBaht(pawn.interest_amount)}</strong>
             </div>
           </div>
 
           {/* Month / Year */}
-          <div className="form-row form-row-2" style={{ marginTop: 16 }}>
+          <div className="form-row form-row-2 pm-mt-16">
             <div className="form-group">
               <label className="form-label">เดือน</label>
               <select className="input" value={form.month} onChange={e => set('month', e.target.value)}>
@@ -137,11 +138,11 @@ export function RecordPaymentModal({ pawn, customerName, onSaved, onClose }) {
   )
 }
 
-// ─── PrincipalChangeModal ─────────────────────────────────────────────────
+// ─── PrincipalChangeForm ─────────────────────────────────────────────────
 import { useEffect } from 'react'
 import { AddPrincipalChange, GetPawnSettings } from 'wailsjs/go/handlers/PawnHandler'
 
-export function PrincipalChangeModal({ pawn, onSaved, onClose }) {
+export function PrincipalChangeForm({ pawn, onSaved, onClose }) {
   const [settings,   setSettings]   = useState(null)
   const [form, setForm] = useState({
     change_type: 'reduction',
@@ -178,7 +179,7 @@ export function PrincipalChangeModal({ pawn, onSaved, onClose }) {
     try {
       await AddPrincipalChange({
         pawn_record_id:      pawn.id,
-        date:                form.date,
+        date:                new Date().toISOString().slice(0, 7),
         change_type:         form.change_type,
         amount:              amt,
         new_principal:       preview.newPrincipal,
@@ -199,13 +200,13 @@ export function PrincipalChangeModal({ pawn, onSaved, onClose }) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" style={{ width: 460 }} onClick={e => e.stopPropagation()}>
+      <div className="modal pm-change-modal" onClick={e => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-title">เปลี่ยนแปลงต้นเงิน</div>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
+        {error && <div className="alert alert-error pm-modal-error">{error}</div>}
         <div className="modal-body">
-          {error && <div className="alert alert-error">{error}</div>}
 
           <div className="pm-info-strip">
             <div className="pm-info-row">
@@ -214,7 +215,7 @@ export function PrincipalChangeModal({ pawn, onSaved, onClose }) {
             </div>
           </div>
 
-          <div className="form-row form-row-2" style={{ marginTop: 16 }}>
+          <div className="form-row form-row-2 pm-mt-16">
             <div className="form-group">
               <label className="form-label">ประเภท</label>
               <select className="input" value={form.change_type} onChange={e => set('change_type', e.target.value)}>
@@ -235,11 +236,7 @@ export function PrincipalChangeModal({ pawn, onSaved, onClose }) {
               />
             </div>
           </div>
-          <div className="form-row form-row-2">
-            <div className="form-group">
-              <label className="form-label">วันที่</label>
-              <input className="input" type="date" value={form.date} onChange={e => set('date', e.target.value)} />
-            </div>
+          <div className="form-row form-row-1">
             <div className="form-group">
               <label className="form-label">หมายเหตุ</label>
               <input className="input" placeholder="(ไม่บังคับ)" value={form.notes} onChange={e => set('notes', e.target.value)} />
@@ -253,9 +250,9 @@ export function PrincipalChangeModal({ pawn, onSaved, onClose }) {
                 <span className="npf-preview-label">ต้นเงินใหม่</span>
                 <span className="npf-preview-amount">{formatBaht(preview.newPrincipal)}</span>
               </div>
-              <div className="npf-preview-row" style={{ borderTop: '1px solid var(--border)', paddingTop: 8 }}>
+              <div className="npf-preview-row pm-preview-row-border">
                 <span className="npf-preview-label">ดอกเบี้ยใหม่/เดือน</span>
-                <span className="npf-preview-val" style={{ fontWeight: 600 }}>
+                <span className="npf-preview-val" >
                   {formatBaht(preview.newAmount)}
                   <span className="npf-preview-note"> ({preview.newRate}%)</span>
                 </span>
@@ -277,4 +274,3 @@ export function PrincipalChangeModal({ pawn, onSaved, onClose }) {
 function IconInfo() {
   return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
 }
-

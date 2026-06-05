@@ -189,3 +189,40 @@
   justify-content: flex-end;
   gap: 10px;
 }
+
+/* ─── Forfeited Banner ───────────────────────────────────────────── */
+.pd-forfeited-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--red-bg, rgba(212, 92, 92, 0.08));
+  border: 1px dashed var(--red, #d45c5c);
+  border-radius: var(--radius, 12px);
+  padding: 14px 18px;
+  margin-bottom: 8px;
+}
+
+.pd-forfeited-banner-icon {
+  color: var(--red, #d45c5c);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pd-forfeited-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pd-forfeited-banner-text strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--red, #d45c5c);
+}
+
+.pd-forfeited-banner-text span {
+  font-size: 13px;
+  color: var(--text-secondary);
+}

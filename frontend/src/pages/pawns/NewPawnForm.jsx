@@ -3,9 +3,11 @@ import {
   GetPawnSettings,
   CreatePawn,
 } from 'wailsjs/go/handlers/PawnHandler'
+import { SetLastTicketNumber } from 'wailsjs/go/handlers/SettingsHandler'
 import { GetCustomers } from 'wailsjs/go/handlers/CustomerHandler'
 import { formatBaht, fullName } from '@/utils/thai'
 import './NewPawnForm.css'
+import './PrincipalChangeForm.css'
 
 const today = () => new Date().toISOString().slice(0, 10)
 
@@ -26,6 +28,7 @@ export default function NewPawnForm({ onSaved, onClose }) {
     description:    '',
     pawned_date:    today(),
     initial_principal: '',
+    ticket_number:  '',
   })
 
   // Calculated from principal + settings
@@ -34,6 +37,10 @@ export default function NewPawnForm({ onSaved, onClose }) {
   useEffect(() => {
     GetPawnSettings().then(s => {
       setSettings(s)
+      setForm(prev => ({
+        ...prev,
+        ticket_number: String(s.LastTicket + 1)
+      }))
     }).catch(() => {})
   }, [])
 
@@ -102,7 +109,8 @@ export default function NewPawnForm({ onSaved, onClose }) {
   const validate = () => {
     if (!form.customer_id)         return 'กรุณาเลือกลูกค้า'
     if (!form.item_type.trim())    return 'กรุณากรอกประเภทรายการ'
-    if (!form.pawned_date)         return 'กรุณากรอกวันจำนำ'
+    const tNum = parseInt(form.ticket_number, 10)
+    if (isNaN(tNum) || tNum <= 0)  return 'กรุณากรอกเลขที่ตั๋วที่ถูกต้อง'
     const p = parseFloat(form.initial_principal)
     if (!p || p <= 0)              return 'กรุณากรอกจำนวนเงินต้น'
     return null
@@ -114,12 +122,15 @@ export default function NewPawnForm({ onSaved, onClose }) {
     setSaving(true)
     setError(null)
     try {
+      const ticketNum = parseInt(form.ticket_number, 10)
+      await SetLastTicketNumber(ticketNum - 1)
+
       await CreatePawn({
         customer_id:          form.customer_id,
         item_type:            form.item_type,
         weight_grams:         parseFloat(form.weight_grams) || 0,
         description:          form.description,
-        pawned_date:          form.pawned_date,
+        pawned_date:          today(),
         initial_principal:    parseFloat(form.initial_principal),
         monthly_interest_rate: preview.rate,
         interest_amount:      preview.amount,
@@ -139,9 +150,9 @@ export default function NewPawnForm({ onSaved, onClose }) {
           <div className="modal-title">รับจำนำใหม่</div>
           <button className="modal-close" onClick={onClose}>×</button>
         </div>
+        {error && <div className="alert alert-error pm-modal-error">{error}</div>}
 
         <div className="modal-body">
-          {error && <div className="alert alert-error">{error}</div>}
 
           {/* ── ลูกค้า ── */}
           <div className="section-divider">ลูกค้า</div>
@@ -220,12 +231,12 @@ export default function NewPawnForm({ onSaved, onClose }) {
           <div className="section-divider">เงื่อนไข</div>
           <div className="form-row form-row-2">
             <div className="form-group">
-              <label className="form-label form-label-required">วันที่จำนำ</label>
+              <label className="form-label form-label-required">เลขที่ตั๋ว</label>
               <input
                 className="input"
-                type="date"
-                value={form.pawned_date}
-                onChange={e => set('pawned_date', e.target.value)}
+                type="number"
+                value={form.ticket_number}
+                onChange={e => set('ticket_number', e.target.value)}
               />
             </div>
             <div className="form-group">

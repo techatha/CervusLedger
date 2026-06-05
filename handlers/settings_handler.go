@@ -84,3 +84,12 @@ func (h *SettingsHandler) GetSettingString(key string, fallback string) string {
 	}
 	return v
 }
+
+// SetLastTicketNumber updates the last_ticket_number setting in the database.
+func (h *SettingsHandler) SetLastTicketNumber(n int) error {
+	_, err := db.DB.Exec(`
+		INSERT INTO settings(key,value) VALUES('last_ticket_number',?)
+		ON CONFLICT(key) DO UPDATE SET value=excluded.value
+	`, strconv.Itoa(n))
+	return err
+}
