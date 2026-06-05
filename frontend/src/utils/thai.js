@@ -66,6 +66,26 @@ export function formatFullThaiDate(dateStr) {
 }
 
 /**
+ * ฟังก์ชันแปลงรูปแบบวันที่เป็นภาษาไทยเต็มรูปแบบ (วันที่ xx เดือน xx พ.ศ. xxx)
+ */
+export function formatShortThaiDate(dateStr) {
+  if (!dateStr) return '—';
+  const part = dateStr.length > 10 ? dateStr.slice(0, 10) : dateStr;
+  const d = new Date(part);
+  if (isNaN(d.getTime())) return dateStr;
+  
+  const day = d.getDate();
+  const monthNames = [
+    'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+    'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+  ];
+  const month = monthNames[d.getMonth()];
+  const year = d.getFullYear() + 543;
+  
+  return `${day} ${month} ${year.toString().slice(2)}`;
+}
+
+/**
  * Build full name from customer object
  */
 export function fullName(c) {

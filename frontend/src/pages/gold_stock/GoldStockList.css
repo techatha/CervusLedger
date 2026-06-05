@@ -1,51 +1,3 @@
-/* ─── Summary Strip ───────────────────────────────────────── */
-.gl-summary {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.gl-stat {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-left: 3px solid;
-  border-radius: var(--radius);
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.gl-stat-green { border-left-color: var(--green); }
-.gl-stat-gold  { border-left-color: var(--gold); }
-.gl-stat-muted { border-left-color: var(--text-disabled); }
-
-.gl-stat-value {
-  font-family: var(--font-display);
-  font-size: 26px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.gl-stat-green .gl-stat-value { color: var(--green); }
-.gl-stat-gold  .gl-stat-value { color: var(--gold); }
-.gl-stat-muted .gl-stat-value { color: var(--text-muted); }
-
-.gl-stat-label {
-  font-size: 11.5px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-top: 2px;
-}
-
-.gl-stat-sub {
-  font-size: 12px;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-}
-
 /* ─── Audit Toolbar ───────────────────────────────────────── */
 .gl-audit-toolbar {
   display: flex;
@@ -59,43 +11,11 @@
   flex-wrap: wrap;
 }
 
-.gl-audit-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
-}
-
-.gl-audit-month-label {
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-/* ─── Audit Amount Input ──────────────────────────────────── */
-.gl-audit-input-amount {
-  width: 80px !important;
-  height: 32px !important;
-  padding: 0 8px !important;
-  text-align: right;
-  font-weight: 700;
-  font-size: 14px !important;
-  font-variant-numeric: tabular-nums;
-  background: var(--bg-base) !important;
-}
-
-.gl-audit-input-amount:focus {
-  border-color: var(--gold);
-  background: var(--bg-surface) !important;
-}
-
 /* ─── Type Section (editorial) ───────────────────────────── */
 .gl-type-section {
   margin-bottom: 44px;
 }
 
-/* The key change: type name is a freestanding heading, no card */
 .gl-type-heading {
   display: flex;
   align-items: baseline;
@@ -125,40 +45,39 @@
   border-radius: 20px;
   background: var(--bg-base);
   flex-shrink: 0;
+  /* re-align to centre with the text baseline */
+  align-self: center;
 }
 
 .gl-type-heading-summary {
   font-size: 13px;
   color: var(--text-secondary);
-  margin-left: auto;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
+  /* push history button to the far right */
+  margin-right: auto;
 }
 
 /* ─── Table Cell Styles ──────────────────────────────────── */
-.gl-index {
-  width: 48px;
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
 .gl-subtype {
   font-weight: 500;
 }
 
 .gl-unit-weight {
-  text-align: right;
+  text-align: left;
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
   font-size: 13px;
 }
 
 .gl-amount {
-  text-align: right;
+  text-align: left;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .gl-purity {
-  text-align: right;
+  text-align: left;
   font-weight: 600;
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
@@ -187,50 +106,58 @@ tr:hover .gl-row-actions {
 /* ─── History Mini Chips ──────────────────────────────────── */
 .gl-history-chips {
   display: flex;
-  gap: 3px;
+  gap: 6px;
   flex-wrap: nowrap;
-  overflow: hidden;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.gl-history-chips::-webkit-scrollbar {
+  display: none;
 }
 
 .gl-history-chip {
   display: flex;
   flex-direction: column;
   align-items: center;
-  border-radius: 4px;
-  padding: 2px 5px;
-  min-width: 34px;
+  justify-content: center;
+  border-radius: 6px;
+  padding: 6px 10px;
+  min-width: 72px;
   border: 1px solid transparent;
   font-variant-numeric: tabular-nums;
-  transition: transform var(--transition);
+  transition: transform var(--transition), box-shadow var(--transition);
+  cursor: default;
 }
 
 .gl-history-chip:hover {
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .gl-history-chip-date {
-  font-size: 9px;
-  color: var(--text-disabled);
+  font-size: 10.5px;
+  color: var(--text-muted);
   white-space: nowrap;
-  line-height: 1;
-  margin-bottom: 2px;
+  line-height: 1.2;
+  margin-bottom: 3px;
 }
 
 .gl-history-chip-val {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
-  line-height: 1;
+  line-height: 1.2;
 }
 
 .gl-history-chip-up {
   background: var(--green-bg);
-  border-color: rgba(91, 175, 130, 0.2);
+  border-color: rgba(91, 175, 130, 0.25);
 }
 .gl-history-chip-up .gl-history-chip-val { color: var(--green); }
 
 .gl-history-chip-down {
   background: var(--red-bg);
-  border-color: rgba(212, 92, 92, 0.2);
+  border-color: rgba(212, 92, 92, 0.25);
 }
 .gl-history-chip-down .gl-history-chip-val { color: var(--red); }
 
@@ -243,55 +170,5 @@ tr:hover .gl-row-actions {
 .gl-history-empty {
   font-size: 12px;
   color: var(--text-disabled);
-}
-
-/* ─── Wizard Modal ────────────────────────────────────────── */
-.gl-wizard-modal {
-  width: 540px !important;
-}
-
-.gl-wizard-progress-label {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 3px;
-}
-
-.gl-wizard-progress-bar {
-  display: flex;
-  gap: 4px;
-  padding: 0 24px 16px;
-  background: var(--bg-surface);
-}
-
-.gl-wizard-progress-seg {
-  flex: 1;
-  height: 3px;
-  border-radius: 2px;
-  background: var(--border);
-  cursor: pointer;
-  transition: background var(--transition);
-}
-
-.gl-wizard-progress-seg.done   { background: var(--green); }
-.gl-wizard-progress-seg.active { background: var(--gold); }
-
-/* Editorial type title inside wizard — matches page heading style */
-.gl-wizard-type-title {
-  font-family: var(--font-display);
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 14px;
-  padding-bottom: 10px;
-  border-bottom: 1.5px solid var(--gold-pale, #F5E9CC);
-}
-
-/* Save (final step) button — green accent */
-.gl-btn-save {
-  background: var(--green) !important;
-  border-color: var(--green) !important;
-}
-
-.gl-btn-save:hover:not(:disabled) {
-  filter: brightness(1.08);
+  font-style: italic;
 }

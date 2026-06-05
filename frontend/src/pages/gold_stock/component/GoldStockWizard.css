@@ -1,0 +1,413 @@
+/* ═══════════════════════════════════════════════════
+   GoldStockWizard — luxury stock-count modal
+   Matches the warm gold/cream design system in App.css
+   ═══════════════════════════════════════════════════ */
+
+/* ─── Backdrop ────────────────────────────────────────────── */
+.gsw-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 14, 4, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  backdrop-filter: blur(4px);
+}
+
+/* ─── Modal shell ─────────────────────────────────────────── */
+.gsw-modal {
+  display: flex;
+  flex-direction: column;
+  width: min(92vw, 640px);
+  max-height: 88vh;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: 16px;
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.22),
+    0 4px 16px rgba(0, 0, 0, 0.10);
+  overflow: hidden;
+}
+
+/* ─── Header ──────────────────────────────────────────────── */
+.gsw-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 22px 28px 18px;
+  border-bottom: 1px solid var(--divider);
+  flex-shrink: 0;
+}
+
+.gsw-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gsw-date-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+}
+
+.gsw-date-value {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.gsw-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 14px;
+  transition: all var(--transition);
+}
+
+.gsw-close:hover {
+  background: var(--red-bg);
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* ─── Progress bar ────────────────────────────────────────── */
+.gsw-progress-track {
+  height: 3px;
+  background: var(--border);
+  flex-shrink: 0;
+  position: relative;
+}
+
+.gsw-progress-fill {
+  position: absolute;
+  inset-block: 0;
+  left: 0;
+  background: var(--gold);
+  border-radius: 0 2px 2px 0;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Step dots (clickable) ───────────────────────────────── */
+.gsw-step-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 28px 0;
+  flex-shrink: 0;
+}
+
+.gsw-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--bg-base);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.gsw-dot::after {
+  /* connector line to next dot */
+  content: '';
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 1.5px;
+  background: var(--border);
+}
+
+.gsw-dot:last-child::after {
+  display: none;
+}
+
+.gsw-dot-num {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-disabled);
+  line-height: 1;
+}
+
+/* Active dot */
+.gsw-dot.active {
+  border-color: var(--gold);
+  background: var(--gold);
+  box-shadow: 0 0 0 4px var(--gold-glow, rgba(200, 150, 60, 0.18));
+}
+
+.gsw-dot.active .gsw-dot-num {
+  color: #1A1200;
+}
+
+/* Done dot */
+.gsw-dot.done {
+  border-color: var(--green);
+  background: var(--green);
+  color: #fff;
+}
+
+.gsw-dot.done::after {
+  background: var(--green);
+}
+
+/* ─── Type section (eyebrow + big title) ──────────────────── */
+.gsw-type-section {
+  padding: 20px 28px 16px;
+  border-bottom: 1px solid var(--divider);
+  flex-shrink: 0;
+}
+
+.gsw-type-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.gsw-type-title {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.gsw-type-meta {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin-top: 5px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Scrollable body ─────────────────────────────────────── */
+.gsw-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ─── Item list ───────────────────────────────────────────── */
+.gsw-items {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* ─── Single item row ─────────────────────────────────────── */
+.gsw-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.gsw-item-row:hover {
+  border-color: var(--gold-dim);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Item info (left) */
+.gsw-item-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
+.gsw-item-index {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-disabled);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.gsw-item-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.gsw-item-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gsw-item-weight {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Stepper (right side of each row) ───────────────────── */
+.gsw-stepper {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+  border: 1.5px solid var(--border-light);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-surface);
+  transition: border-color var(--transition);
+}
+
+.gsw-item-row:hover .gsw-stepper,
+.gsw-stepper:focus-within {
+  border-color: var(--gold);
+}
+
+/* − button */
+.gsw-step-btn {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background var(--transition), color var(--transition);
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.gsw-step-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.gsw-step-minus:hover:not(:disabled) {
+  background: var(--red-bg);
+  color: var(--red);
+}
+
+.gsw-step-plus:hover:not(:disabled) {
+  background: var(--green-bg);
+  color: var(--green);
+}
+
+/* Number input */
+.gsw-step-input {
+  width: 64px;
+  height: 38px;
+  border: none;
+  border-left: 1px solid var(--border-light);
+  border-right: 1px solid var(--border-light);
+  background: transparent;
+  font-family: var(--font);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  outline: none;
+  -moz-appearance: textfield;
+  padding: 0;
+}
+
+.gsw-step-input::-webkit-outer-spin-button,
+.gsw-step-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.gsw-step-input:focus {
+  background: var(--bg-hover);
+  color: var(--gold);
+}
+
+/* ─── Footer navigation ───────────────────────────────────── */
+.gsw-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 28px 22px;
+  border-top: 1px solid var(--divider);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+  gap: 16px;
+}
+
+.gsw-nav-btn {
+  min-width: 120px;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Save button — green accent */
+.gsw-save-btn {
+  background: var(--green) !important;
+  border-color: var(--green) !important;
+  color: #fff !important;
+}
+
+.gsw-save-btn:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+/* Footer pip dots (small decorative page indicator) */
+.gsw-footer-center {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.gsw-pip {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-light);
+  transition: all 0.2s ease;
+  display: block;
+}
+
+.gsw-pip.active {
+  background: var(--gold);
+  width: 18px;
+  border-radius: 3px;
+}
+
+.gsw-pip.done {
+  background: var(--green);
+}

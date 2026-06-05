@@ -85,7 +85,11 @@ func (h *GoldItemHandler) UpdateGoldItem(input models.GoldItemInput) error {
 }
 
 func (h *GoldItemHandler) DeleteGoldItem(id int) error {
-	_, err := db.DB.Exec(`DELETE FROM gold_stock WHERE id = ?`, id)
+	_, err := db.DB.Exec(`DELETE FROM gold_stock_logs WHERE gold_item_id = ?`, id)
+	if err != nil {
+		return err
+	}
+	_, err = db.DB.Exec(`DELETE FROM gold_stock WHERE id = ?`, id)
 	return err
 }
 

@@ -6,8 +6,10 @@ import {
 } from 'wailsjs/go/handlers/GoldItemHandler'
 import GoldStockForm from './GoldStockForm'
 import GoldStockWizard from './component/GoldStockWizard'
+import GoldStockHistory from './GoldStockHistory'
+import HistoryMiniChart from './component/HistoryMiniChart'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faArrowUpFromBracket, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faArrowUpFromBracket, faPlus, faClockRotateLeft, faFilePen } from '@fortawesome/free-solid-svg-icons'
 import './GoldStockList.css'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -20,13 +22,6 @@ function groupBy(arr, key) {
   }, {})
 }
 
-function amountDelta(current, previous) {
-  if (previous == null) return 'neutral'
-  if (current > previous) return 'up'
-  if (current < previous) return 'down'
-  return 'neutral'
-}
-
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function GoldStockList() {
   const [items, setItems] = useState([])
@@ -34,58 +29,20 @@ export default function GoldStockList() {
   const [error, setError] = useState(null)
   const [modal, setModal] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
-
-  const [selectedMonth, setSelectedMonth] = useState(() => {
-    const d = new Date()
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-  })
-  const [stockLogs, setStockLogs] = useState([])
-  const [allStockLogs, setAllStockLogs] = useState([])
-  const [auditLoading, setAuditLoading] = useState(false)
-  const [editedAmounts, setEditedAmounts] = useState({})
   const [exporting, setExporting] = useState(false)
-
   const [wizardOpen, setWizardOpen] = useState(false)
 
-  const loadStockLogsData = useCallback(async (monthStr) => {
-    setAuditLoading(true)
-    setError(null)
-    try {
-      console.log("load all stock logs")
-      const data = await ListStockLogs("")
-      setAllStockLogs(data || [])
-      
-      const currentMonthLogs = (data || []).filter(log => {
-        return log.log_date.startsWith(monthStr)
-      })
-      setStockLogs(currentMonthLogs)
-      
-      const amounts = {}
-      currentMonthLogs.forEach(log => { amounts[log.gold_item_id] = String(log.amount) })
-      setEditedAmounts(amounts)
-    } catch (e) {
-      setError('โหลดข้อมูลสต็อกไม่สำเร็จ: ' + e)
-    } finally {
-      setAuditLoading(false)
-    }
-  }, [])
+  // History overlay state — which type is open
+  const [historyType, setHistoryType] = useState(null) // null = closed, string = type name
 
-  useEffect(() => {
-    const loadAll = async () => {
-      setLoading(true)
-      await Promise.all([loadCatalog(), loadStockLogsData(selectedMonth)])
-      setLoading(false)
-    }
-    loadAll()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  // All stock logs (unfiltered) — passed to history overlay
+  const [allStockLogs, setAllStockLogs] = useState([])
+  // Edited amounts keyed by item.id (for current display only)
+  const [editedAmounts, setEditedAmounts] = useState({})
 
-  useEffect(() => {
-    loadStockLogsData(selectedMonth)
-  }, [selectedMonth, loadStockLogsData])
+  const [auditLoading, setAuditLoading] = useState(false)
 
-  const itemById = {}
-  items.forEach(item => { itemById[item.id] = item })
-
+  // ── Load catalog ────────────────────────────────────────────────────────────
   const loadCatalog = useCallback(async () => {
     try {
       const data = await ListGoldItems('')
@@ -95,86 +52,92 @@ export default function GoldStockList() {
     }
   }, [])
 
+  // ── Load ALL stock logs (no month filter — overlay handles filtering) ────────
+  const loadAllStockLogs = useCallback(async () => {
+    setAuditLoading(true)
+    setError(null)
+    try {
+      const data = await ListStockLogs('')
+      setAllStockLogs(data || [])
+
+      // Build latest-amount map: for each item, use the most recent log
+      const latestByItem = {}
+        ; (data || []).forEach(log => {
+          const existing = latestByItem[log.gold_item_id]
+          if (!existing || log.log_date > existing.log_date) {
+            latestByItem[log.gold_item_id] = log
+          }
+        })
+      const amounts = {}
+      Object.entries(latestByItem).forEach(([id, log]) => {
+        amounts[id] = String(log.amount)
+      })
+      setEditedAmounts(amounts)
+    } catch (e) {
+      setError('โหลดข้อมูลสต็อกไม่สำเร็จ: ' + e)
+    } finally {
+      setAuditLoading(false)
+    }
+  }, [])
+
+  // ── Mount ───────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const loadAll = async () => {
+      setLoading(true)
+      await Promise.all([loadCatalog(), loadAllStockLogs()])
+      setLoading(false)
+    }
+    loadAll()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleDelete = async () => {
     if (!confirmDelete) return
     try {
       await DeleteGoldItem(confirmDelete.id)
       setConfirmDelete(null)
-      await Promise.all([loadCatalog(), loadStockLogsData(selectedMonth)])
+      await Promise.all([loadCatalog(), loadAllStockLogs()])
     } catch (e) {
       setError(String(e))
       setConfirmDelete(null)
     }
   }
 
-  const handleAmountChange = (goldItemId, val) => {
-    setEditedAmounts(p => ({ ...p, [goldItemId]: val }))
-  }
-
   const handleExport = async () => {
     setExporting(true)
-    // TODO: implement export
-    setTimeout(() => setExporting(false), 1500)
+    setTimeout(() => setExporting(false), 1500) // TODO: implement
   }
 
-  const openWizard = () => {
-    setWizardOpen(true)
-  }
-
-  // ─── Computation Logic ───────────────────────────────────────────────────────
+  // ── Grouping & computation ──────────────────────────────────────────────────
   const auditGroups = groupBy(items, 'type')
   const typeKeys = Object.keys(auditGroups)
 
-  // console.log(auditGroups, "auditGroups")
-
-  // Calculate total stats across all items using catalog weight (grams) and edited amounts
-  const totalQuantity = items.reduce((s, item) => s + (parseInt(editedAmounts[item.id]) || 0), 0)
-  const totalWeight = items.reduce((s, item) => {
-    const weight = item.weight_grams || 0
-    const qty = parseInt(editedAmounts[item.id]) || 0
-    return s + (weight * qty)
-  }, 0)
-
-  // Compute groups and rows before rendering
   const computedGroups = typeKeys.map(mainType => {
     const groupItems = auditGroups[mainType]
-    
+
     const groupQty = groupItems.reduce((s, item) => s + (parseInt(editedAmounts[item.id]) || 0), 0)
     const groupWeight = groupItems.reduce((s, item) => {
-      const weight = item.weight_grams || 0
-      const qty = parseInt(editedAmounts[item.id]) || 0
-      return s + (weight * qty)
+      return s + ((item.weight_grams || 0) * (parseInt(editedAmounts[item.id]) || 0))
     }, 0)
 
     const rows = groupItems.map((item, index) => {
       const amtStr = editedAmounts[item.id] || ''
-      const amtInt = parseInt(amtStr) || 0
-      
-      // Find matching logs in allStockLogs to get history (sorted oldest first)
       const history = allStockLogs
         .filter(l => l.gold_item_id === item.id)
-        .reverse()
+        .sort((a, b) => a.log_date.localeCompare(b.log_date))
 
       return {
         gold_item_id: item.id,
         index: index + 1,
         subtype: item.subtype,
         weight: item.weight_grams || 0,
-        amtStr,
-        amtInt,
         purity: item.purity || '—',
+        amtStr,
         history,
-        catalogItem: item
+        catalogItem: item,
       }
     })
 
-    return {
-      mainType,
-      logsCount: groupItems.length,
-      groupQty,
-      groupWeight,
-      rows
-    }
+    return { mainType, logsCount: groupItems.length, groupQty, groupWeight, rows }
   })
 
   return (
@@ -185,7 +148,7 @@ export default function GoldStockList() {
         <div>
           <div className="page-title">สต็อกทองในร้าน</div>
           <div className="page-meta">
-            {`ตรวจนับประจำเดือน ${selectedMonth} · ${totalQuantity} ชิ้น · ${totalWeight.toFixed(2)} กรัม · ${items.length} SKU`}
+            {`${items.length} SKU · ${computedGroups.length} ประเภท`}
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -196,39 +159,18 @@ export default function GoldStockList() {
           <button className="btn btn-primary" onClick={() => setModal('new')}>
             <FontAwesomeIcon icon={faPlus} /> เพิ่มทะเบียนทองใหม่
           </button>
+          <button
+            className="btn btn-primary"
+            onClick={() => setWizardOpen(true)}
+            disabled={auditLoading || items.length === 0}
+          >
+            <FontAwesomeIcon icon={faFilePen} />
+            เริ่มตรวจนับสต็อก
+          </button>
         </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
-
-      {/* ── Summary Strip ────────────────────────────────────────── */}
-      <div className="gl-summary">
-        <StatCard label="จำนวนชิ้นทั้งหมด" value={totalQuantity} sub="ชิ้น / อัน" color="green" />
-        <StatCard label="น้ำหนักทองรวม" value={totalWeight.toFixed(2)} sub="กรัม" color="gold" />
-        <StatCard label="จำนวน SKU" value={items.length} sub="รายการสินค้าทั้งหมด" color="muted" />
-      </div>
-
-      {/* ── Toolbar ──────────────────────────────────────────────── */}
-      <div className="gl-audit-toolbar">
-        <div className="gl-audit-controls">
-          <span className="gl-audit-month-label">เดือน</span>
-          <input
-            type="month"
-            className="input"
-            value={selectedMonth}
-            onChange={e => setSelectedMonth(e.target.value)}
-            style={{ width: 170 }}
-          />
-        </div>
-        <div style={{ flex: 1 }} />
-        <button
-          className="btn btn-primary"
-          onClick={openWizard}
-          disabled={auditLoading || items.length === 0}
-        >
-          บันทึกสต็อกประจำเดือน
-        </button>
-      </div>
 
       {/* ── Per-Type Sections ────────────────────────────────────── */}
       {(loading || auditLoading) ? (
@@ -244,99 +186,104 @@ export default function GoldStockList() {
           </button>
         </div>
       ) : (
-        computedGroups.map(group => {
-          return (
-            <div key={group.mainType} className="gl-type-section">
-              {/* Editorial type heading — no card/box */}
-              <div className="gl-type-heading">
-                <span className="gl-type-heading-name">{group.mainType}</span>
-                <span className="gl-type-heading-count">{group.logsCount} รายการ</span>
-                <span className="gl-type-heading-summary">
-                  {group.groupQty} ชิ้น · {group.groupWeight.toFixed(2)} กรัม
-                </span>
-              </div>
+        computedGroups.map(group => (
+          <div key={group.mainType} className="gl-type-section">
 
-              <div className="card">
-                <div className="table-wrap">
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>#</th>
-                        <th>รุ่น / น้ำหนัก (Subtype)</th>
-                        <th>น้ำหนัก (กรัม)</th>
-                        <th>คงเหลือ (ชิ้น)</th>
-                        <th>ความบริสุทธิ์ (%)</th>
-                        <th>บันทึกล่าสุด</th>
-                        <th style={{ width: 100 }}></th>
+            {/* Editorial heading — type name as title, history button inline */}
+            <div className="gl-type-heading">
+              <span className="gl-type-heading-name">{group.mainType}</span>
+              <span className="gl-type-heading-count">{group.logsCount} รายการ</span>
+              <span className="gl-type-heading-summary">
+                {group.groupQty} ชิ้น · {group.groupWeight.toFixed(2)} กรัม
+              </span>
+              <button
+                className="btn btn-ghost btn-sm gl-history-btn"
+                onClick={() => setHistoryType(group.mainType)}
+                title={`ดูประวัติสต็อก ${group.mainType}`}
+              >
+                <FontAwesomeIcon icon={faClockRotateLeft} />
+                ประวัติ
+              </button>
+            </div>
+
+            <div className="card">
+              <div className="table-wrap">
+                <table className="table" style={{ tableLayout: 'fixed', width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: 220 }}>รายการ</th>
+                      <th style={{ width: 110 }}>น้ำหนัก (กรัม)</th>
+                      <th style={{ width: 110 }}>ความบริสุทธิ์</th>
+                      <th style={{ width: 360 }}>บันทึกล่าสุด</th>
+                      <th style={{ width: 80 }}>คงเหลือ</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {group.rows.map(row => (
+                      <tr key={row.gold_item_id}>
+                        <td className="gl-subtype">{group.mainType} {row.subtype}</td>
+                        <td className="gl-unit-weight">
+                          {row.weight > 0 ? row.weight.toFixed(2) : '—'}
+                        </td>
+                        <td className="gl-purity">
+                          {row.purity !== '—' ? row.purity + '%' : '—'}
+                        </td>
+                        <td className="gl-history">
+                          <HistoryMiniChart history={row.history} />
+                        </td>
+                        <td className="gl-amount">
+                          {row.amtStr || '0'}
+                        </td>
+                        <td className="gl-row-actions" onClick={e => e.stopPropagation()}>
+                          {row.catalogItem && (
+                            <>
+                              <button
+                                className="btn btn-ghost btn-xs"
+                                onClick={() => setModal(row.catalogItem)}
+                              >
+                                แก้ไข
+                              </button>
+                              <button
+                                className="btn btn-danger-ghost btn-xs"
+                                onClick={() => setConfirmDelete(row.catalogItem)}
+                              >
+                                ลบ
+                              </button>
+                            </>
+                          )}
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {group.rows.map((row) => {
-                        return (
-                          <tr key={row.gold_item_id}>
-                            <td className="gl-index">{row.index}</td>
-                            <td className="gl-subtype">{row.subtype}</td>
-                            <td className="gl-unit-weight">
-                              {row.weight > 0 ? row.weight.toFixed(2) : '—'}
-                            </td>
-                            <td className="gl-amount">
-                              <input
-                                type="number"
-                                min="0"
-                                className="input gl-audit-input-amount"
-                                value={row.amtStr}
-                                placeholder="0"
-                                onChange={e => handleAmountChange(row.gold_item_id, e.target.value)}
-                              />
-                            </td>
-                            <td className="gl-purity">
-                              {row.purity !== '—' ? row.purity + '%' : '—'}
-                            </td>
-                            <td className="gl-history">
-                              <HistoryMiniChart history={row.history} />
-                            </td>
-                            <td className="gl-row-actions" onClick={e => e.stopPropagation()}>
-                              {row.catalogItem && (
-                                <>
-                                  <button
-                                    className="btn btn-ghost btn-xs"
-                                    onClick={() => setModal(row.catalogItem)}
-                                    title="แก้ไข"
-                                  >
-                                    แก้ไข
-                                  </button>
-                                  <button
-                                    className="btn btn-danger-ghost btn-xs"
-                                    onClick={() => setConfirmDelete(row.catalogItem)}
-                                    title="ลบ"
-                                  >
-                                    ลบ
-                                  </button>
-                                </>
-                              )}
-                            </td>
-                          </tr>
-                        )
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
-          )
-        })
+
+          </div>
+        ))
       )}
 
+      {/* ── History Overlay ──────────────────────────────────────── */}
+      {historyType && (
+        <GoldStockHistory
+          typeName={historyType}
+          items={items.filter(i => i.type === historyType)}
+          allStockLogs={allStockLogs}
+          onClose={() => setHistoryType(null)}
+        />
+      )}
+
+      {/* ── Wizard ───────────────────────────────────────────────── */}
       {wizardOpen && (
         <GoldStockWizard
-          selectedMonth={selectedMonth}
           items={items}
           editedAmounts={editedAmounts}
           onClose={() => setWizardOpen(false)}
           onSaved={(newAmounts) => {
-            setEditedAmounts(newAmounts)
+            setEditedAmounts(prev => ({ ...prev, ...newAmounts }))
             setWizardOpen(false)
-            loadStockLogsData(selectedMonth)
+            loadAllStockLogs()
           }}
         />
       )}
@@ -347,7 +294,7 @@ export default function GoldStockList() {
           item={modal === 'new' ? null : modal}
           onSaved={async () => {
             setModal(null)
-            await Promise.all([loadCatalog(), loadStockLogsData(selectedMonth)])
+            await Promise.all([loadCatalog(), loadAllStockLogs()])
           }}
           onClose={() => setModal(null)}
         />
@@ -383,41 +330,7 @@ export default function GoldStockList() {
           </div>
         </div>
       )}
-    </div>
-  )
-}
 
-// ─── History Mini Chart ───────────────────────────────────────────────────────
-function HistoryMiniChart({ history }) {
-  if (!history || history.length === 0) {
-    return <span className="gl-history-empty">ยังไม่มีบันทึก</span>
-  }
-
-  const recent = [...history].slice(-6).reverse()
-
-  return (
-    <div className="gl-history-chips">
-      {recent.map((entry, i) => {
-        const prev = recent[i + 1]
-        const delta = amountDelta(entry.amount, prev?.amount)
-        return (
-          <div key={i} className={`gl-history-chip gl-history-chip-${delta}`} title={entry.log_date}>
-            <span className="gl-history-chip-date">{entry.log_date?.slice(0, 7)}</span>
-            <span className="gl-history-chip-val">{entry.amount}</span>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-// ─── Stat Card ────────────────────────────────────────────────────────────────
-function StatCard({ label, value, sub, color }) {
-  return (
-    <div className={`gl-stat gl-stat-${color}`}>
-      <div className="gl-stat-value">{value}</div>
-      <div className="gl-stat-label">{label}</div>
-      {sub && <div className="gl-stat-sub">{sub}</div>}
     </div>
   )
 }

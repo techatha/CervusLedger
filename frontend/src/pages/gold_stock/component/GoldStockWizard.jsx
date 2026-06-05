@@ -1,8 +1,18 @@
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCheck, faChevronRight } from '@fortawesome/free-solid-svg-icons'
+import {
+  faCheck,
+  faChevronRight,
+  faChevronLeft,
+  faPlus,
+  faMinus,
+  faXmark,
+} from '@fortawesome/free-solid-svg-icons'
 import { RecordStockLog } from 'wailsjs/go/handlers/GoldItemHandler'
+import { formatDate } from '@/utils/date'
+import './GoldStockWizard.css'
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function groupBy(arr, key) {
   return arr.reduce((acc, item) => {
     const k = item[key] || 'อื่นๆ'
@@ -12,37 +22,43 @@ function groupBy(arr, key) {
   }, {})
 }
 
-export default function GoldStockWizard({
-  selectedMonth,
-  items,
-  editedAmounts,
-  onClose,
-  onSaved,
-}) {
-  const [wizardStep, setWizardStep] = useState(0)
+// ─── Component ────────────────────────────────────────────────────────────────
+export default function GoldStockWizard({ items, editedAmounts, onClose, onSaved }) {
+  const [wizardStep, setWizardStep]     = useState(0)
   const [wizardAmounts, setWizardAmounts] = useState(() => ({ ...editedAmounts }))
-  const [savingAudit, setSavingAudit] = useState(false)
-  const [error, setError] = useState(null)
+  const [savingAudit, setSavingAudit]   = useState(false)
+  const [error, setError]               = useState(null)
 
-  const auditGroups = groupBy(items, 'type')
-  const typeKeys = Object.keys(auditGroups)
+  const auditGroups     = groupBy(items, 'type')
+  const typeKeys        = Object.keys(auditGroups)
+  const today           = new Date().toISOString()
 
-  const wizardCurrentType = typeKeys[wizardStep]
+  const wizardCurrentType  = typeKeys[wizardStep]
   const wizardCurrentItems = wizardCurrentType ? auditGroups[wizardCurrentType] : []
-  const isLastStep = wizardStep === typeKeys.length - 1
+  const isLastStep         = wizardStep === typeKeys.length - 1
 
-  const handleWizardAmountChange = (goldItemId, val) => {
-    setWizardAmounts(p => ({ ...p, [goldItemId]: val }))
+  // ── Amount helpers ──────────────────────────────────────────────────────────
+  const getAmount = (id) => parseInt(wizardAmounts[id] ?? '0') || 0
+
+  const setAmount = useCallback((id, val) => {
+    const clamped = Math.max(0, val)
+    setWizardAmounts(p => ({ ...p, [id]: String(clamped) }))
+  }, [])
+
+  const handleInput = (id, raw) => {
+    // Allow empty string while typing
+    const n = parseInt(raw)
+    setWizardAmounts(p => ({ ...p, [id]: isNaN(n) ? '' : String(Math.max(0, n)) }))
   }
 
+  // ── Save ────────────────────────────────────────────────────────────────────
   const handleWizardSave = async () => {
     setSavingAudit(true)
     setError(null)
     try {
-      const logDate = `${selectedMonth}-01`
       for (const item of items) {
-        const amount = parseInt(wizardAmounts[item.id] ?? editedAmounts[item.id]) || 0
-        await RecordStockLog({ gold_item_id: item.id, amount, log_date: logDate })
+        const amount = getAmount(item.id)
+        await RecordStockLog({ gold_item_id: item.id, amount, log_date: today })
       }
       onSaved(wizardAmounts)
     } catch (e) {
@@ -52,86 +68,141 @@ export default function GoldStockWizard({
     }
   }
 
-  const handleWizardNext = () => {
-    if (isLastStep) {
-      handleWizardSave()
-    } else {
-      setWizardStep(s => s + 1)
-    }
-  }
+  const handleNext = () => isLastStep ? handleWizardSave() : setWizardStep(s => s + 1)
+  const handlePrev = () => setWizardStep(s => s - 1)
+
+  // ── Group total for current step ────────────────────────────────────────────
+  const stepTotal = wizardCurrentItems.reduce((s, item) => s + getAmount(item.id), 0)
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal gl-wizard-modal" onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <div>
-            <div className="modal-title">บันทึกสต็อกประจำเดือน {selectedMonth}</div>
-            <div className="gl-wizard-progress-label">
-              ประเภท {wizardStep + 1} / {typeKeys.length}
-            </div>
+    <div className="gsw-backdrop" onClick={onClose}>
+      <div className="gsw-modal" onClick={e => e.stopPropagation()}>
+
+        {/* ── Header ────────────────────────────────────────────── */}
+        <div className="gsw-header">
+          <div className="gsw-header-left">
+            <div className="gsw-date-label">บันทึกสต็อก</div>
+            <div className="gsw-date-value">{formatDate(today)}</div>
           </div>
-          <button className="modal-close" onClick={onClose}>×</button>
+          <button className="gsw-close" onClick={onClose}>
+            <FontAwesomeIcon icon={faXmark} />
+          </button>
         </div>
 
-        <div className="gl-wizard-progress-bar">
+        {/* ── Progress bar + step dots ───────────────────────────── */}
+        <div className="gsw-progress-track">
+          <div
+            className="gsw-progress-fill"
+            style={{ width: `${((wizardStep + 1) / typeKeys.length) * 100}%` }}
+          />
+        </div>
+
+        <div className="gsw-step-dots">
           {typeKeys.map((k, i) => (
-            <div
+            <button
               key={k}
-              className={`gl-wizard-progress-seg ${i < wizardStep ? 'done' : i === wizardStep ? 'active' : ''}`}
+              className={`gsw-dot ${i < wizardStep ? 'done' : i === wizardStep ? 'active' : ''}`}
               onClick={() => setWizardStep(i)}
               title={k}
-            />
+            >
+              {i < wizardStep
+                ? <FontAwesomeIcon icon={faCheck} style={{ fontSize: 8 }} />
+                : <span className="gsw-dot-num">{i + 1}</span>
+              }
+            </button>
           ))}
         </div>
 
-        <div className="modal-body">
-          {error && <div className="alert alert-error">{error}</div>}
-
-          {/* Editorial type title inside wizard too */}
-          <div className="gl-wizard-type-title">{wizardCurrentType}</div>
-
-          <div className="table-wrap" style={{ marginTop: 12 }}>
-            <table className="table gl-table">
-              <thead>
-                <tr>
-                  <th>รุ่น / น้ำหนัก</th>
-                  <th style={{ textAlign: 'right', width: 140 }}>จำนวน (ชิ้น)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {wizardCurrentItems.map(item => {
-                  const amtStr = wizardAmounts[item.id] ?? '0'
-                  return (
-                    <tr key={item.id}>
-                      <td style={{ fontWeight: 600 }}>{item.subtype}</td>
-                      <td style={{ textAlign: 'right' }}>
-                        <input
-                          type="number"
-                          min="0"
-                          className="input gl-audit-input-amount"
-                          value={amtStr}
-                          placeholder="0"
-                          onChange={e => handleWizardAmountChange(item.id, e.target.value)}
-                        />
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
+        {/* ── Type title ────────────────────────────────────────── */}
+        <div className="gsw-type-section">
+          <div className="gsw-type-eyebrow">ประเภท {wizardStep + 1} / {typeKeys.length}</div>
+          <div className="gsw-type-title">{wizardCurrentType}</div>
+          <div className="gsw-type-meta">
+            {wizardCurrentItems.length} รายการ · รวม {stepTotal} ชิ้น
           </div>
         </div>
 
-        <div className="modal-footer">
-          {wizardStep > 0 && (
-            <button className="btn btn-ghost" onClick={() => setWizardStep(s => s - 1)}>
-              ← ย้อนกลับ
-            </button>
-          )}
-          <div style={{ flex: 1 }} />
+        {/* ── Item rows ─────────────────────────────────────────── */}
+        <div className="gsw-body">
+          {error && <div className="alert alert-error" style={{ margin: '0 0 16px' }}>{error}</div>}
+
+          <div className="gsw-items">
+            {wizardCurrentItems.map((item, idx) => {
+              const amt = getAmount(item.id)
+              return (
+                <div key={item.id} className="gsw-item-row">
+
+                  {/* Item info */}
+                  <div className="gsw-item-info">
+                    <span className="gsw-item-index">{String(idx + 1).padStart(2, '0')}</span>
+                    <div className="gsw-item-text">
+                      <div className="gsw-item-name">{item.subtype}</div>
+                      {item.weight_grams > 0 && (
+                        <div className="gsw-item-weight">{item.weight_grams.toFixed(2)} ก.</div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Stepper */}
+                  <div className="gsw-stepper">
+                    <button
+                      className="gsw-step-btn gsw-step-minus"
+                      onClick={() => setAmount(item.id, amt - 1)}
+                      disabled={amt <= 0}
+                      aria-label="ลด"
+                    >
+                      <FontAwesomeIcon icon={faMinus} />
+                    </button>
+
+                    <input
+                      type="number"
+                      min="0"
+                      className="gsw-step-input"
+                      value={wizardAmounts[item.id] ?? '0'}
+                      onChange={e => handleInput(item.id, e.target.value)}
+                      onBlur={e => {
+                        // Snap to 0 if left blank
+                        if (e.target.value === '') setAmount(item.id, 0)
+                      }}
+                    />
+
+                    <button
+                      className="gsw-step-btn gsw-step-plus"
+                      onClick={() => setAmount(item.id, amt + 1)}
+                      aria-label="เพิ่ม"
+                    >
+                      <FontAwesomeIcon icon={faPlus} />
+                    </button>
+                  </div>
+
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* ── Footer nav ────────────────────────────────────────── */}
+        <div className="gsw-footer">
+          <button
+            className="btn btn-ghost gsw-nav-btn"
+            onClick={handlePrev}
+            disabled={wizardStep === 0}
+          >
+            <FontAwesomeIcon icon={faChevronLeft} /> ย้อนกลับ
+          </button>
+
+          <div className="gsw-footer-center">
+            {typeKeys.map((_, i) => (
+              <span
+                key={i}
+                className={`gsw-pip ${i === wizardStep ? 'active' : i < wizardStep ? 'done' : ''}`}
+              />
+            ))}
+          </div>
+
           {isLastStep ? (
             <button
-              className="btn btn-primary gl-btn-save"
+              className="btn btn-primary gsw-nav-btn gsw-save-btn"
               onClick={handleWizardSave}
               disabled={savingAudit}
             >
@@ -139,11 +210,12 @@ export default function GoldStockWizard({
               {savingAudit ? 'กำลังบันทึก...' : 'บันทึกสต็อกทั้งหมด'}
             </button>
           ) : (
-            <button className="btn btn-primary" onClick={handleWizardNext}>
-              ประเภทถัดไป <FontAwesomeIcon icon={faChevronRight} />
+            <button className="btn btn-primary gsw-nav-btn" onClick={handleNext}>
+              ถัดไป <FontAwesomeIcon icon={faChevronRight} />
             </button>
           )}
         </div>
+
       </div>
     </div>
   )
