@@ -83,6 +83,7 @@ export default function SmartCardTest() {
               <ResultRow label="ชื่อ-นามสกุล"     value={fullName} />
               <ResultRow label="เลขบัตรประชาชน"   value={result.id_card} mono />
               <ResultRow label="บ้านเลขที่"        value={result.address_no} />
+              <ResultRow label="ที่อยู่เพิ่มเติม"    value={result.address_line} />
               <ResultRow label="หมู่"              value={result.moo} />
               <ResultRow label="ถนน"               value={result.road} />
               <ResultRow label="ตำบล/แขวง"        value={result.tambon} />

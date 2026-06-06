@@ -85,6 +85,18 @@ func (h *SettingsHandler) GetSettingString(key string, fallback string) string {
 	return v
 }
 
+func (h *SettingsHandler) GetBuyingDifference() int {
+	var v string
+	if err := db.DB.QueryRow(`SELECT value FROM settings WHERE key=?`, "buying_difference").Scan(&v); err != nil {
+		return 0
+	}
+	val, err := strconv.Atoi(v)
+	if err != nil {
+		return 0
+	}
+	return val
+}
+
 // SetLastTicketNumber updates the last_ticket_number setting in the database.
 func (h *SettingsHandler) SetLastTicketNumber(n int) error {
 	_, err := db.DB.Exec(`
@@ -93,3 +105,4 @@ func (h *SettingsHandler) SetLastTicketNumber(n int) error {
 	`, strconv.Itoa(n))
 	return err
 }
+

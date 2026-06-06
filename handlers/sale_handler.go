@@ -44,28 +44,46 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 			return models.Sale{}, fmt.Errorf("ไม่พบรายการทองนี้ในระบบ")
 		}
 
+		// Decrement stock log for the sold item
+		var logDate string
+		if len(input.Date) >= 7 {
+			logDate = input.Date[:7] + "-01 00:00:00"
+		} else {
+			logDate = "2026-05-01 00:00:00"
+		}
+
+		var currentAmount int
+		err = tx.QueryRow(`
+			SELECT amount FROM gold_stock_logs 
+			WHERE gold_item_id = ? AND log_date = ?
+		`, goldItemID, logDate).Scan(&currentAmount)
+		if err == nil {
+			_, err = tx.Exec(`
+				UPDATE gold_stock_logs SET amount = amount - 1
+				WHERE gold_item_id = ? AND log_date = ?
+			`, goldItemID, logDate)
+		} else {
+			var latestAmount int
+			err = tx.QueryRow(`
+				SELECT amount FROM gold_stock_logs 
+				WHERE gold_item_id = ? 
+				ORDER BY log_date DESC LIMIT 1
+			`, goldItemID).Scan(&latestAmount)
+			if err != nil {
+				latestAmount = 0
+			}
+			_, err = tx.Exec(`
+				INSERT INTO gold_stock_logs (gold_item_id, amount, log_date)
+				VALUES (?, ?, ?)
+			`, goldItemID, latestAmount - 1, logDate)
+		}
+		if err != nil {
+			return models.Sale{}, fmt.Errorf("decrement stock log from sell: %w", err)
+		}
+
 	case "buy":
 		if input.CustomerID == 0 {
 			return models.Sale{}, fmt.Errorf("ต้องระบุลูกค้าสำหรับการรับซื้อทอง")
-		}
-		// Find existing SKU, or create a new SKU if it doesn't exist
-		err = tx.QueryRow(`
-			SELECT id FROM gold_stock 
-			WHERE type = ? AND subtype = ?
-			LIMIT 1
-		`, input.ItemType, input.ItemSubtype).Scan(&goldItemID)
-		if err != nil {
-			// Insert new SKU in gold_stock catalog with defaults (96.5% and estimated grams)
-			estGrams := input.WeightBaht * 15.16
-			resInsert, err := tx.Exec(`
-				INSERT INTO gold_stock (type, subtype, purity, weight_grams)
-				VALUES (?, ?, '96.5', ?)
-			`, input.ItemType, input.ItemSubtype, estGrams)
-			if err != nil {
-				return models.Sale{}, fmt.Errorf("insert new gold stock from buy: %w", err)
-			}
-			id, _ := resInsert.LastInsertId()
-			goldItemID = int(id)
 		}
 
 		dateVal := input.Date
@@ -75,28 +93,74 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 
 		// Insert record into purchased_gold ledger
 		_, err = tx.Exec(`
-			INSERT INTO purchased_gold (customer_id, type, subtype, weight_baht, weight_grams, total_amount, notes, date, is_inventory, still_exists)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-		`, input.CustomerID, input.ItemType, input.ItemSubtype, input.WeightBaht, input.WeightGrams, input.TotalAmount, input.Notes, dateVal, input.IsInventory)
+			INSERT INTO purchased_gold (customer_id, type, weight_grams, total_amount, notes, date, is_inventory, still_exists)
+			VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+		`, input.CustomerID, input.ItemType, input.WeightGrams, input.TotalAmount, input.Notes, dateVal, input.IsInventory)
 		if err != nil {
 			return models.Sale{}, fmt.Errorf("insert purchased_gold: %w", err)
 		}
 
 		// If user checked "Enter as gold stock", increment the monthly log amount
 		if input.IsInventory == 1 {
-			var logDate string
-			if len(input.Date) >= 7 {
-				logDate = input.Date[:7] + "-01 00:00:00"
-			} else {
-				logDate = "2026-05-01 00:00:00"
+			if goldItemID == 0 && input.ItemType != "" && input.ItemSubtype != "" {
+				err = tx.QueryRow(`
+					SELECT id FROM gold_stock 
+					WHERE type = ? AND subtype = ?
+					LIMIT 1
+				`, input.ItemType, input.ItemSubtype).Scan(&goldItemID)
+				if err != nil {
+					estGrams := input.WeightGrams
+					if estGrams == 0 {
+						estGrams = input.WeightBaht * 15.16
+					}
+					resInsert, err := tx.Exec(`
+						INSERT INTO gold_stock (type, subtype, purity, weight_grams)
+						VALUES (?, ?, '96.5', ?)
+					`, input.ItemType, input.ItemSubtype, estGrams)
+					if err != nil {
+						return models.Sale{}, fmt.Errorf("insert fallback gold stock from buy: %w", err)
+					}
+					id, _ := resInsert.LastInsertId()
+					goldItemID = int(id)
+				}
 			}
-			_, err = tx.Exec(`
-				INSERT INTO gold_stock_logs (gold_item_id, amount, log_date)
-				VALUES (?, 1, ?)
-				ON CONFLICT(gold_item_id, log_date) DO UPDATE SET amount = amount + 1
-			`, goldItemID, logDate)
-			if err != nil {
-				return models.Sale{}, fmt.Errorf("increment stock log from buy: %w", err)
+
+			if goldItemID > 0 {
+				var logDate string
+				if len(input.Date) >= 7 {
+					logDate = input.Date[:7] + "-01 00:00:00"
+				} else {
+					logDate = "2026-05-01 00:00:00"
+				}
+
+				var currentAmount int
+				err = tx.QueryRow(`
+					SELECT amount FROM gold_stock_logs 
+					WHERE gold_item_id = ? AND log_date = ?
+				`, goldItemID, logDate).Scan(&currentAmount)
+				if err == nil {
+					_, err = tx.Exec(`
+						UPDATE gold_stock_logs SET amount = amount + 1
+						WHERE gold_item_id = ? AND log_date = ?
+					`, goldItemID, logDate)
+				} else {
+					var latestAmount int
+					err = tx.QueryRow(`
+						SELECT amount FROM gold_stock_logs 
+						WHERE gold_item_id = ? 
+						ORDER BY log_date DESC LIMIT 1
+					`, goldItemID).Scan(&latestAmount)
+					if err != nil {
+						latestAmount = 0
+					}
+					_, err = tx.Exec(`
+						INSERT INTO gold_stock_logs (gold_item_id, amount, log_date)
+						VALUES (?, ?, ?)
+					`, goldItemID, latestAmount + 1, logDate)
+				}
+				if err != nil {
+					return models.Sale{}, fmt.Errorf("increment stock log from buy: %w", err)
+				}
 			}
 		}
 
@@ -109,9 +173,10 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 
 	// Auto-log income / expense
 	incType, incCat := "income", "ขายทอง"
-	if input.Type == "buy" {
+	switch input.Type {
+	case "buy":
 		incType, incCat = "expense", "รับซื้อทอง"
-	} else if input.Type == "discount" {
+	case "discount":
 		incType, incCat = "expense", "ส่วนลด"
 	}
 	dateVal := input.Date

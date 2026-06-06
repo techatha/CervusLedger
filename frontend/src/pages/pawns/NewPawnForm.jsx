@@ -6,10 +6,11 @@ import {
 import { SetLastTicketNumber } from 'wailsjs/go/handlers/SettingsHandler'
 import { GetCustomers } from 'wailsjs/go/handlers/CustomerHandler'
 import { formatBaht, fullName } from '@/utils/thai'
+import { getLocalISOString } from '@/utils/date'
 import './NewPawnForm.css'
 import './PrincipalChangeForm.css'
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => getLocalISOString().slice(0, 10)
 
 export default function NewPawnForm({ onSaved, onClose }) {
   const [settings,   setSettings]   = useState(null)

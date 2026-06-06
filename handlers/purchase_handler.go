@@ -25,10 +25,9 @@ func (h *PurchaseHandler) ListPurchasedGold() ([]models.PurchasedGold, error) {
 		SELECT 
 			p.id,
 			p.customer_id,
-			COALESCE(c.prefix || c.firstname || ' ' || c.lastname, 'ลูกค้าทั่วไป') as customer_name,
+			COALESCE(c.prefix || ' ' || c.firstname || ' ' || c.lastname, 'ลูกค้าทั่วไป') as customer_name,
 			p.type,
-			COALESCE(p.subtype, '') as subtype,
-			p.weight_baht,
+			'' as subtype,
 			COALESCE(p.weight_grams, 0.0) as weight_grams,
 			p.total_amount,
 			p.notes,
@@ -50,7 +49,7 @@ func (h *PurchaseHandler) ListPurchasedGold() ([]models.PurchasedGold, error) {
 	for rows.Next() {
 		var p models.PurchasedGold
 		if err := rows.Scan(
-			&p.ID, &p.CustomerID, &p.CustomerName, &p.Type, &p.Subtype, &p.WeightBaht, &p.WeightGrams,
+			&p.ID, &p.CustomerID, &p.CustomerName, &p.Type, &p.Subtype, &p.WeightGrams,
 			&p.TotalAmount, &p.Notes, &p.Date, &p.IsInventory, &p.StillExists,
 			&p.CreatedAt,
 		); err != nil {
@@ -75,10 +74,9 @@ func (h *PurchaseHandler) GetCustomerPurchaseRecords(customerID int) ([]models.P
 		SELECT 
 			p.id,
 			p.customer_id,
-			COALESCE(c.prefix || c.firstname || ' ' || c.lastname, 'ลูกค้าทั่วไป') as customer_name,
+			COALESCE(c.prefix || ' ' || c.firstname || ' ' || c.lastname, 'ลูกค้าทั่วไป') as customer_name,
 			p.type,
-			COALESCE(p.subtype, '') as subtype,
-			p.weight_baht,
+			'' as subtype,
 			COALESCE(p.weight_grams, 0.0) as weight_grams,
 			p.total_amount,
 			p.notes,
@@ -101,7 +99,7 @@ func (h *PurchaseHandler) GetCustomerPurchaseRecords(customerID int) ([]models.P
 	for rows.Next() {
 		var p models.PurchasedGold
 		if err := rows.Scan(
-			&p.ID, &p.CustomerID, &p.CustomerName, &p.Type, &p.Subtype, &p.WeightBaht, &p.WeightGrams,
+			&p.ID, &p.CustomerID, &p.CustomerName, &p.Type, &p.Subtype, &p.WeightGrams,
 			&p.TotalAmount, &p.Notes, &p.Date, &p.IsInventory, &p.StillExists,
 			&p.CreatedAt,
 		); err != nil {

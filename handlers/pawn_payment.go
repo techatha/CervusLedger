@@ -104,15 +104,51 @@ func (h *PawnHandler) RedeemPawn(id int) error {
 }
 
 func (h *PawnHandler) ForfeitPawn(id int) error {
-	res, err := db.DB.Exec(`UPDATE pawn_records SET status = 'ขาด' WHERE id = ? AND status = 'active'`, id)
+	tx, err := db.DB.Begin()
 	if err != nil {
-		return fmt.Errorf("forfeit pawn: %w", err)
+		return err
 	}
-	n, _ := res.RowsAffected()
-	if n == 0 {
-		return fmt.Errorf("pawn %d not found or not active", id)
+	defer tx.Rollback()
+
+	// 1. Get pawn record details
+	var customerID int
+	var ticketNumber int
+	var itemType string
+	var weightGrams float64
+	var principalAmount float64
+	var description string
+	err = tx.QueryRow(`
+		SELECT customer_id, ticket_number, item_type, weight_grams, principal_amount, description
+		FROM pawn_records WHERE id = ? AND status = 'active'
+	`, id).Scan(&customerID, &ticketNumber, &itemType, &weightGrams, &principalAmount, &description)
+	if err != nil {
+		return fmt.Errorf("pawn record not found or not active: %w", err)
 	}
-	return nil
+
+	// 2. Update status to 'ขาด'
+	_, err = tx.Exec(`UPDATE pawn_records SET status = 'ขาด' WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("update status to forfeit: %w", err)
+	}
+
+	// 3. Create notes
+	pawnNotes := fmt.Sprintf("หลุดจำนำ ตั๋วเลขที่ #%04d", ticketNumber)
+	if description != "" {
+		pawnNotes += fmt.Sprintf(" (%s)", description)
+	}
+
+	todayStr := time.Now().Format("2006-01-02 15:04:05")
+
+	// 4. Insert into purchased_gold
+	_, err = tx.Exec(`
+		INSERT INTO purchased_gold (customer_id, type, weight_grams, total_amount, notes, date, is_inventory, still_exists)
+		VALUES (?, ?, ?, ?, ?, ?, 0, 1)
+	`, customerID, itemType, weightGrams, principalAmount, pawnNotes, todayStr)
+	if err != nil {
+		return fmt.Errorf("insert purchased_gold from forfeit: %w", err)
+	}
+
+	return tx.Commit()
 }
 
 // UpdateTicketStatus marks a pawn ticket as lost or damaged.

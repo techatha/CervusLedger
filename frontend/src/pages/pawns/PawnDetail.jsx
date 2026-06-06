@@ -19,9 +19,10 @@ import PawnPendingInterestCard from './components/pawnDetail/PawnPendingInterest
 import PawnPrincipalChangesCard from './components/pawnDetail/PawnPrincipalChangesCard'
 import { formatTicket, pawnStatusBadge } from '@/utils/thai'
 import { getPendingMonths, thaiMonthShort } from '@/utils/pawn'
+import { getLocalISOString } from '@/utils/date'
 import { RecordPaymentModal, PrincipalChangeForm } from './PrincipalChangeForm'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPrint, faHandshakeSlash } from '@fortawesome/free-solid-svg-icons'
+import { faPrint, faHandshakeSlash, faMoneyBills } from '@fortawesome/free-solid-svg-icons'
 import './PawnDetail.css'
 
 export default function PawnDetail() {
@@ -117,7 +118,7 @@ export default function PawnDetail() {
         pawn_record_id: pawn.id,
         month: m.month,
         year: m.year,
-        paid_date: new Date().toISOString().slice(0, 10),
+        paid_date: getLocalISOString().slice(0, 10),
         notes: `งวด ${thaiMonthShort(m.month)} ${m.year + 543}`,
         interest_amount: pawn.interest_amount,
         customer_name: pawn.customer_name_display || pawn.customer_name || '',
@@ -170,7 +171,7 @@ export default function PawnDetail() {
           <div style={{ display: 'flex', gap: 8 }}>
 
             <button className="btn btn-ghost" onClick={() => setModal('payment')}>
-              <IconCash /> จ่ายดอกเบี้ยล่วงหน้า
+              <FontAwesomeIcon icon={faMoneyBills} /> จ่ายดอกเบี้ยล่วงหน้า
             </button>
             <button
               className="btn btn-ghost"
@@ -323,9 +324,4 @@ function ConfirmModal({ title, body, confirmLabel, confirmStyle, onConfirm, onCl
     </div>
   )
 }
-
-function IconCash() {
-  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"><rect x="2" y="6" width="20" height="12" rx="2" /><circle cx="12" cy="12" r="2" /><path d="M6 12h.01M18 12h.01" /></svg>
-}
-
 

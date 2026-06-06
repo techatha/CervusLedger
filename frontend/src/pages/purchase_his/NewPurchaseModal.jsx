@@ -4,13 +4,15 @@ import { GetTodayPrice } from 'wailsjs/go/handlers/GoldPriceHandler.js'
 import NewSaleFormBuy from '../sales/components/newSaleForm/Buy.jsx'
 import '../sales/NewSaleForm.css'
 
-const today = () => new Date().toISOString().slice(0, 10)
+import { getLocalISOString } from '@/utils/date'
+
+const today = () => getLocalISOString().slice(0, 10)
 
 const BLANK_BUY = {
   gold_item_id: 0,
   gold_item_label: '',
   weight_grams: '',
-  purity: '90',
+  purity: '96.5',
   price_per_baht: '',
   item_type: '',
   item_subtype: '',
@@ -30,8 +32,10 @@ export default function NewPurchaseModal({ onClose }) {
   const [formData, setFormData] = useState({ ...BLANK_BUY })
 
   useEffect(() => {
+    console.log("hdjkj")
     GetTodayPrice()
       .then(price => {
+        console.log(price)
         setTodayPrice(price)
       })
       .catch(e => console.error('Failed to load today price in NewPurchaseModal:', e))
@@ -43,7 +47,6 @@ export default function NewPurchaseModal({ onClose }) {
 
     if (!formData.customer_id) return setError('กรุณาเลือกลูกค้าสำหรับการรับซื้อทอง')
     if (!formData.item_type?.trim()) return setError('กรุณากรอกประเภททอง')
-    if (!formData.item_subtype?.trim()) return setError('กรุณากรอกรุ่น/น้ำหนัก (Subtype)')
     if (!formData.weight_baht) return setError('กรุณากรอกน้ำหนัก')
     if (!formData.total_amount) return setError('กรุณากรอกราคารับซื้อรวม')
 
@@ -51,7 +54,7 @@ export default function NewPurchaseModal({ onClose }) {
     const itemToAdd = {
       type: 'buy',
       customer_id: formData.customer_id,
-      gold_item_id: 0,
+      gold_item_id: formData.gold_item_id || 0,
       weight_baht: parseFloat(formData.weight_baht),
       weight_grams: parseFloat(formData.weight_grams || 0),
       gold_price_id: priceID,
@@ -60,9 +63,9 @@ export default function NewPurchaseModal({ onClose }) {
       notes: formData.notes,
       date: formData.date,
       item_type: formData.item_type,
-      item_subtype: formData.item_subtype,
+      item_subtype: formData.item_subtype || '',
       is_inventory: formData.is_inventory,
-      label: `รับซื้อ: ${formData.item_type} — ${formData.item_subtype || (formData.weight_baht + ' บาท')}`,
+      label: `รับซื้อ: ${formData.item_type}${formData.item_subtype ? ` — ${formData.item_subtype}` : ''}${formData.weight_grams ? ` (${formData.weight_grams} กรัม)` : ''}`,
     }
 
     onClose()
@@ -80,11 +83,17 @@ export default function NewPurchaseModal({ onClose }) {
         {error && <div className="alert alert-error" style={{ margin: '12px 16px 0' }}>{error}</div>}
 
         <div className="modal-body">
-          <NewSaleFormBuy
-            formData={formData}
-            setFormData={setFormData}
-            todayPrice={todayPrice}
-          />
+          {todayPrice ? (
+            <NewSaleFormBuy
+              formData={formData}
+              setFormData={setFormData}
+              todayPrice={todayPrice}
+            />
+          ) : (
+            <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
+              กำลังโหลดราคาทองคำปัจจุบัน...
+            </div>
+          )}
         </div>
         <div className="modal-footer">
           <button type="button" className="btn btn-ghost" onClick={onClose}>
@@ -95,6 +104,7 @@ export default function NewPurchaseModal({ onClose }) {
             className="btn btn-primary"
             onClick={handleSubmit}
             style={{ background: 'var(--amber)', color: '#fff', border: 'none' }}
+            disabled={!todayPrice}
           >
             ใส่ตะกร้าและไปหน้ารายการขาย
           </button>

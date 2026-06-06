@@ -5,6 +5,7 @@ import { RecordPayment } from 'wailsjs/go/handlers/PawnHandler'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCartArrowDown } from '@fortawesome/free-solid-svg-icons'
 import { formatBaht } from '@/utils/thai'
+import { getLocalISOString } from '@/utils/date'
 import './PrincipalChangeForm.css'
 
 const THAI_MONTHS = [
@@ -12,7 +13,7 @@ const THAI_MONTHS = [
   'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม',
 ]
 
-const today = () => new Date().toISOString().slice(0, 10)
+const today = () => getLocalISOString().slice(0, 10)
 const nowCE  = new Date()
 
 export function RecordPaymentModal({ pawn, customerName, onSaved, onClose }) {
@@ -179,7 +180,7 @@ export function PrincipalChangeForm({ pawn, onSaved, onClose }) {
     try {
       await AddPrincipalChange({
         pawn_record_id:      pawn.id,
-        date:                new Date().toISOString().slice(0, 7),
+        date:                getLocalISOString().slice(0, 7),
         change_type:         form.change_type,
         amount:              amt,
         new_principal:       preview.newPrincipal,

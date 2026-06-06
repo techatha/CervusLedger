@@ -66,6 +66,32 @@ func createTables() {
 		}
 	}
 
+	// Drop old purchased_gold table if it has weight_baht
+	var hasWeightBaht bool
+	rows, err = DB.Query("PRAGMA table_info(purchased_gold)")
+	if err == nil {
+		for rows.Next() {
+			var cid int
+			var name, ctype string
+			var notnull, pk int
+			var dfltVal interface{}
+			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dfltVal, &pk); err == nil {
+				if name == "weight_baht" {
+					hasWeightBaht = true
+				}
+			}
+		}
+		rows.Close()
+	}
+	if hasWeightBaht {
+		_, err = DB.Exec("DROP TABLE purchased_gold")
+		if err != nil {
+			log.Println("Warning: Failed to drop old purchased_gold table:", err)
+		} else {
+			log.Println("Dropped old purchased_gold table successfully")
+		}
+	}
+
 	// Ensure tables exist
 	queries := []string{
 
@@ -78,6 +104,7 @@ func createTables() {
 			phone           TEXT,
 			id_card         TEXT UNIQUE,
 			address_no      TEXT,
+			address_line    TEXT,
 			moo             TEXT,
 			soi             TEXT,
 			road            TEXT,
@@ -113,8 +140,6 @@ func createTables() {
 			id             INTEGER PRIMARY KEY AUTOINCREMENT,
 			customer_id    INTEGER NOT NULL,
 			type           TEXT NOT NULL,
-			subtype        TEXT,
-			weight_baht    REAL NOT NULL,
 			weight_grams   REAL DEFAULT 0.0,
 			total_amount   REAL NOT NULL DEFAULT 0,
 			notes          TEXT,
@@ -214,8 +239,6 @@ func createTables() {
 			('shop_name',            'ห้างทองแต้ยืนยง'),
 			('shop_address',         '332/1 ถ.เชียงใหม่-ลำพูน ต.วัตเกต อ.เมืองเชียงใหม่ จ.เชียงใหม่ 50000'),
 			('shop_phone',           '053-140-935'),
-			('buy_price_per_baht',   '0'),
-			('sell_price_per_baht',  '0'),
 			('buying_difference',    '0'),
 			('interest_rate_low',    '0.03'),
 			('interest_rate_high',   '0.02'),
@@ -227,6 +250,23 @@ func createTables() {
 			('pawn_legal_terms',     'ข้่าพเจ้าขอรับรองว่าทรัพย์สินดั่งกล่าวเป็นของข้าพเจ้าจริงไม่ใช่ทรัพย์สินที่ได้มาจากการกระทำผิดใดๆ ทั้งสิ้น และ <bold><underline> จะมาถอนภายในกำหนด หนึ่ง เดือน </underline></bold> หากพ้นกำหนดนี้แล้ว ข้าพเจ้ายินยอมให้กรรมสิทธิในทรัพสินดังกล่าวเป็นกรรมสิทธิของทางร้าน ข้าพเจ้าได้อ่านสัญญาดีแล้วจึงลงลายมือไว้เป็นหลักฐาน'),
 			('income_expense_presets', '[{"name":"ดอกเบี้ยจำนำ","type":"income","color":"#2ecc71"},{"name":"ขายทอง","type":"income","color":"#f1c40f"},{"name":"ค่าบริการ","type":"income","color":"#3498db"},{"name":"อื่นๆ","type":"income","color":"#95a5a6"},{"name":"รับซื้อทอง","type":"expense","color":"#e67e22"},{"name":"ค่าเช่า","type":"expense","color":"#e74c3c"},{"name":"ค่าสาธารณูปโภค","type":"expense","color":"#9b59b6"},{"name":"เงินเดือน","type":"expense","color":"#1abc9c"},{"name":"ค่าใช้จ่ายทั่วไป","type":"expense","color":"#34495e"},{"name":"อื่นๆ","type":"expense","color":"#7f8c8d"}]')
 		`,
+
+		// Indexes for DATETIME and DATE columns
+		`CREATE INDEX IF NOT EXISTS idx_customers_created_at ON customers(created_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_gold_stock_created_at ON gold_stock(created_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_gold_stock_logs_log_date ON gold_stock_logs(log_date)`,
+		`CREATE INDEX IF NOT EXISTS idx_gold_stock_logs_created_at ON gold_stock_logs(created_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_purchased_gold_date ON purchased_gold(date)`,
+		`CREATE INDEX IF NOT EXISTS idx_purchased_gold_created_at ON purchased_gold(created_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_gold_prices_date ON gold_prices(date)`,
+		`CREATE INDEX IF NOT EXISTS idx_pawn_records_pawned_date ON pawn_records(pawned_date)`,
+		`CREATE INDEX IF NOT EXISTS idx_pawn_records_created_at ON pawn_records(created_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_pawn_payments_paid_date ON pawn_payments(paid_date)`,
+		`CREATE INDEX IF NOT EXISTS idx_principal_changes_date ON principal_changes(date)`,
+		`CREATE INDEX IF NOT EXISTS idx_income_expenses_date ON income_expenses(date)`,
+		`CREATE INDEX IF NOT EXISTS idx_income_expenses_created_at ON income_expenses(created_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_daily_cash_last_record_date ON daily_cash(last_record_date)`,
+		`CREATE INDEX IF NOT EXISTS idx_daily_cash_created_at ON daily_cash(created_at)`,
 	}
 
 	for _, query := range queries {
@@ -234,16 +274,5 @@ func createTables() {
 		if err != nil {
 			log.Fatal("Failed to create table:", err)
 		}
-	}
-
-	// Migrations: Alter tables to add columns if they don't exist
-	alterQueries := []string{
-		`ALTER TABLE purchased_gold ADD COLUMN subtype TEXT`,
-		`ALTER TABLE purchased_gold ADD COLUMN weight_grams REAL DEFAULT 0.0`,
-		`ALTER TABLE income_expenses ADD COLUMN color TEXT`,
-	}
-	for _, query := range alterQueries {
-		// Ignore error if column already exists
-		_, _ = DB.Exec(query)
 	}
 }

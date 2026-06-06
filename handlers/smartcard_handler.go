@@ -251,9 +251,26 @@ func (h *SmartCardHandler) parseAddress(addr string, c *models.Customer) {
 			p := strings.TrimPrefix(part, "จังหวัด")
 			c.Province = strings.TrimSpace(p)
 		} else {
-			// Unidentified part (likely Road or Soi)
-			r := strings.TrimPrefix(part, "ถนน")
-			c.Road = strings.TrimSpace(r)
+			// Unidentified part (likely Road, Soi, Trok, Village, or Building)
+			if strings.Contains(part, "ซอย") || strings.Contains(part, "ตรอก") || strings.Contains(part, "หมู่บ้าน") || strings.Contains(part, "อาคาร") || strings.Contains(part, "ตึก") || strings.Contains(part, "ชั้น") {
+				if c.AddressLine != "" {
+					c.AddressLine += " " + part
+				} else {
+					c.AddressLine = part
+				}
+			} else {
+				r := strings.TrimPrefix(part, "ถนน")
+				r = strings.TrimSpace(r)
+				if c.Road == "" {
+					c.Road = r
+				} else {
+					if c.AddressLine != "" {
+						c.AddressLine += " " + part
+					} else {
+						c.AddressLine = part
+					}
+				}
+			}
 		}
 	}
 }

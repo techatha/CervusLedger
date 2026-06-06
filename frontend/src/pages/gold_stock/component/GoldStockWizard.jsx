@@ -10,6 +10,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 import { RecordStockLog } from 'wailsjs/go/handlers/GoldItemHandler'
 import { formatShortThaiDate } from '@/utils/thai'
+import { getLocalISOString } from '@/utils/date'
 import './GoldStockWizard.css'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -31,7 +32,7 @@ export default function GoldStockWizard({ items, editedAmounts, onClose, onSaved
 
   const auditGroups = groupBy(items, 'type')
   const typeKeys = Object.keys(auditGroups)
-  const today = new Date().toISOString()
+  const today = getLocalISOString()
 
   const wizardCurrentType = typeKeys[wizardStep]
   const wizardCurrentItems = wizardCurrentType ? auditGroups[wizardCurrentType] : []

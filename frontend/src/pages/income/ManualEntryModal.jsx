@@ -4,7 +4,9 @@ import { GetAllSettings } from 'wailsjs/go/handlers/SettingsHandler'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faArrowTrendUp,faArrowTrendDown, faPlus } from '@fortawesome/free-solid-svg-icons'
 
-const today = () => new Date().toISOString().slice(0, 10)
+import { getLocalISOString } from '@/utils/date'
+
+const today = () => getLocalISOString().slice(0, 10)
 
 export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
   const [form, setForm] = useState({

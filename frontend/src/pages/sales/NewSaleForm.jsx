@@ -4,7 +4,9 @@ import NewSaleFormBuy from './components/newSaleForm/Buy.jsx'
 import NewSaleFormDiscount from './components/newSaleForm/Discount.jsx'
 import './NewSaleForm.css'
 
-const today = () => new Date().toISOString().slice(0, 10)
+import { getLocalISOString } from '@/utils/date'
+
+const today = () => getLocalISOString().slice(0, 10)
 
 const BLANK_SELL = {
   gold_item_id: 0, gold_item_label: '', weight_grams: '', purity: '90',
@@ -14,7 +16,7 @@ const BLANK_SELL = {
 }
 
 const BLANK_BUY = {
-  gold_item_id: 0, gold_item_label: '', weight_grams: '', purity: '90',
+  gold_item_id: 0, gold_item_label: '', weight_grams: '', purity: '96.5',
   price_per_baht: '', item_type: '', item_subtype: '', weight_baht: '', total_amount: '',
   is_inventory: 0, customer_id: 0, customer_label: '', notes: '', date: today()
 }
@@ -34,7 +36,7 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
       return { ...BLANK_SELL, price_per_baht: todayPrice ? String(todayPrice.sell_price_per_baht) : '' }
     }
     if (initialTab === 'buy') {
-      return { ...BLANK_BUY, price_per_baht: todayPrice ? String(todayPrice.sell_price_per_baht) : '' }
+      return { ...BLANK_BUY, price_per_baht: todayPrice ? String(todayPrice.buy_price_per_baht) : '' }
     }
     return BLANK_DISCOUNT
   })
@@ -43,7 +45,7 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
     setTab(newTab)
     setError(null)
     if (newTab === 'sell') setFormData({ ...BLANK_SELL, price_per_baht: todayPrice ? String(todayPrice.sell_price_per_baht) : '' })
-    else if (newTab === 'buy') setFormData({ ...BLANK_BUY, price_per_baht: todayPrice ? String(todayPrice.sell_price_per_baht) : '' })
+    else if (newTab === 'buy') setFormData({ ...BLANK_BUY, price_per_baht: todayPrice ? String(todayPrice.buy_price_per_baht) : '' })
     else if (newTab === 'discount') setFormData({ ...BLANK_DISCOUNT })
   }
 
@@ -98,7 +100,6 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
     } else if (tab === 'buy') {
       if (!formData.customer_id) return setError('กรุณาเลือกลูกค้าสำหรับการรับซื้อทอง')
       if (!formData.item_type?.trim()) return setError('กรุณากรอกประเภททอง')
-      if (!formData.item_subtype?.trim()) return setError('กรุณากรอกรุ่น/น้ำหนัก (Subtype)')
       if (!formData.weight_baht) return setError('กรุณากรอกน้ำหนัก')
       if (!formData.total_amount) return setError('กรุณากรอกราคารับซื้อรวม')
 
@@ -106,7 +107,7 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
       onAdd({
         type: 'buy',
         customer_id: formData.customer_id,
-        gold_item_id: 0,
+        gold_item_id: formData.gold_item_id || 0,
         weight_baht: parseFloat(formData.weight_baht),
         weight_grams: parseFloat(formData.weight_grams || 0),
         gold_price_id: priceID,
@@ -115,9 +116,9 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
         notes: formData.notes,
         date: formData.date,
         item_type: formData.item_type,
-        item_subtype: formData.item_subtype,
+        item_subtype: formData.item_subtype || '',
         is_inventory: formData.is_inventory,
-        label: `รับซื้อ: ${formData.item_type} — ${formData.item_subtype || (formData.weight_baht + ' บาท')}`,
+        label: `รับซื้อ: ${formData.item_type}${formData.item_subtype ? ` — ${formData.item_subtype}` : ''}${formData.weight_grams ? ` (${formData.weight_grams} กรัม)` : ''}`,
       })
       onClose()
 

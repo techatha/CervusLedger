@@ -4,6 +4,8 @@ import {context} from '../models';
 
 export function GetAllSettings():Promise<Record<string, string>>;
 
+export function GetBuyingDifference():Promise<number>;
+
 export function GetSettingFloat(arg1:string,arg2:number):Promise<number>;
 
 export function GetSettingString(arg1:string,arg2:string):Promise<string>;

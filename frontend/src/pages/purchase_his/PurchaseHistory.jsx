@@ -60,7 +60,7 @@ export default function PurchaseHistory() {
     return matchesSearch && matchesStatus && matchesInventory
   })
 
-  const totalWeight = filteredPurchases.reduce((sum, item) => sum + (item.weight_baht || 0), 0)
+  const totalWeight = filteredPurchases.reduce((sum, item) => sum + (item.weight_baht || (item.weight_grams || 0) / 15.244), 0)
   const totalAmount = filteredPurchases.reduce((sum, item) => sum + (item.total_amount || 0), 0)
 
   return (
@@ -188,7 +188,7 @@ export default function PurchaseHistory() {
 
                   {/* ประเภททอง (แสดงเป็น Normal Text) */}
                   <td style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-                    {item.type || item.item_type || '—'} {item.subtype || '—'}
+                    {item.type || item.item_type || '—'} 
                   </td>
 
                   {/* น้ำหนัก (gram) */}

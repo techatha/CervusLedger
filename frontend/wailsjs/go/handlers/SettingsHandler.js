@@ -6,6 +6,10 @@ export function GetAllSettings() {
   return window['go']['handlers']['SettingsHandler']['GetAllSettings']();
 }
 
+export function GetBuyingDifference() {
+  return window['go']['handlers']['SettingsHandler']['GetBuyingDifference']();
+}
+
 export function GetSettingFloat(arg1, arg2) {
   return window['go']['handlers']['SettingsHandler']['GetSettingFloat'](arg1, arg2);
 }

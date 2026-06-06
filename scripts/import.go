@@ -17,7 +17,9 @@ func main() {
 	os.MkdirAll(homeDir+"/CervusLedger", 0755)
 
 	fmt.Println("Wiping out existing database to re-initialize from scratch...")
-	os.Remove(dbPath) // Delete the entire DB to ensure a clean slate and fresh schema
+	if f, err := os.OpenFile(dbPath, os.O_WRONLY|os.O_TRUNC, 0666); err == nil {
+		f.Close()
+	}
 
 	db.Init(dbPath)
 

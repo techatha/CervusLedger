@@ -9,9 +9,9 @@ import './PurchaseDetailModal.css'
 export default function PurchaseDetailModal({ item, onClose, onUpdate }) {
   const navigate = useNavigate()
 
-  const [isEditing,   setIsEditing]   = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const [editedNotes, setEditedNotes] = useState(item.notes || '')
-  const [saving,      setSaving]      = useState(false)
+  const [saving, setSaving] = useState(false)
 
   const handleSaveNotes = async () => {
     setSaving(true)
@@ -77,7 +77,7 @@ export default function PurchaseDetailModal({ item, onClose, onUpdate }) {
           {/* Item header */}
           <div className="pdm-item-header">
             <span className="pdm-item-title">
-              {item.type || item.item_type || '—'} {item.subtype || item.item_subtype || '—'}
+              {item.type || item.item_type || '—'}
             </span>
           </div>
 
@@ -117,7 +117,6 @@ export default function PurchaseDetailModal({ item, onClose, onUpdate }) {
 
             <div className="pdm-row">
               <span className="pdm-row-label">รุ่น / ขนาด</span>
-              <span className="pdm-val pdm-val-secondary">{item.subtype || item.item_subtype || '—'}</span>
             </div>
 
             {/* สถานะปัจจุบัน toggle row */}

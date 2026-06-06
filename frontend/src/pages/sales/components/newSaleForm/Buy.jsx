@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPen, faRotateLeft, faCheck } from '@fortawesome/free-solid-svg-icons'
 import CustomerNoteSection from './CustomerNote.jsx'
 import GoldTypeSelectSection from './GoldTypeSelectSection.jsx'
-import { GetAllSettings } from 'wailsjs/go/handlers/SettingsHandler'
+import { GetBuyingDifference } from 'wailsjs/go/handlers/SettingsHandler'
 
 export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
   const setBuyField = (k, v) => setFormData(p => ({ ...p, [k]: v }))
@@ -17,13 +17,10 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
   const calculatedRef = useRef(0)
 
   useEffect(() => {
-    GetAllSettings()
+    GetBuyingDifference()
       .then(data => {
-        if (data && data.buying_difference) {
-          const diff = parseFloat(data.buying_difference) || 0
-          setBuyingDifference(diff)
-          updateBuyCalculation({}, diff)
-        }
+        setBuyingDifference(data)
+        updateBuyCalculation({}, data)
       })
       .catch(e => console.error('Failed to load settings in Buy.jsx:', e))
   }, [])
@@ -65,7 +62,7 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
     setHasManualOverride(false)
     setIsEditingTotal(false)
     setEditedTotal('')
-  }, [formData.gold_item_id])
+  }, [formData.item_type])
 
   useEffect(() => {
     if (!formData.price_per_baht && todayPrice?.buy_price_per_baht) {
@@ -104,37 +101,115 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
 
   return (
     <>
-      <GoldTypeSelectSection
-        tabMode="buy"
-        goldItemId={formData.gold_item_id}
-        weightGrams={formData.weight_grams}
-        purity={formData.purity}
-        onChange={(fields) => {
-          const updated = { ...fields }
-          if (fields.gold_item_label) {
-            const parts = fields.gold_item_label.split(' — ')
-            if (parts.length === 2) {
-              updated.item_type = parts[0]
-              updated.item_subtype = parts[1]
+      {/* ─── Inventory checkbox ─────────────────────────────────── */}
+      <div className="nsf-inventory">
+        <label className={`nsf-inventory-label ${formData.is_inventory === 1 ? 'nsf-inventory-label--active' : ''}`}>
+          <input
+            type="checkbox"
+            checked={formData.is_inventory === 1}
+            onChange={e => {
+              const ticked = e.target.checked ? 1 : 0
+              setFormData(prev => ({
+                ...prev,
+                is_inventory: ticked,
+                gold_item_id: 0,
+                gold_item_label: '',
+                item_type: '',
+                item_subtype: '',
+                weight_grams: '',
+                weight_baht: '',
+                total_amount: '',
+                purity: ticked ? '0' : '96.5'
+              }))
+            }}
+            className="nsf-inventory-checkbox"
+          />
+          <div>
+            <div className={`nsf-inventory-title ${formData.is_inventory === 1 ? 'nsf-inventory-title--active' : ''}`}>
+              นำเข้าคลังสินค้าหลัก
+            </div>
+            <div className="nsf-inventory-desc">
+              บันทึกในคลังสำหรับนับสต็อกประจำเดือน
+            </div>
+          </div>
+        </label>
+      </div>
+      {formData.is_inventory === 1 ? (
+        <GoldTypeSelectSection
+          tabMode="buy"
+          goldItemId={formData.gold_item_id}
+          weightGrams={formData.weight_grams}
+          purity={formData.purity}
+          onChange={(fields) => {
+            const updated = { ...fields }
+            if (fields.gold_item_label) {
+              const parts = fields.gold_item_label.split(' — ')
+              if (parts.length === 2) {
+                updated.item_type = parts[0]
+                updated.item_subtype = parts[1]
+              }
+            } else if (fields.gold_item_id === 0) {
+              updated.item_type = ''
+              updated.item_subtype = ''
             }
-          } else if (fields.gold_item_id === 0) {
-            updated.item_type = ''
-            updated.item_subtype = ''
-          }
-          updateBuyCalculation(updated)
-        }}
-      />
+            updateBuyCalculation(updated)
+          }}
+        />
+      ) : (
+        <>
+          <div className="section-divider">ข้อมูลทองคำที่รับซื้อ</div>
+
+          <div className="form-group">
+            <label className="form-label form-label-required">ประเภททอง</label>
+            <input
+              className="input"
+              type="text"
+              placeholder="ระบุประเภททอง เช่น ทองรูปพรรณ, ทองแท่ง, เศษทอง..."
+              value={formData.item_type || ''}
+              onChange={e => updateBuyCalculation({ item_type: e.target.value })}
+            />
+          </div>
+
+          <div className="form-row form-row-2" style={{ marginTop: '12px' }}>
+            <div className="form-group">
+              <label className="form-label form-label-required">น้ำหนัก (กรัม)</label>
+              <input
+                className="input"
+                type="number"
+                min="0"
+                step="0.0001"
+                placeholder="0.00"
+                value={formData.weight_grams || ''}
+                onChange={e => updateBuyCalculation({ weight_grams: e.target.value })}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label form-label-required">ความบริสุทธิ์ (%)</label>
+              <input
+                className="input"
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                placeholder="96.5"
+                value={formData.purity || ''}
+                onChange={e => updateBuyCalculation({ purity: e.target.value })}
+              />
+            </div>
+          </div>
+        </>
+      )}
 
       <div className="form-group nsf-buy-price-group">
         <label className="form-label form-label-required">ราคาทองแท่ง (บาท)</label>
         <input
           className="input"
           type="text"
-          value={formatNumberInput(todayPrice.buy_price_per_baht)}
+          value={formatNumberInput(formData.price_per_baht)}
           onChange={e => updateBuyCalculation({ price_per_baht: e.target.value })}
           onBlur={e => updateBuyCalculation({ price_per_baht: formatCurrency(e.target.value) })}
           placeholder="0.00"
-          disabled={!formData.gold_item_id}
+          disabled={!formData.item_type}
         />
         {todayPrice && (
           <span className="nsf-buy-today-price-hint">
@@ -235,26 +310,6 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
           )}
         </div>
       )}
-
-      {/* ─── Inventory checkbox ─────────────────────────────────── */}
-      <div className="nsf-inventory">
-        <label className={`nsf-inventory-label ${formData.is_inventory === 1 ? 'nsf-inventory-label--active' : ''}`}>
-          <input
-            type="checkbox"
-            checked={formData.is_inventory === 1}
-            onChange={e => setBuyField('is_inventory', e.target.checked ? 1 : 0)}
-            className="nsf-inventory-checkbox"
-          />
-          <div>
-            <div className={`nsf-inventory-title ${formData.is_inventory === 1 ? 'nsf-inventory-title--active' : ''}`}>
-              นำเข้าคลังสินค้าหลัก
-            </div>
-            <div className="nsf-inventory-desc">
-              บันทึกในคลังสำหรับนับสต็อกประจำเดือน
-            </div>
-          </div>
-        </label>
-      </div>
 
       <CustomerNoteSection
         tabMode="buy"

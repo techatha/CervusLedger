@@ -133,12 +133,13 @@ function TicketBody({ pawn, customer, shop, principal, copyLabel }) {
             </span>
           </div>
         )}
-        {(customer?.tambon || customer?.amphoe || customer?.province) && (
+        {(customer?.address_no || customer?.address_line || customer?.moo || customer?.road || customer?.tambon || customer?.amphoe || customer?.province) && (
           <div className="rcp-row">
             <span className="rcp-label">ที่อยู่</span>
             <span className="rcp-value" style={{ fontSize: 12 }}>
               {[
                 customer.address_no,
+                customer.address_line,
                 customer.moo ? `ม.${customer.moo}` : '',
                 customer.road,
                 customer.tambon,
