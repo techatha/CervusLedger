@@ -3,6 +3,7 @@ package handlers
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"CervusLedger/db"
 	"CervusLedger/models"
@@ -126,6 +127,58 @@ func (h *PurchaseHandler) ToggleIsInventory(id int, isInventory int) error {
 		WHERE id = ?
 	`, isInventory, id)
 	return err
+}
+
+func (h *PurchaseHandler) CastToInventory(purchaseID int, goldItemID int) error {
+	tx, err := db.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// 1. Set is_inventory = 1
+	_, err = tx.Exec(`
+		UPDATE purchased_gold
+		SET is_inventory = 1
+		WHERE id = ?
+	`, purchaseID)
+	if err != nil {
+		return err
+	}
+
+	// 2. Increment stock log for today's date
+	logDate := time.Now().Format("2006-01-02") + " 00:00:00"
+
+	var currentAmount int
+	err = tx.QueryRow(`
+		SELECT amount FROM gold_stock_logs 
+		WHERE gold_item_id = ? AND log_date = ?
+	`, goldItemID, logDate).Scan(&currentAmount)
+	if err == nil {
+		_, err = tx.Exec(`
+			UPDATE gold_stock_logs SET amount = amount + 1
+			WHERE gold_item_id = ? AND log_date = ?
+		`, goldItemID, logDate)
+	} else {
+		var latestAmount int
+		err = tx.QueryRow(`
+			SELECT amount FROM gold_stock_logs 
+			WHERE gold_item_id = ? 
+			ORDER BY log_date DESC LIMIT 1
+		`, goldItemID).Scan(&latestAmount)
+		if err != nil {
+			latestAmount = 0
+		}
+		_, err = tx.Exec(`
+			INSERT INTO gold_stock_logs (gold_item_id, amount, log_date)
+			VALUES (?, ?, ?)
+		`, goldItemID, latestAmount + 1, logDate)
+	}
+	if err != nil {
+		return fmt.Errorf("increment stock log: %w", err)
+	}
+
+	return tx.Commit()
 }
 
 

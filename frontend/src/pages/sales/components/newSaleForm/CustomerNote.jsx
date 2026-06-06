@@ -54,33 +54,33 @@ export default function CustomerNoteSection({
       <div className="section-divider">ลูกค้า & หมายเหตุ</div>
       <div className="form-row form-row-2">
         
-        {/* Customer Autocomplete */}
-        <div className="form-group" ref={custRef} style={{ position: 'relative' }}>
+        <div className="form-group" ref={custRef}>
           <label className={`form-label ${tabMode === 'buy' ? 'form-label-required' : ''}`}>
             {tabMode === 'buy' ? 'ลูกค้า' : 'ลูกค้า (ไม่บังคับ)'}
           </label>
-          <input
-            className="input"
-            placeholder="ค้นหาชื่อหรือเบอร์..."
-            value={custSearch}
-            onChange={handleSearchChange}
-            onFocus={() => custSearch && setShowCustDrop(true)}
-          />
+          <div style={{ position: 'relative' }}>
+            {showCustDrop && customers.length > 0 && (
+              <div className="nsf-dropdown" style={{ bottom: 'calc(100% + 4px)', top: 'auto', zIndex: 100 }}>
+                {customers.map(c => (
+                  <div key={c.id} className="nsf-drop-item" onMouseDown={() => handleSelect(c)}>
+                    <span className="nsf-drop-name">{fullName(c)}</span>
+                    {c.phone && <span className="nsf-drop-desc">{c.phone}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+            <input
+              className="input"
+              placeholder="ค้นหาชื่อหรือเบอร์..."
+              value={custSearch}
+              onChange={handleSearchChange}
+              onFocus={() => custSearch && setShowCustDrop(true)}
+            />
+          </div>
           
           {customerId > 0 && (
             <div className="nsf-selected-item">
               <IconCheck /> {customerLabel}
-            </div>
-          )}
-          
-          {showCustDrop && customers.length > 0 && (
-            <div className="nsf-dropdown">
-              {customers.map(c => (
-                <div key={c.id} className="nsf-drop-item" onMouseDown={() => handleSelect(c)}>
-                  <span className="nsf-drop-name">{fullName(c)}</span>
-                  {c.phone && <span className="nsf-drop-desc">{c.phone}</span>}
-                </div>
-              ))}
             </div>
           )}
         </div>

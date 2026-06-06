@@ -9,9 +9,7 @@
 }
 
 /* ─── Item header ─────────────────────────────────────────────────── */
-.pdm-item-header {
-  margin-bottom: 2px;
-}
+.pdm-item-header { margin-bottom: 2px; }
 .pdm-item-title {
   font-size: 18px;
   font-weight: 600;
@@ -55,13 +53,8 @@
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
 }
-.pdm-weight-val-amber {
-  color: var(--amber);
-}
-.pdm-weight-unit {
-  font-size: 12px;
-  color: var(--text-muted);
-}
+.pdm-weight-val-amber { color: var(--amber); }
+.pdm-weight-unit { font-size: 12px; color: var(--text-muted); }
 
 /* ─── Detail rows card ────────────────────────────────────────────── */
 .pdm-rows {
@@ -89,15 +82,12 @@
   color: var(--text-muted);
   flex-shrink: 0;
 }
-
 .pdm-val {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
   text-align: right;
 }
-.pdm-val-secondary { color: var(--text-secondary); }
-
 .pdm-link {
   font-size: 14px;
   font-weight: 600;
@@ -108,7 +98,7 @@
 }
 .pdm-link:hover { color: var(--gold-light); }
 
-/* ─── Inventory toggle row ────────────────────────────────────────── */
+/* ─── Inventory toggle rows ───────────────────────────────────────── */
 .pdm-inventory-row {
   cursor: pointer;
   transition: background var(--transition);
@@ -118,17 +108,28 @@
 .pdm-inventory-row--on           { background: var(--green-bg); }
 .pdm-inventory-row--on:hover     { background: var(--green-bg); }
 
+/* Locked state — already-committed inventory row */
+.pdm-inventory-row--locked {
+  cursor: default !important;
+  background: var(--blue-bg, rgba(90,144,200,0.08)) !important;
+}
+.pdm-inventory-row--locked:hover {
+  background: var(--blue-bg, rgba(90,144,200,0.08)) !important;
+}
+
 .pdm-inventory-left {
   display: flex;
   align-items: center;
   gap: 12px;
 }
-
 .pdm-inventory-title {
   font-size: 13.5px;
   font-weight: 500;
   color: var(--text-secondary);
   transition: color var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .pdm-inventory-title--on { color: var(--green); font-weight: 600; }
 
@@ -136,6 +137,22 @@
   font-size: 11.5px;
   color: var(--text-muted);
   margin-top: 1px;
+  line-height: 1.4;
+}
+
+/* "บันทึกแล้ว" pill next to title */
+.pdm-locked-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--blue);
+  background: var(--blue-bg, rgba(90,144,200,0.12));
+  border: 1px solid rgba(90,144,200,0.25);
+  border-radius: 20px;
+  padding: 1px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
 }
 
 /* ─── Notes block ─────────────────────────────────────────────────── */
@@ -144,13 +161,11 @@
   flex-direction: column;
   gap: 7px;
 }
-
 .pdm-notes-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
-
 .pdm-notes-label {
   font-size: 11px;
   font-weight: 600;
@@ -158,8 +173,6 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-
-/* View mode */
 .pdm-notes-body {
   background: var(--bg-hover);
   border: 1px solid var(--border);
@@ -176,19 +189,11 @@
   border-color: var(--gold);
   background: var(--bg-selected);
 }
-
 .pdm-notes-empty {
   color: var(--text-disabled);
   font-style: italic;
 }
-
-/* Edit mode */
-.pdm-notes-edit {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
+.pdm-notes-edit { display: flex; flex-direction: column; gap: 8px; }
 .pdm-notes-textarea {
   width: 100%;
   min-height: 72px;
@@ -197,15 +202,120 @@
   font-size: 13px;
   line-height: 1.6;
 }
-
 .pdm-notes-actions {
   display: flex;
   gap: 8px;
   justify-content: flex-end;
 }
 
+/* ─── Disabled row ────────────────────────────────────────────────── */
 .pdm-row-disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed !important;
   pointer-events: none;
+}
+
+/* ─── Confirm dialog ──────────────────────────────────────────────── */
+
+/* Sits on top of the detail modal — higher z-index */
+.pdm-confirm-backdrop {
+  z-index: 110 !important;
+  background: rgba(10, 6, 0, 0.50) !important;
+}
+
+.pdm-confirm-modal {
+  width: 400px;
+  max-width: 92vw;
+  border-radius: var(--radius-lg);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+/* Warning icon header */
+.pdm-confirm-icon-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 24px 18px;
+  background: var(--amber-bg, rgba(212,140,60,0.1));
+  border-bottom: 1px solid var(--divider);
+  gap: 10px;
+}
+
+.pdm-confirm-icon {
+  font-size: 32px;
+  color: var(--amber, #D48C3C);
+}
+
+/* Title */
+.pdm-confirm-title {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  padding: 0;
+}
+
+/* Body text */
+.pdm-confirm-body {
+  padding: 8px 24px 20px;
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.pdm-confirm-body p { margin-bottom: 10px; }
+.pdm-confirm-body strong { color: var(--text-primary); font-weight: 600; }
+
+.pdm-confirm-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.pdm-confirm-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.pdm-confirm-list li::before {
+  content: '•';
+  color: var(--gold);
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Footer buttons */
+.pdm-confirm-footer {
+  display: flex;
+  gap: 10px;
+  padding: 14px 24px 20px;
+  border-top: 1px solid var(--divider);
+  justify-content: flex-end;
+}
+
+.pdm-confirm-btn-ok {
+  background: var(--green);
+  color: #fff;
+  border: none;
+  gap: 7px;
+}
+.pdm-confirm-btn-ok:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+.pdm-confirm-btn-ok:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

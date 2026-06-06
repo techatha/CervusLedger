@@ -80,7 +80,7 @@ export default function SalesList() {
         // 1. ถ้ารายการเป็น "รายรับ" (ขายทอง หรือ รับดอกเบี้ย) ให้ Push ลง Stack
         if (currentItem.type === 'sell' || currentItem.type === 'pawn_interest') {
           revenueStack.push(currentItem)
-        } 
+        }
         // 2. ถ้ารายการเป็น "รับซื้อ (Buy)" มันคือรายจ่าย ให้ข้าม Stack และบันทึกตรงๆ
         else if (currentItem.type === 'buy') {
           mergedCart.push(currentItem)
@@ -100,18 +100,18 @@ export default function SalesList() {
               topItem.notes = topItem.notes
                 ? `${topItem.notes} | หัก(${discountRefText}: ${remainingDiscount}บ.)`
                 : `หัก(${discountRefText}: ${remainingDiscount}บ.)`
-              
+
               remainingDiscount = 0
               revenueStack.push(topItem)
             } else {
               // ส่วนลด มากกว่า ยอดรายรับ -> หักจนรายรับเหลือ 0 แล้วดึงรายการต่อไปมาหักต่อ
               const applied = topItem.total_amount
               remainingDiscount -= applied
-              
+
               topItem.notes = topItem.notes
                 ? `${topItem.notes} | หัก(${discountRefText}: ${applied}บ.)`
                 : `หัก(${discountRefText}: ${applied}บ.)`
-              
+
               topItem.total_amount = 0
               mergedCart.push(topItem) // ยอดเป็น 0 ส่งเข้าผลลัพธ์สุดท้าย
             }
@@ -123,8 +123,8 @@ export default function SalesList() {
             mergedCart.push({
               ...currentItem,
               total_amount: remainingDiscount, // บันทึกเฉพาะส่วนลดที่เหลือ
-              notes: currentItem.notes 
-                ? `${currentItem.notes} [ส่วนลดเกินยอดขาย: บันทึกเป็นรายจ่าย]` 
+              notes: currentItem.notes
+                ? `${currentItem.notes} [ส่วนลดเกินยอดขาย: บันทึกเป็นรายจ่าย]`
                 : '[ส่วนลดเกินยอดขาย: บันทึกเป็นรายจ่าย]'
             })
           }
@@ -150,10 +150,10 @@ export default function SalesList() {
         } else {
           // ถอด label ออกก่อนส่งให้ Backend
           const { label, ...cleanInput } = item
-          await CreateSale(cleanInput)
+          await CreateSale({ ...cleanInput, date: new Date().toISOString() })
         }
       }
-      
+
       setCartItems([])
       setQrAmount(0)
       setShowQr(false)

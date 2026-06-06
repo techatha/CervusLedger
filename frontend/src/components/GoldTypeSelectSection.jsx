@@ -5,7 +5,8 @@ export default function GoldTypeSelectSection({
   goldItemId,    
   weightGrams,   
   purity,        
-  onChange       
+  onChange,
+  hideWeightAndPurity = false
 }) {
   const [goldItems, setGoldItems] = useState([])
   const [mainTypes, setMainTypes] = useState([])
@@ -33,7 +34,7 @@ export default function GoldTypeSelectSection({
     if (item) {
       onChange({
         gold_item_id: item.id,
-        gold_item_label: `${item.type} — ${item.subtype}`,
+        gold_item_label: `${item.type} ${item.subtype}`,
         weight_grams: item.weight_grams ? String(item.weight_grams) : '',
         purity: item.purity ? String(item.purity) : '90'
       })
@@ -48,13 +49,13 @@ export default function GoldTypeSelectSection({
 
       <div className="form-row form-row-2">
         <div className="form-group">
-          <label className="form-label form-label-required">ประเภทสินค้าหลัก</label>
+          <label className="form-label form-label-required">ประเภทสินค้า</label>
           <select
             className="input"
             value={selectedMainType}
             onChange={e => handleMainTypeChange(e.target.value)}
           >
-            <option value="">-- เลือกประเภทหลัก --</option>
+            <option value="">-- เลือกประเภท --</option>
             {mainTypes.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
         </div>
@@ -75,36 +76,40 @@ export default function GoldTypeSelectSection({
         </div>
       </div>
 
-      <div className="section-divider">รายละเอียดการชั่งน้ำหนัก & คำนวณราคา</div>
+      {!hideWeightAndPurity && (
+        <>
+          <div className="section-divider">รายละเอียดการชั่งน้ำหนัก & คำนวณราคา</div>
 
-      <div className="form-row form-row-2" style={{ marginTop: '12px' }}>
-        <div className="form-group">
-          <label className="form-label form-label-required">น้ำหนัก (กรัม)</label>
-          <input
-            className="input"
-            type="number"
-            min="0"
-            step="0.0001"
-            placeholder="0.00"
-            value={weightGrams}
-            onChange={e => onChange({ weight_grams: e.target.value })}
-            disabled={!goldItemId}
-          />
-        </div>
-        <div className="form-group">
-          <label className="form-label form-label-required">ความบริสุทธิ์ (%)</label>
-          <input
-            className="input"
-            type="number"
-            min="0"
-            max="100"
-            step="0.1"
-            value={purity}
-            onChange={e => onChange({ purity: e.target.value })}
-            disabled={!goldItemId}
-          />
-        </div>
-      </div>
+          <div className="form-row form-row-2" style={{ marginTop: '12px' }}>
+            <div className="form-group">
+              <label className="form-label form-label-required">น้ำหนัก (กรัม)</label>
+              <input
+                className="input"
+                type="number"
+                min="0"
+                step="0.0001"
+                placeholder="0.00"
+                value={weightGrams}
+                onChange={e => onChange({ weight_grams: e.target.value })}
+                disabled={!goldItemId}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label form-label-required">ความบริสุทธิ์ (%)</label>
+              <input
+                className="input"
+                type="number"
+                min="0"
+                max="100"
+                step="0.1"
+                value={purity}
+                onChange={e => onChange({ purity: e.target.value })}
+                disabled={!goldItemId}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </>
   )
 }

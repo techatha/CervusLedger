@@ -4,7 +4,7 @@ import { faTag, faCheck, faPen, faXmark } from '@fortawesome/free-solid-svg-icon
 import { formatBaht, fullName, toBE } from '@/utils/thai.js'
 import { formatNumberInput, formatCurrency } from '@/utils/number.js'
 import CustomerNoteSection from './CustomerNote.jsx'
-import GoldTypeSelectSection from './GoldTypeSelectSection.jsx'
+import GoldTypeSelectSection from '@/components/GoldTypeSelectSection.jsx'
 
 export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
   const [negotiatedPrice, setNegotiatedPrice] = useState('')

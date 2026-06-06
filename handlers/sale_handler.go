@@ -46,10 +46,10 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 
 		// Decrement stock log for the sold item
 		var logDate string
-		if len(input.Date) >= 7 {
-			logDate = input.Date[:7] + "-01 00:00:00"
+		if len(input.Date) >= 10 {
+			logDate = input.Date[:10] + " 00:00:00"
 		} else {
-			logDate = "2026-05-01 00:00:00"
+			logDate = time.Now().Format(time.DateOnly) + " 00:00:00"
 		}
 
 		var currentAmount int
@@ -127,10 +127,10 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 
 			if goldItemID > 0 {
 				var logDate string
-				if len(input.Date) >= 7 {
-					logDate = input.Date[:7] + "-01 00:00:00"
+				if len(input.Date) >= 10 {
+					logDate = input.Date[:10] + " 00:00:00"
 				} else {
-					logDate = "2026-05-01 00:00:00"
+					logDate = time.Now().Format(time.RFC3339)[:10] + " 00:00:00"
 				}
 
 				var currentAmount int

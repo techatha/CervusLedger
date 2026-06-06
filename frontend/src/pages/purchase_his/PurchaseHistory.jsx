@@ -219,25 +219,30 @@ export default function PurchaseHistory() {
                     {item.notes || <span style={{ color: 'var(--text-disabled)' }}>—</span>}
                   </td>
 
-                  {/* ปุ่มเปลี่ยนสถานะ ไว้ท้ายสุด */}
+                  {/* ปุ่มเปลี่ยนสถานะ — ซ่อนเมื่อนำเข้าคลังแล้ว (is_inventory = 1) */}
                   <td style={{ textAlign: 'center' }}>
-                    <button
-                      className="btn btn-ghost ph-btn-toggle"
-                      style={{ 
-                        fontSize: '12px', 
-                        padding: '6px 10px', 
-                        height: 'auto', 
-                        border: '1px solid var(--border)',
-                        color: 'var(--text-secondary)'
-                      }}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleToggle(item)
-                      }}
-                      title="สลับสถานะ มีของในร้าน / ละลายแล้ว"
-                    >
-                      {item.still_exists === 1 ? 'นำไปหลอมแล้ว' : 'คืนสถานะมีของ'}
-                    </button>
+                    {item.is_inventory === 1 ? (
+                      /* ล็อคแล้ว — อยู่ในระบบคลัง ไม่แสดงปุ่ม */
+                      null
+                    ) : (
+                      <button
+                        className="btn btn-ghost ph-btn-toggle"
+                        style={{
+                          fontSize: '12px',
+                          padding: '6px 10px',
+                          height: 'auto',
+                          border: '1px solid var(--border)',
+                          color: 'var(--text-secondary)',
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleToggle(item)
+                        }}
+                        title="สลับสถานะ มีของในร้าน / ละลายแล้ว"
+                      >
+                        {item.still_exists === 1 ? 'นำไปหลอมแล้ว' : 'คืนสถานะมีของ'}
+                      </button>
+                    )}
                   </td>
 
                 </tr>

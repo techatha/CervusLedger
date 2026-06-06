@@ -3,6 +3,8 @@
 import {models} from '../models';
 import {context} from '../models';
 
+export function CastToInventory(arg1:number,arg2:number):Promise<void>;
+
 export function GetCustomerPurchaseRecords(arg1:number):Promise<Array<models.PurchasedGold>>;
 
 export function ListPurchasedGold():Promise<Array<models.PurchasedGold>>;
