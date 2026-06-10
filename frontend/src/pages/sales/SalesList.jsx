@@ -8,13 +8,12 @@ import { RecordPayment } from 'wailsjs/go/handlers/PawnHandler.js'
 import PromptPayQR from './components/saleList/PromptPayQR'
 import SalesCart from './components/saleList/SalesCart'
 
-export default function SalesList() {
+export default function SalesList({ cartItems, setCartItems }) {
   const location = useLocation()
   const navigate = useNavigate()
 
   const [showForm, setShowForm] = useState(null) // null | 'sell' | 'buy'
   const [price, setPrice] = useState(null)
-  const [cartItems, setCartItems] = useState([])
   const [qrAmount, setQrAmount] = useState(0)
   const [showQr, setShowQr] = useState(false)
   const [savingCart, setSavingCart] = useState(false)

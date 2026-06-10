@@ -9,6 +9,10 @@ export function DeleteGoldItem(arg1:number):Promise<void>;
 
 export function DeleteStockLog(arg1:number):Promise<void>;
 
+export function ExportGoldStock(arg1:string,arg2:string):Promise<void>;
+
+export function ExportGoldStockToXlsx(arg1:string,arg2:string,arg3:string):Promise<void>;
+
 export function GetGoldItem(arg1:number):Promise<models.GoldItem>;
 
 export function GetGoldMainTypes():Promise<Array<string>>;

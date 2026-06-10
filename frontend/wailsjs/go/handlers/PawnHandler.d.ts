@@ -31,4 +31,6 @@ export function Startup(arg1:context.Context):Promise<void>;
 
 export function UpdatePawnDescription(arg1:number,arg2:string):Promise<void>;
 
+export function UpdatePawnInterest(arg1:number,arg2:number,arg3:number):Promise<void>;
+
 export function UpdateTicketStatus(arg1:number,arg2:string):Promise<void>;

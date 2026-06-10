@@ -21,6 +21,8 @@ export default function NewPawnForm({ onSaved, onClose }) {
   const [error,      setError]      = useState(null)
   const dropRef = useRef(null)
 
+  const [customRate, setCustomRate] = useState('')
+
   const [form, setForm] = useState({
     customer_id:    0,
     customer_label: '',
@@ -45,7 +47,16 @@ export default function NewPawnForm({ onSaved, onClose }) {
     }).catch(() => {})
   }, [])
 
-  // Recalculate interest whenever principal or settings change
+  // Update interest rate input when principal or settings change
+  useEffect(() => {
+    if (!settings || !form.initial_principal) return
+    const p = parseFloat(form.initial_principal)
+    if (isNaN(p) || p <= 0) return
+    const rate = p < settings.Threshold ? settings.LowRate : settings.HighRate
+    setCustomRate(String(rate))
+  }, [form.initial_principal, settings])
+
+  // Recalculate preview whenever principal, settings, or customRate changes
   useEffect(() => {
     if (!settings || !form.initial_principal) {
       setPreview({ rate: 0, amount: 0 })
@@ -53,10 +64,11 @@ export default function NewPawnForm({ onSaved, onClose }) {
     }
     const p = parseFloat(form.initial_principal)
     if (isNaN(p) || p <= 0) { setPreview({ rate: 0, amount: 0 }); return }
-    const rate   = p < settings.Threshold ? settings.LowRate : settings.HighRate
+
+    const rate = parseFloat(customRate) || 0
     const amount = Math.max(p * rate / 100, settings.MinInterest)
     setPreview({ rate, amount })
-  }, [form.initial_principal, settings])
+  }, [form.initial_principal, settings, customRate])
 
   // Customer autocomplete
   useEffect(() => {
@@ -230,7 +242,7 @@ export default function NewPawnForm({ onSaved, onClose }) {
 
           {/* ── เงื่อนไข ── */}
           <div className="section-divider">เงื่อนไข</div>
-          <div className="form-row form-row-2">
+          <div className="form-row form-row-3">
             <div className="form-group">
               <label className="form-label form-label-required">เลขที่ตั๋ว</label>
               <input
@@ -252,6 +264,18 @@ export default function NewPawnForm({ onSaved, onClose }) {
                 onChange={e => set('initial_principal', e.target.value)}
               />
             </div>
+            <div className="form-group">
+              <label className="form-label form-label-required">ดอกเบี้ย (% ต่อเดือน)</label>
+              <input
+                className="input"
+                type="number"
+                placeholder="0.00"
+                min="0"
+                step="0.01"
+                value={customRate}
+                onChange={e => setCustomRate(e.target.value)}
+              />
+            </div>
           </div>
 
           {/* Interest Preview */}
@@ -261,10 +285,6 @@ export default function NewPawnForm({ onSaved, onClose }) {
                 <span className="npf-preview-label">อัตราดอกเบี้ย</span>
                 <span className="npf-preview-val">
                   {preview.rate}% ต่อเดือน
-                  {parseFloat(form.initial_principal) < (settings?.Threshold || 10000)
-                    ? <span className="npf-preview-note"> (ต้นต่ำกว่า {(settings?.Threshold || 10000).toLocaleString()})</span>
-                    : <span className="npf-preview-note"> (ต้นตั้งแต่ {(settings?.Threshold || 10000).toLocaleString()})</span>
-                  }
                 </span>
               </div>
               <div className="npf-preview-row npf-preview-total">

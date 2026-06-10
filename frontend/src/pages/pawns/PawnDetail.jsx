@@ -197,7 +197,12 @@ export default function PawnDetail() {
             onError={setError}
           />
 
-          <PawnFinancialCard pawn={pawn} />
+          <PawnFinancialCard
+            pawn={pawn}
+            isActive={isActive}
+            onReload={load}
+            onError={setError}
+          />
 
           <PawnStatusCard
             pawn={pawn}

@@ -58,6 +58,10 @@ export function UpdatePawnDescription(arg1, arg2) {
   return window['go']['handlers']['PawnHandler']['UpdatePawnDescription'](arg1, arg2);
 }
 
+export function UpdatePawnInterest(arg1, arg2, arg3) {
+  return window['go']['handlers']['PawnHandler']['UpdatePawnInterest'](arg1, arg2, arg3);
+}
+
 export function UpdateTicketStatus(arg1, arg2) {
   return window['go']['handlers']['PawnHandler']['UpdateTicketStatus'](arg1, arg2);
 }

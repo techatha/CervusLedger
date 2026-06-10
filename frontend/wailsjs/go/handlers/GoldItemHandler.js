@@ -14,6 +14,14 @@ export function DeleteStockLog(arg1) {
   return window['go']['handlers']['GoldItemHandler']['DeleteStockLog'](arg1);
 }
 
+export function ExportGoldStock(arg1, arg2) {
+  return window['go']['handlers']['GoldItemHandler']['ExportGoldStock'](arg1, arg2);
+}
+
+export function ExportGoldStockToXlsx(arg1, arg2, arg3) {
+  return window['go']['handlers']['GoldItemHandler']['ExportGoldStockToXlsx'](arg1, arg2, arg3);
+}
+
 export function GetGoldItem(arg1) {
   return window['go']['handlers']['GoldItemHandler']['GetGoldItem'](arg1);
 }

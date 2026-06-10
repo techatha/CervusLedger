@@ -33,6 +33,7 @@ const Placeholder = ({ title }) => (
 
 function AppContent() {
   const [registerCardData, setRegisterCardData] = useState(null)
+  const [cartItems, setCartItems] = useState([])
   const navigate = useNavigate()
 
   return (
@@ -47,7 +48,7 @@ function AppContent() {
           <Route path="/pawns"         element={<PawnList />} />
           <Route path="/pawns/:id"     element={<PawnDetail />} />
           <Route path="/gold"          element={<GoldStockList />} />
-          <Route path="/sales"         element={<SalesList />} />
+          <Route path="/sales"         element={<SalesList cartItems={cartItems} setCartItems={setCartItems} />} />
           <Route path="/buy"           element={<PurchaseHistory />} />
           <Route path="/income"        element={<IncomePage />} />
           <Route path="/settings"      element={<SettingsPage />} />

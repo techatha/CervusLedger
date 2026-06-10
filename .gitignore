@@ -5,3 +5,13 @@ scripts/data
 .DS_Store
 .env
 .env.*
+
+# Go build caches and local workspace files
+.gocache/
+.gopath/
+.gotmp/
+
+# Compiled binaries
+CervusLedger
+CervusLedger_bin
+

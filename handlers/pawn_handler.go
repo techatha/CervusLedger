@@ -114,9 +114,27 @@ func (h *PawnHandler) GetPawnSettings() (models.PawnSettings, error) {
 // ─── Create ────────────────────────────────────────────────────────────────
 
 func (h *PawnHandler) CreatePawn(input models.PawnInput) (models.PawnRecord, error) {
-	ticket, err := nextTicketNumber()
+	tx, err := db.DB.Begin()
 	if err != nil {
-		return models.PawnRecord{}, fmt.Errorf("ticket number: %w", err)
+		return models.PawnRecord{}, err
+	}
+	defer tx.Rollback()
+
+	// 1. Get next ticket number inside the transaction
+	var raw string
+	err = tx.QueryRow(`SELECT value FROM settings WHERE key = 'last_ticket_number'`).Scan(&raw)
+	if err != nil {
+		_, _ = tx.Exec(`INSERT OR IGNORE INTO settings(key,value) VALUES('last_ticket_number','0')`)
+		raw = "0"
+	}
+	ticket, _ := strconv.Atoi(raw)
+	ticket++
+	if ticket > 9999 {
+		ticket = 1
+	}
+	_, err = tx.Exec(`UPDATE settings SET value = ? WHERE key = 'last_ticket_number'`, strconv.Itoa(ticket))
+	if err != nil {
+		return models.PawnRecord{}, fmt.Errorf("update last ticket: %w", err)
 	}
 
 	pawnedDateVal := input.PawnedDate
@@ -124,7 +142,8 @@ func (h *PawnHandler) CreatePawn(input models.PawnInput) (models.PawnRecord, err
 		pawnedDateVal = pawnedDateVal + " " + time.Now().Format("15:04:05")
 	}
 
-	res, err := db.DB.Exec(`
+	// 2. Insert pawn record
+	res, err := tx.Exec(`
 		INSERT INTO pawn_records
 		  (ticket_number, customer_id, item_type, weight_grams, description,
 		   pawned_date, principal_amount, monthly_interest_rate, interest_amount,
@@ -145,6 +164,31 @@ func (h *PawnHandler) CreatePawn(input models.PawnInput) (models.PawnRecord, err
 		return models.PawnRecord{}, fmt.Errorf("insert pawn: %w", err)
 	}
 	id, _ := res.LastInsertId()
+
+	// 3. Fetch customer name safely
+	var prefix, firstname, lastname string
+	_ = tx.QueryRow(`SELECT COALESCE(prefix, ''), firstname, lastname FROM customers WHERE id = ?`, input.CustomerID).Scan(&prefix, &firstname, &lastname)
+	
+	customerName := ""
+	if prefix != "" {
+		customerName = prefix + " "
+	}
+	customerName += firstname + " " + lastname
+
+	// 4. Auto-log as expense
+	notes := fmt.Sprintf("รับจำนำ ตั๋ว %04d (%s) - %s", ticket, customerName, input.ItemType)
+	_, err = tx.Exec(`
+		INSERT INTO income_expenses (type, category, amount, notes, source, date)
+		VALUES ('expense', 'รับจำนำ', ?, ?, 'auto', ?)
+	`, input.InitialPrincipal, notes, pawnedDateVal)
+	if err != nil {
+		return models.PawnRecord{}, fmt.Errorf("auto expense entry: %w", err)
+	}
+
+	if err := tx.Commit(); err != nil {
+		return models.PawnRecord{}, err
+	}
+
 	return h.GetPawn(int(id))
 }
 
@@ -329,3 +373,14 @@ func (h *PawnHandler) UpdatePawnDescription(id int, description string) error {
 	_, err := db.DB.Exec(`UPDATE pawn_records SET description = ? WHERE id = ?`, description, id)
 	return err
 }
+
+// UpdatePawnInterest updates the monthly interest rate and interest amount for a pawn record.
+func (h *PawnHandler) UpdatePawnInterest(id int, rate float64, amount float64) error {
+	_, err := db.DB.Exec(`
+		UPDATE pawn_records
+		SET monthly_interest_rate = ?, interest_amount = ?
+		WHERE id = ?
+	`, rate, amount, id)
+	return err
+}
+
