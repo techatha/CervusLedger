@@ -261,6 +261,7 @@ func createTables() {
 		`CREATE INDEX IF NOT EXISTS idx_gold_prices_date ON gold_prices(date)`,
 		`CREATE INDEX IF NOT EXISTS idx_pawn_records_pawned_date ON pawn_records(pawned_date)`,
 		`CREATE INDEX IF NOT EXISTS idx_pawn_records_created_at ON pawn_records(created_at)`,
+		`CREATE INDEX IF NOT EXISTS idx_pawn_records_status ON pawn_records(status)`,
 		`CREATE INDEX IF NOT EXISTS idx_pawn_payments_paid_date ON pawn_payments(paid_date)`,
 		`CREATE INDEX IF NOT EXISTS idx_principal_changes_date ON principal_changes(date)`,
 		`CREATE INDEX IF NOT EXISTS idx_income_expenses_date ON income_expenses(date)`,

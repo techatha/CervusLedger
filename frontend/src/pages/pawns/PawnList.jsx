@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ListPawns } from 'wailsjs/go/handlers/PawnHandler'
 import { toBE, formatBaht, formatTicket, pawnStatusBadge } from '@/utils/thai'
@@ -7,26 +7,26 @@ import NewPawnForm from './NewPawnForm'
 import './PawnList.css'
 
 const STATUS_TABS = [
-  { value: '',       label: 'ทั้งหมด'  },
   { value: 'active', label: 'ยังอยู่'  },
   { value: 'ถอน',    label: 'ถอนแล้ว' },
   { value: 'ขาด',    label: 'ขาด'     },
+  { value: '',       label: 'ทั้งหมด'  },
 ]
 
 export default function PawnList() {
   const navigate = useNavigate()
   const [pawns,    setPawns]    = useState([])
-  const [status,   setStatus]   = useState('')
+  const [status,   setStatus]   = useState('active')
   const [search,   setSearch]   = useState('')
   const [loading,  setLoading]  = useState(true)
   const [error,    setError]    = useState(null)
   const [showNew,  setShowNew]  = useState(false)
 
-  const load = useCallback(async (s, q) => {
+  const load = useCallback(async (q) => {
     setLoading(true)
     setError(null)
     try {
-      const data = await ListPawns(s, q)
+      const data = await ListPawns('', q)
       setPawns(data || [])
     } catch (e) {
       setError('โหลดข้อมูลไม่สำเร็จ: ' + e)
@@ -35,17 +35,21 @@ export default function PawnList() {
     }
   }, [])
 
-  useEffect(() => { load('', '') }, [load])
+  const isMounted = useRef(false)
 
-  // Debounce search
+  // Debounce search & handle initial load
   useEffect(() => {
-    const t = setTimeout(() => load(status, search), 250)
+    if (!isMounted.current) {
+      load(search)
+      isMounted.current = true
+      return
+    }
+    const t = setTimeout(() => load(search), 250)
     return () => clearTimeout(t)
-  }, [search, status, load])
+  }, [search, load])
 
   const handleTabChange = (s) => {
     setStatus(s)
-    load(s, search)
   }
 
   // Summary counts from loaded data (approximate — full count is server-side)
@@ -53,9 +57,9 @@ export default function PawnList() {
     acc[p.status] = (acc[p.status] || 0) + 1
     return acc
   }, {})
-  const activeTotal = pawns
-    .filter(p => p.status === 'active')
-    .reduce((s, p) => s + (p.current_principal || 0), 0)
+
+  const displayedPawns = status === '' ? pawns : pawns.filter(p => p.status === status)
+  const currentTotal = displayedPawns.reduce((s, p) => s + (p.current_principal || 0), 0)
 
   return (
     <div className="page-view">
@@ -64,9 +68,7 @@ export default function PawnList() {
         <div>
           <div className="page-title">จำนำ</div>
           <div className="page-meta">
-            {!loading && `${pawns.length} รายการ`}
-            {!loading && status === '' && counts.active > 0 &&
-              ` · ยังอยู่ ${counts.active} ราย · ยอดรวม ${formatBaht(activeTotal)}`}
+            {loading && displayedPawns.length > 0 ? 'กำลังโหลด...' : `${displayedPawns.length} รายการ · ยอดรวม ${formatBaht(currentTotal)}`}
           </div>
         </div>
         <button className="btn btn-primary" onClick={() => setShowNew(true)}>
@@ -78,18 +80,19 @@ export default function PawnList() {
       {/* Tabs + Search */}
       <div className="pl-toolbar">
         <div className="pl-tabs">
-          {STATUS_TABS.map(t => (
-            <button
-              key={t.value}
-              className={`pl-tab ${status === t.value ? 'pl-tab-active' : ''}`}
-              onClick={() => handleTabChange(t.value)}
-            >
-              {t.label}
-              {t.value !== '' && counts[t.value] > 0 && (
-                <span className="pl-tab-count">{counts[t.value]}</span>
-              )}
-            </button>
-          ))}
+          {STATUS_TABS.map(t => {
+            const count = t.value === '' ? pawns.length : (counts[t.value] || 0)
+            return (
+              <button
+                key={t.value}
+                className={`pl-tab ${status === t.value ? 'pl-tab-active' : ''}`}
+                onClick={() => handleTabChange(t.value)}
+              >
+                {t.label}
+                <span className="pl-tab-count">{count}</span>
+              </button>
+            )
+          })}
         </div>
         <div className="search-wrap" style={{ maxWidth: 280 }}>
           <span className="search-icon"><IconSearch /></span>
@@ -121,15 +124,15 @@ export default function PawnList() {
               </tr>
             </thead>
             <tbody>
-              {loading ? (
+              {loading && displayedPawns.length === 0 ? (
                 <tr className="loading-row"><td colSpan={8}>กำลังโหลด...</td></tr>
-              ) : pawns.length === 0 ? (
+              ) : displayedPawns.length === 0 ? (
                 <tr className="loading-row">
                   <td colSpan={8}>
                     {search ? 'ไม่พบรายการที่ค้นหา' : 'ยังไม่มีรายการจำนำ'}
                   </td>
                 </tr>
-              ) : pawns.map(p => {
+              ) : displayedPawns.map(p => {
                 const { label, cls } = pawnStatusBadge(p.status)
                 return (
                   <tr key={p.id} onClick={() => navigate(`/pawns/${p.id}`)}>
@@ -185,7 +188,7 @@ export default function PawnList() {
 
       {showNew && (
         <NewPawnForm
-          onSaved={() => { setShowNew(false); load(status, search) }}
+          onSaved={() => { setShowNew(false); load(search) }}
           onClose={() => setShowNew(false)}
         />
       )}

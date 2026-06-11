@@ -1,33 +1,134 @@
-.cl-index  { width: 48px; color: var(--text-muted); font-size: 13px; }
-.cl-name   { font-weight: 500; }
-.cl-phone  { font-variant-numeric: tabular-nums; color: var(--text-secondary); }
-.cl-idcard { font-variant-numeric: tabular-nums; font-size: 13px; }
-.cl-address{ color: var(--text-secondary); font-size: 13px; max-width: 200px; }
-.cl-date   { color: var(--text-muted); font-size: 13px; white-space: nowrap; }
-.cl-actions {
-  text-align: right; /* Align buttons to the right */
+/* ─── Card grid ─────────────────────────────────────────────── */
+.cl-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+/* ─── Individual card ───────────────────────────────────────── */
+.cl-card {
+  position: relative;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.cl-card:hover {
+  border-color: var(--border-light);
+  box-shadow: var(--shadow-sm);
+}
+
+.cl-card:hover .cl-card-actions {
+  opacity: 1;
+}
+
+/* ─── Hover-reveal action buttons ───────────────────────────── */
+.cl-card-actions {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  gap: 4px;
   opacity: 0;
-  transition: opacity 0.13s;
-  white-space: nowrap; /* Keeps buttons on one line without breaking the table cell */
+  transition: opacity var(--transition);
 }
 
-/* If you want the gap back, target the buttons specifically */
-.cl-actions button {
-  margin-left: 4px;
+/* ─── Top row: avatar + name ────────────────────────────────── */
+.cl-card-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-tr:hover .cl-actions { 
-  opacity: 1; 
+.cl-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
-.id-card-mask {
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  letter-spacing: 0.06em;
+/* Avatar colour palettes — warm/cool rotation */
+.av0 { background: #F0EAD8; color: #8B6914; }
+.av1 { background: #E8EFF5; color: #2C5F82; }
+.av2 { background: #EDF5EC; color: #2D6B3A; }
+.av3 { background: #F5EAF0; color: #82304A; }
+.av4 { background: #EAE8F5; color: #4A3C82; }
+
+.cl-card-name-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.cl-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* leave room for action buttons on hover */
+  padding-right: 48px;
+}
+
+.cl-card-date {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ─── Detail rows ───────────────────────────────────────────── */
+.cl-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cl-card-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
   color: var(--text-secondary);
-  background: var(--bg-card);
-  padding: 2px 7px;
-  border-radius: 4px;
+  line-height: 1.3;
 }
 
-.no-data { color: var(--text-disabled); }
+.cl-card-row svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.cl-card-row span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cl-card-row-empty {
+  color: var(--text-disabled);
+}
+
+.cl-card-row-empty svg {
+  color: var(--text-disabled);
+  opacity: 0.5;
+}
+
+/* ─── Responsive: collapse to 2 cols on narrower views ─────── */
+@media (max-width: 900px) {
+  .cl-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
