@@ -25,7 +25,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPrint, faHandshakeSlash, faMoneyBills } from '@fortawesome/free-solid-svg-icons'
 import './PawnDetail.css'
 
-export default function PawnDetail() {
+export default function PawnDetail({ cartItems, setCartItems }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const pawnId = parseInt(id, 10)
@@ -127,6 +127,31 @@ export default function PawnDetail() {
     })
 
     navigate('/sales', { state: { addItems: itemsToAdd } })
+  }
+
+  const handleAddToCartPendingInterest = (selectedIndexes) => {
+    const itemsToAdd = selectedIndexes.map(idx => {
+      const m = pendingMonths[idx]
+      return {
+        type: 'pawn_interest',
+        label: `ชำระดอกเบี้ยตั๋ว #${formatTicket(pawn.ticket_number)}`,
+        weight_baht: 0,
+        price_per_baht: 0,
+        total_amount: pawn.interest_amount,
+
+        pawn_record_id: pawn.id,
+        month: m.month,
+        year: m.year,
+        paid_date: getLocalISOString().slice(0, 10),
+        notes: `งวด ${thaiMonthShort(m.month)} ${m.year + 543}`,
+        interest_amount: pawn.interest_amount,
+        customer_name: pawn.customer_name_display || pawn.customer_name || '',
+        ticket_number: pawn.ticket_number
+      }
+    })
+
+    setCartItems(prev => [...prev, ...itemsToAdd])
+    alert(`เพิ่มดอกเบี้ยค้างชำระ ${itemsToAdd.length} งวดลงในตะกร้าแล้ว`)
   }
 
   if (loading) return <div className="page-view"><div className="empty-state"><div className="empty-state-text">กำลังโหลด...</div></div></div>
@@ -243,6 +268,8 @@ export default function PawnDetail() {
             pendingMonths={pendingMonths}
             pawn={pawn}
             onPayPendingInterest={handlePayPendingInterest}
+            onAddToCart={handleAddToCartPendingInterest}
+            cartItems={cartItems}
           />
 
           <PawnPrincipalChangesCard changes={changes} />

@@ -38,7 +38,7 @@ function AppContent() {
 
   return (
     <div className="app-shell">
-      <Sidebar />
+      <Sidebar cartItems={cartItems} />
       <main className="app-main">
         <Routes>
           <Route path="/"              element={<Navigate to="/dashboard" replace />} />
@@ -46,7 +46,7 @@ function AppContent() {
           <Route path="/customers"     element={<CustomerList />} />
           <Route path="/customers/:id" element={<CustomerProfile />} />
           <Route path="/pawns"         element={<PawnList />} />
-          <Route path="/pawns/:id"     element={<PawnDetail />} />
+          <Route path="/pawns/:id"     element={<PawnDetail cartItems={cartItems} setCartItems={setCartItems} />} />
           <Route path="/gold"          element={<GoldStockList />} />
           <Route path="/sales"         element={<SalesList cartItems={cartItems} setCartItems={setCartItems} />} />
           <Route path="/buy"           element={<PurchaseHistory />} />

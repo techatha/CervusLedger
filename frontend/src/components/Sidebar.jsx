@@ -53,7 +53,7 @@ const NAV = [
   },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ cartItems }) {
   const [shopName, setShopName] = useState('ห้างทองแต้ยืนยง')
   const [readerConnected, setReaderConnected] = useState(false)
 
@@ -103,6 +103,9 @@ export default function Sidebar() {
               >
                 <span className="sidebar-link-icon">{item.icon}</span>
                 <span className="sidebar-link-label">{item.label}</span>
+                {item.to === '/sales' && cartItems && cartItems.length > 0 && (
+                  <span className="cart-badge">{cartItems.length}</span>
+                )}
               </NavLink>
             ))}
           </div>

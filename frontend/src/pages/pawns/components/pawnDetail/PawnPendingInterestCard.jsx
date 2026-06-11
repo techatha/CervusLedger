@@ -1,8 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { formatBaht } from '@/utils/thai'
 import { thaiMonthShort } from '@/utils/pawn'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCartArrowDown } from '@fortawesome/free-solid-svg-icons'
+import { faCartArrowDown, faCartPlus } from '@fortawesome/free-solid-svg-icons'
 
 function IconXCircle() {
   return (
@@ -19,8 +19,25 @@ function IconXCircle() {
   )
 }
 
-export default function PawnPendingInterestCard({ pendingMonths, pawn, onPayPendingInterest }) {
+export default function PawnPendingInterestCard({ pendingMonths, pawn, onPayPendingInterest, onAddToCart, cartItems }) {
   const [selectedPending, setSelectedPending] = useState([])
+
+  useEffect(() => {
+    setSelectedPending([])
+  }, [cartItems])
+
+  const isMonthInCart = (m) => {
+    return cartItems?.some(item =>
+      item.type === 'pawn_interest' &&
+      item.pawn_record_id === pawn.id &&
+      item.month === m.month &&
+      item.year === m.year
+    )
+  }
+
+  const selectableIndexes = pendingMonths
+    .map((_, i) => i)
+    .filter(i => !isMonthInCart(pendingMonths[i]))
 
   if (!pendingMonths || pendingMonths.length === 0) return null
 
@@ -38,25 +55,30 @@ export default function PawnPendingInterestCard({ pendingMonths, pawn, onPayPend
               <th>งวดเดือน</th>
               <th>สถานะ</th>
               <th style={{ textAlign: 'right' }}>ยอดค้าง</th>
-              <th style={{ textAlign: 'center', width: 60 }}>
-                <input
-                  type="checkbox"
-                  style={{ cursor: 'pointer' }}
-                  checked={selectedPending.length === pendingMonths.length}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      setSelectedPending(pendingMonths.map((_, i) => i))
-                    } else {
-                      setSelectedPending([])
-                    }
-                  }}
-                />
+              <th style={{ textAlign: 'center', width: 80 }}>
+                {selectableIndexes.length > 0 ? (
+                  <input
+                    type="checkbox"
+                    style={{ cursor: 'pointer' }}
+                    checked={selectableIndexes.length > 0 && selectedPending.length === selectableIndexes.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedPending(selectableIndexes)
+                      } else {
+                        setSelectedPending([])
+                      }
+                    }}
+                  />
+                ) : (
+                  <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>เลือก</span>
+                )}
               </th>
             </tr>
           </thead>
           <tbody>
             {pendingMonths.map((m, idx) => {
               const isSelected = selectedPending.includes(idx)
+              const inCart = isMonthInCart(m)
               return (
                 <tr
                   key={idx}
@@ -69,20 +91,22 @@ export default function PawnPendingInterestCard({ pendingMonths, pawn, onPayPend
                     {formatBaht(pawn.interest_amount)}
                   </td>
                   <td style={{ textAlign: 'center' }}>
-                    <input
-                      type="checkbox"
-                      style={{ cursor: 'pointer' }}
-                      checked={isSelected}
-                      onChange={() => {
-                        if (isSelected) {
-                          // Unchecking: Keep only items older than the unchecked one
-                          setSelectedPending(pendingMonths.map((_, i) => i).filter(i => i < idx))
-                        } else {
-                          // Checking: Select all items up to and including the checked one
-                          setSelectedPending(pendingMonths.map((_, i) => i).filter(i => i <= idx))
-                        }
-                      }}
-                    />
+                    {inCart ? (
+                      <span style={{ color: 'var(--blue)', fontSize: 12, fontWeight: 600 }}>ในตะกร้า</span>
+                    ) : (
+                      <input
+                        type="checkbox"
+                        style={{ cursor: 'pointer' }}
+                        checked={isSelected}
+                        onChange={() => {
+                          if (isSelected) {
+                            setSelectedPending(selectableIndexes.filter(i => i < idx))
+                          } else {
+                            setSelectedPending(selectableIndexes.filter(i => i <= idx))
+                          }
+                        }}
+                      />
+                    )}
                   </td>
                 </tr>
               )
@@ -99,6 +123,12 @@ export default function PawnPendingInterestCard({ pendingMonths, pawn, onPayPend
             </span>
           </div>
           <div className="pawn-detail-actions">
+            <button
+              className="btn btn-ghost"
+              onClick={() => onAddToCart(selectedPending)}
+            >
+              <FontAwesomeIcon icon={faCartPlus} /> ใส่ตะกร้า
+            </button>
             <button
               className="btn btn-primary"
               onClick={() => onPayPendingInterest(selectedPending)}
