@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { GetCustomers } from 'wailsjs/go/handlers/CustomerHandler.js'
 import { fullName } from '@/utils/thai.js'
+import { SMARTCARD_EVENTS } from '@/utils/smartcard'
 
 export default function CustomerNoteSection({ 
   tabMode,         // 'sell' or 'buy'
@@ -35,6 +36,23 @@ export default function CustomerNoteSection({
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [])
+
+  // Handle auto-selection from smart card events (insertion or registration)
+  useEffect(() => {
+    const handleSmartcardSelect = (e) => {
+      const c = e.detail?.customer
+      if (c) {
+        console.log('[CustomerNoteSection] Smartcard selection event triggered for customer:', c)
+        const name = fullName(c)
+        onCustomerSelect(c)
+        setCustSearch(name)
+        setShowCustDrop(false)
+        setCustomers([])
+      }
+    }
+    window.addEventListener(SMARTCARD_EVENTS.SALE_SELECT, handleSmartcardSelect)
+    return () => window.removeEventListener(SMARTCARD_EVENTS.SALE_SELECT, handleSmartcardSelect)
+  }, [onCustomerSelect])
 
   const handleSelect = (c) => {
     onCustomerSelect(c)

@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { GetAllSettings } from 'wailsjs/go/handlers/SettingsHandler'
 import './Sidebar.css'
+import { SMARTCARD_EVENTS } from '@/utils/smartcard'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
   faHouse,
@@ -70,8 +71,8 @@ export default function Sidebar() {
     const handleStatus = (e) => {
       setReaderConnected(!!e.detail?.connected)
     }
-    window.addEventListener('smartcard-reader-status', handleStatus)
-    return () => window.removeEventListener('smartcard-reader-status', handleStatus)
+    window.addEventListener(SMARTCARD_EVENTS.READER_STATUS, handleStatus)
+    return () => window.removeEventListener(SMARTCARD_EVENTS.READER_STATUS, handleStatus)
   }, [])
 
   return (

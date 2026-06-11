@@ -7,6 +7,7 @@ import { SetLastTicketNumber } from 'wailsjs/go/handlers/SettingsHandler'
 import { GetCustomers } from 'wailsjs/go/handlers/CustomerHandler'
 import { formatBaht, fullName } from '@/utils/thai'
 import { getLocalISOString } from '@/utils/date'
+import { SMARTCARD_EVENTS } from '@/utils/smartcard'
 import './NewPawnForm.css'
 import './PrincipalChangeForm.css'
 
@@ -115,8 +116,8 @@ export default function NewPawnForm({ onSaved, onClose }) {
         setCustomers([])
       }
     }
-    window.addEventListener('smartcard-pawn-select', handleSmartcardSelect)
-    return () => window.removeEventListener('smartcard-pawn-select', handleSmartcardSelect)
+    window.addEventListener(SMARTCARD_EVENTS.PAWN_SELECT, handleSmartcardSelect)
+    return () => window.removeEventListener(SMARTCARD_EVENTS.PAWN_SELECT, handleSmartcardSelect)
   }, [])
 
   const validate = () => {

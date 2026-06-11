@@ -2,6 +2,12 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ReadSmartCard } from 'wailsjs/go/handlers/SmartCardHandler'
 import { GetCustomers } from 'wailsjs/go/handlers/CustomerHandler'
+import {
+  dispatchReaderStatus,
+  dispatchCardInsert,
+  dispatchPawnSelect,
+  dispatchSaleSelect
+} from '@/utils/smartcard'
 
 export default function SmartCardWatcher({ onOpenRegisterModal }) {
   const navigate = useNavigate()
@@ -12,9 +18,10 @@ export default function SmartCardWatcher({ onOpenRegisterModal }) {
     const checkCard = async () => {
       const isCustomerFormOpen = document.querySelector('.cf-modal') !== null
       const isNewPawnFormOpen = document.querySelector('.npf-modal') !== null
+      const isNewSaleFormOpen = document.querySelector('.nsf-modal') !== null
       
-      // Bypassed if any modal other than CustomerForm or NewPawnForm is active
-      const isOtherModalOpen = document.querySelector('.modal:not(.cf-modal):not(.npf-modal)') !== null
+      // Bypassed if any modal other than CustomerForm, NewPawnForm, or NewSaleForm is active
+      const isOtherModalOpen = document.querySelector('.modal:not(.cf-modal):not(.npf-modal):not(.nsf-modal)') !== null
 
       if (isOtherModalOpen) {
         // console.log('[SmartCardWatcher] Check bypassed: Another modal is active.')
@@ -24,7 +31,7 @@ export default function SmartCardWatcher({ onOpenRegisterModal }) {
       try {
         const card = await ReadSmartCard()
         // If it succeeds, the reader is connected
-        window.dispatchEvent(new CustomEvent('smartcard-reader-status', { detail: { connected: true } }))
+        dispatchReaderStatus(true)
 
         if (card && card.id_card) {
           const cleanId = card.id_card.trim()
@@ -39,7 +46,7 @@ export default function SmartCardWatcher({ onOpenRegisterModal }) {
           // If CustomerForm is open, dispatch event to it and do nothing else
           if (isCustomerFormOpen) {
             // console.log('[SmartCardWatcher] CustomerForm is open, sending smartcard-insert event.')
-            window.dispatchEvent(new CustomEvent('smartcard-insert', { detail: { card } }))
+            dispatchCardInsert(card)
             return
           }
 
@@ -52,7 +59,10 @@ export default function SmartCardWatcher({ onOpenRegisterModal }) {
             // console.log(`[SmartCardWatcher] Match found! Registered customer ID: ${matched.id}`)
             if (isNewPawnFormOpen) {
               // console.log('[SmartCardWatcher] NewPawnForm is open, sending smartcard-pawn-select event.')
-              window.dispatchEvent(new CustomEvent('smartcard-pawn-select', { detail: { customer: matched } }))
+              dispatchPawnSelect(matched)
+            } else if (isNewSaleFormOpen) {
+              // console.log('[SmartCardWatcher] NewSaleForm is open, sending smartcard-sale-select event.')
+              dispatchSaleSelect(matched)
             } else if (location.pathname !== `/customers/${matched.id}`) {
               // console.log(`[SmartCardWatcher] Navigating to customer profile: /customers/${matched.id}`)
               navigate(`/customers/${matched.id}`)
@@ -71,7 +81,7 @@ export default function SmartCardWatcher({ onOpenRegisterModal }) {
         // If the error message does not indicate "no reader found", the reader itself is connected.
         const isConnected = !errMsg.includes('ไม่พบเครื่องอ่านบัตร') && !errMsg.includes('ไม่พบเครื่องอ่าน')
         
-        window.dispatchEvent(new CustomEvent('smartcard-reader-status', { detail: { connected: isConnected } }))
+        dispatchReaderStatus(isConnected)
 
         // Reset lastCardId to allow re-detecting insertion
         if (lastCardId !== null) {

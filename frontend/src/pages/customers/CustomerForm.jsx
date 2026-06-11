@@ -7,6 +7,7 @@ import {
 import {
   ReadSmartCard,
 } from 'wailsjs/go/handlers/SmartCardHandler'
+import { mapCardToCustomer, SMARTCARD_EVENTS, dispatchPawnSelect, dispatchSaleSelect } from '@/utils/smartcard'
 import { PREFIXES, PROVINCES } from '@/utils/thai'
 import { useNavigate } from 'react-router-dom'
 import './CustomerForm.css'
@@ -49,20 +50,7 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
         .catch(e => setError('โหลดข้อมูลไม่สำเร็จ: ' + e))
         .finally(() => setLoading(false))
     } else if (initialCardData) {
-      setForm(prev => ({
-        ...prev,
-        prefix:       initialCardData.prefix       || prev.prefix,
-        firstname:    initialCardData.firstname     || prev.firstname,
-        lastname:     initialCardData.lastname      || prev.lastname,
-        id_card:      initialCardData.id_card       || prev.id_card,
-        address_no:   initialCardData.address_no    || prev.address_no,
-        address_line: initialCardData.address_line  || prev.address_line,
-        moo:          initialCardData.moo           || prev.moo,
-        road:         initialCardData.road          || prev.road,
-        tambon:       initialCardData.tambon        || prev.tambon,
-        amphoe:       initialCardData.amphoe        || prev.amphoe,
-        province:     initialCardData.province      || prev.province,
-      }))
+      setForm(prev => mapCardToCustomer(initialCardData, prev))
       setCardSuccess(true)
       setTimeout(() => setCardSuccess(false), 3000)
       setLoading(false)
@@ -86,26 +74,13 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
         if (!confirmImport) return
       }
 
-      setForm(prev => ({
-        ...prev,
-        prefix:       card.prefix       || prev.prefix,
-        firstname:    card.firstname     || prev.firstname,
-        lastname:     card.lastname      || prev.lastname,
-        id_card:      card.id_card       || prev.id_card,
-        address_no:   card.address_no    || prev.address_no,
-        address_line: card.address_line  || prev.address_line,
-        moo:          card.moo           || prev.moo,
-        road:         card.road          || prev.road,
-        tambon:       card.tambon        || prev.tambon,
-        amphoe:       card.amphoe        || prev.amphoe,
-        province:     card.province      || prev.province,
-      }))
+      setForm(prev => mapCardToCustomer(card, prev))
       setCardSuccess(true)
       setTimeout(() => setCardSuccess(false), 3000)
     }
 
-    window.addEventListener('smartcard-insert', handleSmartCardInsert)
-    return () => window.removeEventListener('smartcard-insert', handleSmartCardInsert)
+    window.addEventListener(SMARTCARD_EVENTS.INSERT, handleSmartCardInsert)
+    return () => window.removeEventListener(SMARTCARD_EVENTS.INSERT, handleSmartCardInsert)
   }, [])
 
   const set = (field, val) =>
@@ -120,20 +95,7 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
     setCardSuccess(false)
     try {
       const card = await ReadSmartCard()
-      setForm(prev => ({
-        ...prev,
-        prefix:       card.prefix       || prev.prefix,
-        firstname:    card.firstname     || prev.firstname,
-        lastname:     card.lastname      || prev.lastname,
-        id_card:      card.id_card       || prev.id_card,
-        address_no:   card.address_no    || prev.address_no,
-        address_line: card.address_line  || prev.address_line,
-        moo:          card.moo           || prev.moo,
-        road:         card.road          || prev.road,
-        tambon:       card.tambon        || prev.tambon,
-        amphoe:       card.amphoe        || prev.amphoe,
-        province:     card.province      || prev.province,
-      }))
+      setForm(prev => mapCardToCustomer(card, prev))
       setCardSuccess(true)
       setTimeout(() => setCardSuccess(false), 3000)
     } catch (e) {
@@ -176,12 +138,14 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
           phone: form.phone,
           id_card: payload.id_card,
         }
-        window.dispatchEvent(new CustomEvent('smartcard-pawn-select', { detail: { customer: matched } }))
+        dispatchPawnSelect(matched)
+        dispatchSaleSelect(matched)
         
         onSaved(newId)
         
         const isPawnFormOpen = document.querySelector('.npf-modal') !== null
-        if (!isPawnFormOpen) {
+        const isSaleFormOpen = document.querySelector('.nsf-modal') !== null
+        if (!isPawnFormOpen && !isSaleFormOpen) {
           navigate(`/customers/${newId}`)
         }
       }
