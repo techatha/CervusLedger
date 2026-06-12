@@ -1,11 +1,67 @@
-.gf-type-row {
+/* ─── Modal width ─────────────────────────────────────────── */
+.gsf-modal { width: 500px; max-width: 95vw; }
+
+.gsf-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* ─── Section label ───────────────────────────────────────── */
+.gsf-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--gold);
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--gold-dim);
+}
+
+/* ─── "Add new type" link ─────────────────────────────────── */
+.gsf-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--gold);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font);
+  padding: 0;
+  margin-top: 6px;
+  transition: color var(--transition);
+}
+.gsf-link-btn:hover { text-decoration: underline; color: var(--gold-light); }
+
+/* ─── New type inline box ─────────────────────────────────── */
+.gsf-new-type-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--gold-glow, rgba(200,150,60,.1));
+  border: 1px solid var(--gold-dim);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-top: 8px;
+}
+
+.gsf-new-type-box .input {
+  flex: 1;
+  height: 34px;
+}
+
+/* ─── Subtype chips ───────────────────────────────────────── */
+.gsf-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin-bottom: 8px;
 }
 
-.gf-type-chip {
-  padding: 5px 12px;
+.gsf-chip {
+  padding: 4px 13px;
   border-radius: 99px;
   border: 1px solid var(--border);
   background: transparent;
@@ -14,15 +70,25 @@
   font-size: 13px;
   cursor: pointer;
   transition: all var(--transition);
+  white-space: nowrap;
 }
-.gf-type-chip:hover {
+
+.gsf-chip:hover {
   border-color: var(--gold);
   color: var(--gold);
   background: var(--gold-dim);
 }
-.gf-type-chip-active {
+
+.gsf-chip-active {
   border-color: var(--gold) !important;
   background: var(--gold-dim) !important;
   color: var(--gold) !important;
-  font-weight: 500;
+  font-weight: 600;
+}
+
+/* ─── Hint text ───────────────────────────────────────────── */
+.gsf-hint {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 4px;
 }

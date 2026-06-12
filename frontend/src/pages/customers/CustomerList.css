@@ -44,7 +44,7 @@
   width: 28px;
   height: 28px;
   border-radius: 6px;
-  border: 1px solid var(--border);
+  border: none;
   background: var(--bg-surface);
   color: var(--text-secondary);
   display: flex;
@@ -59,13 +59,11 @@
 .cl-card-actions button.btn-edit:hover {
   background: var(--bg-hover);
   color: var(--gold);
-  border-color: var(--gold);
 }
 
 .cl-card-actions button.btn-delete:hover {
   background: var(--red-bg);
   color: var(--red);
-  border-color: var(--red);
 }
 
 /* ─── Top row: avatar + name ────────────────────────────────── */

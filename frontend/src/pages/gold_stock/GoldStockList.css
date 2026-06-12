@@ -22,7 +22,7 @@
   gap: 12px;
   margin-bottom: 14px;
   padding-bottom: 12px;
-  border-bottom: 1.5px solid var(--gold-pale, #F5E9CC);
+  border-bottom: 1.5px solid var(--gold, #F5E9CC);
 }
 
 .gl-type-heading-name {
