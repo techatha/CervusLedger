@@ -1,3 +1,30 @@
+export namespace handlers {
+	
+	export class ImportResult {
+	    customers_imported: number;
+	    pawn_records_imported: number;
+	    pawn_payments_imported: number;
+	    principal_changes_imported: number;
+	    warnings: string[];
+	    cancelled: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ImportResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.customers_imported = source["customers_imported"];
+	        this.pawn_records_imported = source["pawn_records_imported"];
+	        this.pawn_payments_imported = source["pawn_payments_imported"];
+	        this.principal_changes_imported = source["principal_changes_imported"];
+	        this.warnings = source["warnings"];
+	        this.cancelled = source["cancelled"];
+	    }
+	}
+
+}
+
 export namespace models {
 	
 	export class Customer {

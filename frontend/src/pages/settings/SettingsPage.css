@@ -117,3 +117,123 @@
 .sp-color-input:focus {
   border-color: var(--gold) !important;
 }
+
+/* ─── Import Data Section ───────────────────────────── */
+.sp-import-desc {
+  font-size: 13.5px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+.sp-import-desc p {
+  margin: 0 0 8px 0;
+}
+.sp-import-desc ul {
+  margin: 0 0 8px 0;
+  padding-left: 20px;
+}
+.sp-import-desc li {
+  margin-bottom: 4px;
+}
+
+.sp-import-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+}
+
+.sp-import-template-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.sp-import-template-btn:hover {
+  background: var(--bg-card);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.sp-import-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ─── Import Result Summary ─────────────────────────── */
+.sp-import-result {
+  padding: 16px;
+  background: var(--bg-hover);
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(61,154,104,0.25);
+}
+
+.sp-import-result-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--green);
+  margin-bottom: 12px;
+}
+
+.sp-import-result-counts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.sp-import-count-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 8px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.sp-import-count-num {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold);
+  font-family: 'Courier New', monospace;
+  line-height: 1;
+}
+
+.sp-import-count-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ─── Import Warnings ───────────────────────────────── */
+.sp-import-warnings {
+  margin-top: 12px;
+  font-size: 12.5px;
+  color: var(--text-secondary);
+}
+.sp-import-warnings summary {
+  cursor: pointer;
+  font-weight: 500;
+  padding: 6px 0;
+  color: var(--amber, #f59e0b);
+}
+.sp-import-warnings ul {
+  margin: 6px 0 0 0;
+  padding-left: 18px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.sp-import-warnings li {
+  padding: 2px 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
