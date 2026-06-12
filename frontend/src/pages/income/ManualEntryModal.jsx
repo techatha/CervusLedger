@@ -82,7 +82,7 @@ export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
     setSelectedIdx(null)
     setIsManual(!isManual)
     if (!isManual) {
-      setForm(p => ({ ...p, category: '', color: '#95a5a6' }))
+      setForm(p => ({ ...p, category: '', color: '#cbd5e1' }))
     } else {
       setForm(p => ({ ...p, category: '', color: '' }))
     }
@@ -107,7 +107,6 @@ export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
         amount: parseFloat(form.amount),
         notes: form.notes,
         date: form.date,
-        color: form.color,
       })
       onSaved()
     } catch (e) {
@@ -229,16 +228,6 @@ export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
                   onChange={e => set('category', e.target.value)}
                   autoFocus
                 />
-                <div className="mem-color-picker">
-                  <input
-                    type="color"
-                    value={form.color}
-                    onChange={e => set('color', e.target.value)}
-                    className="mem-color-input"
-                    title="เลือกสี"
-                  />
-                  <span className="mem-color-hex">{form.color.toUpperCase()}</span>
-                </div>
               </div>
             )}
           </div>

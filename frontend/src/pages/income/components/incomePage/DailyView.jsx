@@ -105,12 +105,17 @@ export default function DailyView({
       .reduce((sum, e) => sum + (e.type === 'income' ? (e.amount || 0) : -(e.amount || 0)), 0)
   }, [allEntries, date])
 
+  const expectedAmount = useMemo(() => {
+    if (!dailyCash) return 0
+    return dailyCash.amount_last_record + todayNet
+  }, [dailyCash, todayNet])
+
   const discrepancy = useMemo(() => {
     if (!dailyCash) return 0
     const act = parseFloat(actualVal)
-    if (isNaN(act)) return -dailyCash.expected_amount
-    return act - dailyCash.expected_amount
-  }, [dailyCash, actualVal])
+    if (isNaN(act)) return -expectedAmount
+    return act - expectedAmount
+  }, [dailyCash, actualVal, expectedAmount])
 
   // Filter entries for the selected day + current filters
   const entries = useMemo(() => {
@@ -340,9 +345,9 @@ export default function DailyView({
               </div>
             </div>
             <div className="dv-cash-sep" />
-            <div className="dv-cash-metric">
+             <div className="dv-cash-metric">
               <div className="dv-cash-label">ยอดที่ควรมีในร้าน</div>
-              <div className="dv-cash-val dv-cash-expected">{formatBaht(dailyCash.expected_amount)}</div>
+              <div className="dv-cash-val dv-cash-expected">{formatBaht(expectedAmount)}</div>
             </div>
           </div>
 

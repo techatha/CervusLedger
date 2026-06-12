@@ -1,32 +1,35 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ListPawns } from 'wailsjs/go/handlers/PawnHandler'
+import { ListPawnsSorted } from 'wailsjs/go/handlers/PawnHandler'
 import { toBE, formatBaht, formatTicket, pawnStatusBadge } from '@/utils/thai'
 import { getPendingMonths } from '@/utils/pawn'
 import NewPawnForm from './NewPawnForm'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faMagnifyingGlass, faPlus, faArrowDownShortWide, faArrowDownWideShort } from '@fortawesome/free-solid-svg-icons'
 import './PawnList.css'
 
 const STATUS_TABS = [
-  { value: 'active', label: 'ยังอยู่'  },
-  { value: 'ถอน',    label: 'ถอนแล้ว' },
-  { value: 'ขาด',    label: 'ขาด'     },
-  { value: '',       label: 'ทั้งหมด'  },
+  { value: 'active', label: 'ยังอยู่' },
+  { value: 'ขาด', label: 'ขาด' },
+  { value: 'ถอน', label: 'ถอนแล้ว' },
+  { value: '', label: 'ทั้งหมด' },
 ]
 
 export default function PawnList() {
   const navigate = useNavigate()
-  const [pawns,    setPawns]    = useState([])
-  const [status,   setStatus]   = useState('active')
-  const [search,   setSearch]   = useState('')
-  const [loading,  setLoading]  = useState(true)
-  const [error,    setError]    = useState(null)
-  const [showNew,  setShowNew]  = useState(false)
+  const [pawns, setPawns] = useState([])
+  const [status, setStatus] = useState('active')
+  const [search, setSearch] = useState('')
+  const [sortOrder, setSortOrder] = useState('desc')
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [showNew, setShowNew] = useState(false)
 
-  const load = useCallback(async (q) => {
+  const load = useCallback(async (q, order) => {
     setLoading(true)
     setError(null)
     try {
-      const data = await ListPawns('', q)
+      const data = await ListPawnsSorted('', q, order)
       setPawns(data || [])
     } catch (e) {
       setError('โหลดข้อมูลไม่สำเร็จ: ' + e)
@@ -40,13 +43,13 @@ export default function PawnList() {
   // Debounce search & handle initial load
   useEffect(() => {
     if (!isMounted.current) {
-      load(search)
+      load(search, sortOrder)
       isMounted.current = true
       return
     }
-    const t = setTimeout(() => load(search), 250)
+    const t = setTimeout(() => load(search, sortOrder), 250)
     return () => clearTimeout(t)
-  }, [search, load])
+  }, [search, sortOrder, load])
 
   const handleTabChange = (s) => {
     setStatus(s)
@@ -72,7 +75,7 @@ export default function PawnList() {
           </div>
         </div>
         <button className="btn btn-primary" onClick={() => setShowNew(true)}>
-          <IconPlus />
+          <FontAwesomeIcon icon={faPlus} />
           รับจำนำใหม่
         </button>
       </div>
@@ -94,14 +97,25 @@ export default function PawnList() {
             )
           })}
         </div>
-        <div className="search-wrap" style={{ maxWidth: 280 }}>
-          <span className="search-icon"><IconSearch /></span>
-          <input
-            className="input search-input"
-            placeholder="ตั๋ว, ชื่อ, รายการ..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div className="search-wrap" style={{ maxWidth: 280 }}>
+            <span className="search-icon">
+              <FontAwesomeIcon icon={faMagnifyingGlass} />
+            </span>
+            <input
+              className="input search-input"
+              placeholder="ตั๋ว, ชื่อ, รายการ..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          <button
+            className="pl-sort-btn"
+            onClick={() => setSortOrder(p => p === 'asc' ? 'desc' : 'asc')}
+            title="เรียงลำดับเลขตั๋ว"
+          >
+            <FontAwesomeIcon icon={sortOrder === 'asc' ? faArrowDownShortWide : faArrowDownWideShort} />
+          </button>
         </div>
       </div>
 
@@ -172,10 +186,10 @@ export default function PawnList() {
                           ) : null
                         })()}
                         {p.ticket_status !== 'active' && (
-                        <span className="badge badge-amber">
-                          {p.ticket_status === 'lost' ? 'ทำหาย' : 'ชำรุด'}
-                        </span>
-                      )}
+                          <span className="badge badge-amber">
+                            {p.ticket_status === 'lost' ? 'ทำหาย' : 'ชำรุด'}
+                          </span>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -188,7 +202,7 @@ export default function PawnList() {
 
       {showNew && (
         <NewPawnForm
-          onSaved={() => { setShowNew(false); load(search) }}
+          onSaved={() => { setShowNew(false); load(search, sortOrder) }}
           onClose={() => setShowNew(false)}
         />
       )}
@@ -196,10 +210,4 @@ export default function PawnList() {
   )
 }
 
-function IconPlus() {
-  return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-}
-function IconSearch() {
-  return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-}
 

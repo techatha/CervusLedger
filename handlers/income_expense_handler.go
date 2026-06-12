@@ -28,7 +28,7 @@ func (h *IncomeExpenseHandler) Startup(ctx context.Context) {
 
 func (h *IncomeExpenseHandler) ListIncomeExpense(f models.IncomeExpenseFilter) ([]models.IncomeExpense, error) {
 	query := `
-		SELECT id, type, category, amount, notes, source, date, color, created_at
+		SELECT id, type, category, amount, notes, source, date, created_at
 		FROM income_expenses
 		WHERE 1=1
 	`
@@ -61,14 +61,12 @@ func (h *IncomeExpenseHandler) ListIncomeExpense(f models.IncomeExpenseFilter) (
 	var list []models.IncomeExpense
 	for rows.Next() {
 		var e models.IncomeExpense
-		var col sql.NullString
 		if err := rows.Scan(
 			&e.ID, &e.Type, &e.Category, &e.Amount,
-			&e.Notes, &e.Source, &e.Date, &col, &e.CreatedAt,
+			&e.Notes, &e.Source, &e.Date, &e.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan income_expenses: %w", err)
 		}
-		e.Color = col.String
 		list = append(list, e)
 	}
 	return list, nil
@@ -82,24 +80,22 @@ func (h *IncomeExpenseHandler) CreateIncomeExpense(input models.IncomeExpenseInp
 		dateVal = dateVal + " " + time.Now().Format("15:04:05")
 	}
 	res, err := db.DB.Exec(`
-		INSERT INTO income_expenses (type, category, amount, notes, source, date, color)
-		VALUES (?, ?, ?, ?, 'manual', ?, ?)
-	`, input.Type, input.Category, input.Amount, input.Notes, dateVal, input.Color)
+		INSERT INTO income_expenses (type, category, amount, notes, source, date)
+		VALUES (?, ?, ?, ?, 'manual', ?)
+	`, input.Type, input.Category, input.Amount, input.Notes, dateVal)
 	if err != nil {
 		return models.IncomeExpense{}, fmt.Errorf("create income_expenses: %w", err)
 	}
 	id, _ := res.LastInsertId()
 
 	var e models.IncomeExpense
-	var col sql.NullString
 	db.DB.QueryRow(`
-		SELECT id, type, category, amount, notes, source, date, color, created_at
+		SELECT id, type, category, amount, notes, source, date, created_at
 		FROM income_expenses WHERE id = ?
 	`, id).Scan(
 		&e.ID, &e.Type, &e.Category, &e.Amount,
-		&e.Notes, &e.Source, &e.Date, &col, &e.CreatedAt,
+		&e.Notes, &e.Source, &e.Date, &e.CreatedAt,
 	)
-	e.Color = col.String
 	return e, nil
 }
 

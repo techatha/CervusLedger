@@ -213,7 +213,6 @@ func createTables() {
 			notes      TEXT,
 			source     TEXT DEFAULT 'manual',
 			date       DATE NOT NULL,
-			color      TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 

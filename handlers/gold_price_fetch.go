@@ -76,22 +76,40 @@ func (h *GoldPriceHandler) fetchPricesFromAPI() (barBuy, barSell, omBuy, omSell 
 
 // scrapeGoldTradersWebsite parses the raw HTML directly from the official source
 func (h *GoldPriceHandler) scrapeGoldTradersWebsite() (barBuy, barSell, omBuy, omSell float64, updateTime string, err error) {
+	urls := []string{
+		"https://classic.goldtraders.or.th/",
+		"https://classic.goldtraders.or.th/default.aspx",
+	}
+
+	var lastErr error
+	for _, targetURL := range urls {
+		barBuy, barSell, omBuy, omSell, updateTime, err = h.scrapeURL(targetURL)
+		if err == nil {
+			return barBuy, barSell, omBuy, omSell, updateTime, nil
+		}
+		lastErr = err
+	}
+
+	return 0, 0, 0, 0, "", fmt.Errorf("all scraper attempts failed. Last error: %w", lastErr)
+}
+
+func (h *GoldPriceHandler) scrapeURL(targetURL string) (barBuy, barSell, omBuy, omSell float64, updateTime string, err error) {
 	client := &http.Client{Timeout: 5 * time.Second}
 
-	resp, err := client.Get("https://classic.goldtraders.or.th/")
+	resp, err := client.Get(targetURL)
 	if err != nil {
-		return 0, 0, 0, 0, "", fmt.Errorf("scraper connection failure: %w", err)
+		return 0, 0, 0, 0, "", fmt.Errorf("scraper connection failure on %s: %w", targetURL, err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return 0, 0, 0, 0, "", fmt.Errorf("scraper received HTTP error status: %d", resp.StatusCode)
+		return 0, 0, 0, 0, "", fmt.Errorf("scraper received HTTP error status %d from %s", resp.StatusCode, targetURL)
 	}
 
 	// Load HTML DOM document
 	doc, err := goquery.NewDocumentFromReader(resp.Body)
 	if err != nil {
-		return 0, 0, 0, 0, "", fmt.Errorf("failed parsing gold html structure: %w", err)
+		return 0, 0, 0, 0, "", fmt.Errorf("failed parsing gold html structure from %s: %w", targetURL, err)
 	}
 
 	// Locate elements via official DOM IDs matching goldtraders.or.th elements
@@ -120,7 +138,7 @@ func (h *GoldPriceHandler) scrapeGoldTradersWebsite() (barBuy, barSell, omBuy, o
 	}
 
 	if barBuy == 0 || barSell == 0 || omBuy == 0 || omSell == 0 {
-		return 0, 0, 0, 0, "", fmt.Errorf("scraper extracted unexpected empty text fields")
+		return 0, 0, 0, 0, "", fmt.Errorf("scraper extracted unexpected empty text fields from %s", targetURL)
 	}
 	return barBuy, barSell, omBuy, omSell, updateTime, nil
 }

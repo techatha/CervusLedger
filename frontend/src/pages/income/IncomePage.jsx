@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   ListIncomeExpense,
   GetIncomeExpenseSummary,
@@ -6,6 +6,7 @@ import {
   ExportIncomeExpense,
   ListDailyCash,
 } from 'wailsjs/go/handlers/IncomeExpenseHandler.js'
+import { GetAllSettings } from 'wailsjs/go/handlers/SettingsHandler'
 import { formatBaht } from '@/utils/thai'
 import ManualEntryModal from './ManualEntryModal'
 import CalendarGrid from './components/incomePage/CalendarGrid'
@@ -46,6 +47,7 @@ export default function IncomePage() {
   const [selectedDate, setSelectedDate] = useState(null)
   const [typeFilter,   setTypeFilter]   = useState('')
   const [sourceFilter, setSourceFilter] = useState('')
+  const [presets,      setPresets]      = useState([])
 
   // Build date range for API from year/month
   const getDateRange = useCallback((y, m) => {
@@ -77,9 +79,32 @@ export default function IncomePage() {
     }
   }, [getDateRange])
 
-  useEffect(() => { load(year, month) }, [])
+  useEffect(() => { 
+    load(year, month)
+    GetAllSettings()
+      .then(data => {
+        try {
+          if (data.income_expense_presets) {
+            setPresets(JSON.parse(data.income_expense_presets))
+          }
+        } catch (e) {
+          console.error("Failed to parse presets:", e)
+        }
+      })
+      .catch(console.error)
+  }, [])
 
   const reload = () => load(year, month)
+
+  const mappedEntries = useMemo(() => {
+    return entries.map(entry => {
+      const preset = presets.find(p => p.name === entry.category && p.type === entry.type)
+      return {
+        ...entry,
+        color: preset ? preset.color : '#cbd5e1'
+      }
+    })
+  }, [entries, presets])
 
   // Month navigation
   const changeMonth = (y, m) => {
@@ -194,7 +219,7 @@ export default function IncomePage() {
             />
           ) : (
             <DailyView
-              allEntries={entries}
+              allEntries={mappedEntries}
               date={selectedDate}
               loading={loading}
               typeFilter={typeFilter}
@@ -213,7 +238,7 @@ export default function IncomePage() {
         <div className="ip-sidebar">
           <SummaryPanel
             summary={summary}
-            entries={entries}
+            entries={mappedEntries}
             selectedDate={selectedDate}
             year={year}
             month={month}

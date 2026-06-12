@@ -21,6 +21,82 @@ func (h *PawnHandler) Startup(ctx context.Context) {
 	h.ctx = ctx
 }
 
+// ListPawnsSorted returns all pawns with joined customer name, sorted by ticket number.
+// status = "" means all; search matches ticket number, customer name, or item type.
+// sortOrder = "asc" or "desc".
+func (h *PawnHandler) ListPawnsSorted(status, search, sortOrder string) ([]models.PawnRecord, error) {
+	query := `
+		SELECT
+			pr.id, pr.ticket_number, pr.customer_id,
+			(c.prefix || ' ' || c.firstname || ' ' || c.lastname) AS customer_name,
+			pr.item_type, pr.weight_grams, pr.description,
+			pr.pawned_date, pr.principal_amount AS initial_principal,
+			COALESCE(
+				(SELECT pc.new_principal FROM principal_changes pc
+				 WHERE pc.pawn_record_id = pr.id
+				 ORDER BY pc.date DESC, pc.id DESC LIMIT 1),
+				pr.principal_amount
+			) AS current_principal,
+			pr.monthly_interest_rate, pr.interest_amount,
+			pr.status, pr.ticket_status, pr.created_at,
+			(SELECT pp.month FROM pawn_payments pp
+			 WHERE pp.pawn_record_id = pr.id
+			 ORDER BY pp.year DESC, pp.month DESC LIMIT 1) AS last_paid_month,
+			(SELECT pp.year FROM pawn_payments pp
+			 WHERE pp.pawn_record_id = pr.id
+			 ORDER BY pp.year DESC, pp.month DESC LIMIT 1) AS last_paid_year
+		FROM pawn_records pr
+		LEFT JOIN customers c ON c.id = pr.customer_id
+		WHERE 1=1
+	`
+	args := []interface{}{}
+
+	if status != "" {
+		query += ` AND pr.status = ?`
+		args = append(args, status)
+	}
+	if search != "" {
+		like := "%" + search + "%"
+		query += ` AND (
+			CAST(pr.ticket_number AS TEXT) LIKE ?
+			OR c.firstname LIKE ?
+			OR c.lastname  LIKE ?
+			OR pr.item_type LIKE ?
+		)`
+		args = append(args, like, like, like, like)
+	}
+
+	if sortOrder == "asc" {
+		query += ` ORDER BY pr.ticket_number ASC`
+	} else {
+		query += ` ORDER BY pr.ticket_number DESC`
+	}
+
+	rows, err := db.DB.Query(query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list pawns sorted: %w", err)
+	}
+	defer rows.Close()
+
+	var list []models.PawnRecord
+	for rows.Next() {
+		var item models.PawnRecord
+		err := rows.Scan(
+			&item.ID, &item.TicketNumber, &item.CustomerID,
+			&item.CustomerName, &item.ItemType, &item.WeightGrams,
+			&item.Description, &item.PawnedDate, &item.InitialPrincipal,
+			&item.CurrentPrincipal, &item.MonthlyInterestRate,
+			&item.InterestAmount, &item.Status, &item.TicketStatus,
+			&item.CreatedAt, &item.LastPaidMonth, &item.LastPaidYear,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scan pawn list: %w", err)
+		}
+		list = append(list, item)
+	}
+	return list, nil
+}
+
 func (h *PawnHandler) GetCustomerPawnRecords(id int) ([]models.PawnRecord, error) {
 	rows, err := db.DB.Query(`
 		SELECT

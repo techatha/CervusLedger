@@ -34,9 +34,38 @@
   top: 10px;
   right: 10px;
   display: flex;
-  gap: 4px;
+  gap: 6px;
   opacity: 0;
   transition: opacity var(--transition);
+  z-index: 2;
+}
+
+.cl-card-actions button {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  transition: all var(--transition);
+  padding: 0;
+}
+
+.cl-card-actions button.btn-edit:hover {
+  background: var(--bg-hover);
+  color: var(--gold);
+  border-color: var(--gold);
+}
+
+.cl-card-actions button.btn-delete:hover {
+  background: var(--red-bg);
+  color: var(--red);
+  border-color: var(--red);
 }
 
 /* ─── Top row: avatar + name ────────────────────────────────── */

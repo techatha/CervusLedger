@@ -42,6 +42,10 @@ export function ListPawns(arg1, arg2) {
   return window['go']['handlers']['PawnHandler']['ListPawns'](arg1, arg2);
 }
 
+export function ListPawnsSorted(arg1, arg2, arg3) {
+  return window['go']['handlers']['PawnHandler']['ListPawnsSorted'](arg1, arg2, arg3);
+}
+
 export function RecordPayment(arg1) {
   return window['go']['handlers']['PawnHandler']['RecordPayment'](arg1);
 }

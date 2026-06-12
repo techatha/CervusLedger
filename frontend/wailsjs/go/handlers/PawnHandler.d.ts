@@ -23,6 +23,8 @@ export function GetPrincipalChanges(arg1:number):Promise<Array<models.PrincipalC
 
 export function ListPawns(arg1:string,arg2:string):Promise<Array<models.PawnRecord>>;
 
+export function ListPawnsSorted(arg1:string,arg2:string,arg3:string):Promise<Array<models.PawnRecord>>;
+
 export function RecordPayment(arg1:models.PawnPaymentInput):Promise<void>;
 
 export function RedeemPawn(arg1:number):Promise<void>;

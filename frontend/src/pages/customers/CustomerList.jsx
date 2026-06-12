@@ -7,7 +7,7 @@ import {
 import { fullName, toBE } from '@/utils/thai'
 import CustomerForm from './CustomerForm'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faLocationDot, faPhone } from '@fortawesome/free-solid-svg-icons'
+import { faLocationDot, faPhone, faMagnifyingGlass, faUserPlus, faPenToSquare, faTrashCan } from '@fortawesome/free-solid-svg-icons'
 import './CustomerList.css'
 
 // ─── Avatar colour rotation (5 warm/cool palettes) ───────────────────────────
@@ -78,13 +78,11 @@ export default function CustomerList() {
         <div>
           <div className="page-title">ลูกค้า</div>
           <div className="page-meta">
-            {loading && customers.length > 0 ? 'กำลังโหลด...' : `${customers.length} ราย`}
+            {loading && customers.length > 0 ? 'กำลังโหลด...' : `ลูกค้าที่ลงทะเบียนแล้วทั้งหมด ${customers.length} ราย`}
           </div>
         </div>
         <button className="btn btn-primary" onClick={() => setModal('new')}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
-            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-          </svg>
+        <FontAwesomeIcon icon={faUserPlus} />
           เพิ่มลูกค้า
         </button>
       </div>
@@ -93,9 +91,7 @@ export default function CustomerList() {
       <div className="toolbar">
         <div className="search-wrap">
           <span className="search-icon">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
+            <FontAwesomeIcon icon={faMagnifyingGlass} />
           </span>
           <input
             className="input search-input"
@@ -200,8 +196,12 @@ function CustomerCard({ customer: c, index, onOpen, onEdit, onDelete }) {
 
       {/* Hover-reveal action buttons */}
       <div className="cl-card-actions" onClick={e => e.stopPropagation()}>
-        <button className="btn btn-ghost btn-xs" onClick={onEdit} title="แก้ไข">แก้ไข</button>
-        <button className="btn btn-danger-ghost btn-xs" onClick={onDelete} title="ลบ">ลบ</button>
+        <button className="btn-edit" onClick={onEdit} title="แก้ไข">
+          <FontAwesomeIcon icon={faPenToSquare} />
+        </button>
+        <button className="btn-delete" onClick={onDelete} title="ลบ">
+          <FontAwesomeIcon icon={faTrashCan} />
+        </button>
       </div>
 
       {/* Avatar + name */}
