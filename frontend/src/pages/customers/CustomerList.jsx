@@ -7,7 +7,7 @@ import {
 import { fullName, toBE } from '@/utils/thai'
 import CustomerForm from './CustomerForm'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faLocationDot, faPhone, faMagnifyingGlass, faUserPlus, faPenToSquare, faTrashCan } from '@fortawesome/free-solid-svg-icons'
+import { faLocationDot, faPhone, faMagnifyingGlass, faUserPlus, faPenToSquare, faTrashCan,faUser } from '@fortawesome/free-solid-svg-icons'
 import './CustomerList.css'
 
 // ─── Avatar colour rotation (5 warm/cool palettes) ───────────────────────────
@@ -110,12 +110,12 @@ export default function CustomerList() {
       {/* ── Card grid ─────────────────────────────────────────── */}
       {loading && customers.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">👤</div>
+          <div className="empty-state-icon"><FontAwesomeIcon icon={faUser} /></div>
           <div className="empty-state-text">กำลังโหลด...</div>
         </div>
       ) : customers.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-state-icon">👤</div>
+          <div className="empty-state-icon"><FontAwesomeIcon icon={faUser} /></div>
           <div className="empty-state-text">
             {search ? 'ไม่พบลูกค้าที่ค้นหา' : 'ยังไม่มีข้อมูลลูกค้า'}
           </div>
@@ -163,7 +163,11 @@ export default function CustomerList() {
                 <strong style={{ color: 'var(--text-primary)' }}>{fullName(confirmDelete)}</strong>{' '}
                 ออกจากระบบหรือไม่?
                 <br />
-                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+                <span style={{ fontSize: 13, color: 'var(--red)', fontWeight: 500 }}>
+                  ⚠️ ข้อมูลลูกค้าในรายการจำนำและประวัติรับซื้อจะหายไป
+                </span>
+                <br />
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                   ข้อมูลที่ถูกลบไม่สามารถกู้คืนได้
                 </span>
               </p>

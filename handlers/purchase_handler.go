@@ -26,7 +26,7 @@ func (h *PurchaseHandler) ListPurchasedGold() ([]models.PurchasedGold, error) {
 		SELECT 
 			p.id,
 			p.customer_id,
-			COALESCE(c.prefix || ' ' || c.firstname || ' ' || c.lastname, 'ลูกค้าทั่วไป') as customer_name,
+			COALESCE(c.prefix || ' ' || c.firstname || ' ' || c.lastname, 'ไม่พบข้อมูลลูกค้า') as customer_name,
 			p.type,
 			'' as subtype,
 			COALESCE(p.weight_grams, 0.0) as weight_grams,
@@ -75,7 +75,7 @@ func (h *PurchaseHandler) GetCustomerPurchaseRecords(customerID int) ([]models.P
 		SELECT 
 			p.id,
 			p.customer_id,
-			COALESCE(c.prefix || ' ' || c.firstname || ' ' || c.lastname, 'ลูกค้าทั่วไป') as customer_name,
+			COALESCE(c.prefix || ' ' || c.firstname || ' ' || c.lastname, 'ไม่พบข้อมูลลูกค้า') as customer_name,
 			p.type,
 			'' as subtype,
 			COALESCE(p.weight_grams, 0.0) as weight_grams,

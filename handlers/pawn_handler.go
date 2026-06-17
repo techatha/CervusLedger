@@ -28,7 +28,7 @@ func (h *PawnHandler) ListPawnsSorted(status, search, sortOrder string) ([]model
 	query := `
 		SELECT
 			pr.id, pr.ticket_number, pr.customer_id,
-			(c.prefix || ' ' || c.firstname || ' ' || c.lastname) AS customer_name,
+			COALESCE(c.prefix || ' ' || c.firstname || ' ' || c.lastname, 'ไม่พบข้อมูลลูกค้า') AS customer_name,
 			pr.item_type, pr.weight_grams, pr.description,
 			pr.pawned_date, pr.principal_amount AS initial_principal,
 			COALESCE(
@@ -275,7 +275,7 @@ func (h *PawnHandler) GetPawn(id int) (models.PawnRecord, error) {
 	err := db.DB.QueryRow(`
 		SELECT
 			pr.id, pr.ticket_number, pr.customer_id,
-			(c.prefix || ' ' || c.firstname || ' ' || c.lastname) AS customer_name,
+			COALESCE(c.prefix || ' ' || c.firstname || ' ' || c.lastname, 'ไม่พบข้อมูลลูกค้า') AS customer_name,
 			pr.item_type, pr.weight_grams, pr.description,
 			pr.pawned_date, pr.principal_amount AS initial_principal,
 			pr.monthly_interest_rate, pr.interest_amount,
@@ -309,7 +309,7 @@ func (h *PawnHandler) ListPawns(status, search string) ([]models.PawnRecord, err
 	query := `
 		SELECT
 			pr.id, pr.ticket_number, pr.customer_id,
-			(c.prefix || ' ' || c.firstname || ' ' || c.lastname) AS customer_name,
+			COALESCE(c.prefix || ' ' || c.firstname || ' ' || c.lastname, 'ไม่พบข้อมูลลูกค้า') AS customer_name,
 			pr.item_type, pr.weight_grams, pr.description,
 			pr.pawned_date, pr.principal_amount AS initial_principal,
 			COALESCE(
