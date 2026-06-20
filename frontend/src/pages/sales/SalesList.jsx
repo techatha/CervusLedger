@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { usePawnCache } from '@/context/PawnCacheContext'
 import NewSaleForm from './NewSaleForm'
 import './SalesList.css'
 import GoldPriceDashboard from '@/components/GoldPriceDashboard'
@@ -11,6 +12,7 @@ import SalesCart from './components/saleList/SalesCart'
 export default function SalesList({ cartItems, setCartItems }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const { reloadAll } = usePawnCache()
 
   const [showForm, setShowForm] = useState(null) // null | 'sell' | 'buy'
   const [price, setPrice] = useState(null)
@@ -157,6 +159,7 @@ export default function SalesList({ cartItems, setCartItems }) {
       setQrAmount(0)
       setShowQr(false)
       priceDashboardRef.current?.refresh()
+      reloadAll()
       alert('บันทึกรายการสำเร็จเรียบร้อยแล้ว')
     } catch (e) {
       setError('บันทึกรายการไม่สำเร็จ: ' + e)

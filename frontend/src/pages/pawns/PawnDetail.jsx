@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { usePawnCache } from '@/context/PawnCacheContext'
 import {
   GetPawn,
   GetPawnPayments,
@@ -29,6 +30,7 @@ export default function PawnDetail({ cartItems, setCartItems }) {
   const { id } = useParams()
   const navigate = useNavigate()
   const pawnId = parseInt(id, 10)
+  const { reloadAll } = usePawnCache()
 
   const [pawn, setPawn] = useState(null)
   const [payments, setPayments] = useState([])
@@ -88,6 +90,7 @@ export default function PawnDetail({ cartItems, setCartItems }) {
       await RedeemPawn(pawnId)
       setModal(null)
       load()
+      reloadAll()
     } catch (e) { setError(String(e)) }
   }
 
@@ -96,6 +99,7 @@ export default function PawnDetail({ cartItems, setCartItems }) {
       await ForfeitPawn(pawnId)
       setModal(null)
       load()
+      reloadAll()
     } catch (e) { setError(String(e)) }
   }
 
@@ -103,6 +107,7 @@ export default function PawnDetail({ cartItems, setCartItems }) {
     try {
       await UpdateTicketStatus(pawnId, ts)
       load()
+      reloadAll()
     } catch (e) { setError(String(e)) }
   }
   const handlePayPendingInterest = (selectedIndexes) => {
@@ -218,14 +223,14 @@ export default function PawnDetail({ cartItems, setCartItems }) {
             pawn={pawn}
             pawnId={pawnId}
             isActive={isActive}
-            onReload={load}
+            onReload={() => { load(); reloadAll(); }}
             onError={setError}
           />
 
           <PawnFinancialCard
             pawn={pawn}
             isActive={isActive}
-            onReload={load}
+            onReload={() => { load(); reloadAll(); }}
             onError={setError}
           />
 
@@ -283,7 +288,7 @@ export default function PawnDetail({ cartItems, setCartItems }) {
           <RecordPaymentModal
             pawn={pawn}
             customerName={pawn.customer_name_display || ''}
-            onSaved={() => { setModal(null); load() }}
+            onSaved={() => { setModal(null); load(); reloadAll() }}
             onClose={() => setModal(null)}
           />
         )
@@ -292,7 +297,7 @@ export default function PawnDetail({ cartItems, setCartItems }) {
         modal === 'principal' && (
           <PrincipalChangeForm
             pawn={{ ...pawn, current_principal: current }}
-            onSaved={() => { setModal(null); load() }}
+            onSaved={() => { setModal(null); load(); reloadAll() }}
             onClose={() => setModal(null)}
           />
         )

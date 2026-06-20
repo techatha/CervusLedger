@@ -72,12 +72,17 @@ function AppContent() {
   )
 }
 
+import { PawnCacheProvider } from './context/PawnCacheContext'
+
 function App() {
   return (
     <Router>
-      <AppContent />
+      <PawnCacheProvider>
+        <AppContent />
+      </PawnCacheProvider>
     </Router>
   )
 }
 
 export default App
+
