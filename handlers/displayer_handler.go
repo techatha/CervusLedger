@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"CervusLedger/db"
+
 	"go.bug.st/serial"
 )
 
@@ -102,17 +104,31 @@ func (h *DisplayerHandler) TestWiFiDisplayerConnection(ip string) (bool, error) 
 	return true, nil
 }
 
-func (h *DisplayerHandler) SendQRToDisplay(base64PNG string) error {
+func (h *DisplayerHandler) SendQRToDisplay(promptpayID string, amount float64) error {
 	var ip string
 	err := db.DB.QueryRow(`SELECT value FROM settings WHERE key = 'qrcodedisplayer_ip'`).Scan(&ip)
 	if err != nil || ip == "" {
 		return fmt.Errorf("หน้าจอแสดงผล QR ยังไม่ได้ตั้งค่า WiFi หรือไม่พบ IP")
 	}
 
-	pngBytes, err := DecodeBase64PNG(base64PNG)
+	// Download from promptpay.io directly from backend to avoid CORS restrictions
+	url := fmt.Sprintf("https://promptpay.io/%s/%.2f.png", promptpayID, amount)
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(url)
 	if err != nil {
-		return fmt.Errorf("decode base64 png: %w", err)
+		return fmt.Errorf("ดาวน์โหลด QR Code จาก promptpay.io ล้มเหลว: %w", err)
 	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("ดาวน์โหลด QR Code ล้มเหลว: http %d", resp.StatusCode)
+	}
+
+	var buf bytes.Buffer
+	if _, err := buf.ReadFrom(resp.Body); err != nil {
+		return fmt.Errorf("อ่านข้อมูลรูปภาพ QR ล้มเหลว: %w", err)
+	}
+	pngBytes := buf.Bytes()
 
 	bmp, err := QRToBitmap(pngBytes)
 	if err != nil {
@@ -192,18 +208,42 @@ func (h *DisplayerHandler) FindESP32Port() (string, error) {
 		return "", err
 	}
 
+	fmt.Printf("Looking for ESP32 Display on %d ports....\n", len(ports))
 	for _, portName := range ports {
 		if strings.Contains(portName, "Bluetooth") || strings.Contains(portName, "Incoming") {
 			continue
 		}
 
-		_, err := h.testPortForESP32(portName)
+		fmt.Printf("Testing port: %s\n", portName)
+		_, err := h.testPortForESP32WithTimeout(portName, 4*time.Second)
 		if err == nil {
+			fmt.Printf("Found ESP32 Display on port: %s\n", portName)
 			return portName, nil
+		} else {
+			fmt.Printf("Port %s test failed/timeout: %v\n", portName, err)
 		}
 	}
 
 	return "", fmt.Errorf("ไม่พบอุปกรณ์หน้าจอแสดงผล QR เชื่อมต่ออยู่")
+}
+
+func (h *DisplayerHandler) testPortForESP32WithTimeout(portName string, timeout time.Duration) (string, error) {
+	type result struct {
+		port string
+		err  error
+	}
+	ch := make(chan result, 1)
+	go func() {
+		p, err := h.testPortForESP32(portName)
+		ch <- result{port: p, err: err}
+	}()
+
+	select {
+	case res := <-ch:
+		return res.port, res.err
+	case <-time.After(timeout):
+		return "", fmt.Errorf("timeout waiting for port response")
+	}
 }
 
 func (h *DisplayerHandler) testPortForESP32(portName string) (string, error) {
@@ -269,22 +309,25 @@ func (h *DisplayerHandler) drainNonJSON(port serial.Port) {
 }
 
 func (h *DisplayerHandler) PushQR(esp32IP string, bmp *Bitmap) error {
-	body := make([]byte, 4+len(bmp.Bytes))
-	binary.LittleEndian.PutUint16(body[0:2], uint16(bmp.Width))
-	binary.LittleEndian.PutUint16(body[2:4], uint16(bmp.Height))
-	copy(body[4:], bmp.Bytes)
+    body := make([]byte, 4+len(bmp.Bytes))
+    binary.LittleEndian.PutUint16(body[0:2], uint16(bmp.Width))
+    binary.LittleEndian.PutUint16(body[2:4], uint16(bmp.Height))
+    copy(body[4:], bmp.Bytes)
 
-	url := fmt.Sprintf("http://%s/qr", esp32IP)
-	client := &http.Client{Timeout: 5 * time.Second}
+    hexString := hex.EncodeToString(body)
 
-	resp, err := client.Post(url, "application/octet-stream", bytes.NewReader(body))
-	if err != nil {
-		return fmt.Errorf("POST to ESP32 at %s: %w", esp32IP, err)
-	}
-	defer resp.Body.Close()
+    url := fmt.Sprintf("http://%s/qr", esp32IP)
+    client := &http.Client{Timeout: 5 * time.Second}
 
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("ESP32 returned HTTP %d", resp.StatusCode)
-	}
-	return nil
+    // ส่งข้อความไปแบบ text/plain
+    resp, err := client.Post(url, "text/plain", strings.NewReader(hexString))
+    if err != nil {
+        return fmt.Errorf("POST to ESP32 at %s: %w", esp32IP, err)
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        return fmt.Errorf("ESP32 returned HTTP %d", resp.StatusCode)
+    }
+    return nil
 }

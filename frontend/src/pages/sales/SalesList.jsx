@@ -73,23 +73,7 @@ export default function SalesList({ cartItems, setCartItems }) {
       setDisplayStatus('sending')
       setDisplayError(null)
       try {
-        const safeAmount = Number(mainTotalAmount).toFixed(2)
-        const url = `https://promptpay.io/${promptpayNumber}/${safeAmount}.png`
-
-        const response = await fetch(url)
-        if (!response.ok) {
-          throw new Error(`โหลดคิวอาร์ล้มเหลว (${response.status})`)
-        }
-
-        const blob = await response.blob()
-        const base64PNG = await new Promise((resolve, reject) => {
-          const reader = new FileReader()
-          reader.onloadend = () => resolve(reader.result)
-          reader.onerror = reject
-          reader.readAsDataURL(blob)
-        })
-
-        await SendQRToDisplay(base64PNG)
+        await SendQRToDisplay(promptpayNumber, Number(mainTotalAmount))
         setDisplayStatus('done')
       } catch (err) {
         console.error('Failed to send QR to display:', err)

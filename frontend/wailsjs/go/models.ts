@@ -1,5 +1,21 @@
 export namespace handlers {
 	
+	export class Bitmap {
+	    Width: number;
+	    Height: number;
+	    Bytes: number[];
+	
+	    static createFrom(source: any = {}) {
+	        return new Bitmap(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.Width = source["Width"];
+	        this.Height = source["Height"];
+	        this.Bytes = source["Bytes"];
+	    }
+	}
 	export class ImportResult {
 	    customers_imported: number;
 	    pawn_records_imported: number;

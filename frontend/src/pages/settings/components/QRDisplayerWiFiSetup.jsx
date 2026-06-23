@@ -57,8 +57,10 @@ export default function QRDisplayerWiFiSetup() {
     setConnectionSuccess(null); // Reset connection test state
 
     try {
+      console.log("Waiting save wifi credentials...")
       const ip = await SaveWiFiCredentialsAuto(ssid, password);
       setSavedIP(ip);
+      console.log("waiting done! ip: ", ip);
       setStatus('done');
     } catch (err) {
       setError(err.message || String(err));
@@ -132,6 +134,7 @@ export default function QRDisplayerWiFiSetup() {
               onChange={(e) => setSsid(e.target.value)}
               placeholder="ชื่อเครือข่าย WiFi"
               disabled={status === 'connecting'}
+              style={{ fontFamily: 'sans-serif' }}
             />
           </div>
           <div className="form-group">
@@ -143,6 +146,7 @@ export default function QRDisplayerWiFiSetup() {
               onChange={(e) => setPassword(e.target.value)}
               placeholder="รหัสผ่าน WiFi"
               disabled={status === 'connecting'}
+              style={{ fontFamily: 'sans-serif' }}
             />
           </div>
         </div>
