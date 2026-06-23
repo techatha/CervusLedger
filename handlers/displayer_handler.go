@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -111,6 +112,30 @@ func (h *DisplayerHandler) SendQRToDisplay(promptpayID string, amount float64) e
 		return fmt.Errorf("หน้าจอแสดงผล QR ยังไม่ได้ตั้งค่า WiFi หรือไม่พบ IP")
 	}
 
+	if promptpayID == "" {
+		_ = db.DB.QueryRow(`SELECT value FROM settings WHERE key = 'promptpay_number'`).Scan(&promptpayID)
+	}
+	if promptpayID == "" {
+		promptpayID = getEnvFromDotEnv("PROMPTPAY_NUMBER")
+		if promptpayID == "" {
+			promptpayID = getEnvFromDotEnv("VITE_DEFAULT_PROMPTPAY_NUMBER")
+		}
+	}
+	if promptpayID == "" {
+		return fmt.Errorf("ไม่พบหมายเลขพร้อมเพย์ กรุณาตั้งค่าในหน้าตั้งค่าหรือไฟล์ .env")
+	}
+
+	// Fetch store's PromptPay name from settings
+	var promptpayName string
+	_ = db.DB.QueryRow(`SELECT value FROM settings WHERE key = 'promptpay_name'`).Scan(&promptpayName)
+
+	if promptpayName == "" {
+		promptpayName = getEnvFromDotEnv("PROMPTPAY_NAME")
+		if promptpayName == "" {
+			promptpayName = getEnvFromDotEnv("VITE_DEFAULT_PROMPTPAY_NAME")
+		}
+	}
+
 	// Download from promptpay.io directly from backend to avoid CORS restrictions
 	url := fmt.Sprintf("https://promptpay.io/%s/%.2f.png", promptpayID, amount)
 	client := &http.Client{Timeout: 10 * time.Second}
@@ -135,7 +160,7 @@ func (h *DisplayerHandler) SendQRToDisplay(promptpayID string, amount float64) e
 		return fmt.Errorf("convert QR to bitmap: %w", err)
 	}
 
-	if err := h.PushQR(ip, bmp); err != nil {
+	if err := h.PushQR(ip, bmp, amount, promptpayName); err != nil {
 		return fmt.Errorf("ส่ง QR ไปหน้าจอไม่ได้: %w", err)
 	}
 
@@ -308,26 +333,117 @@ func (h *DisplayerHandler) drainNonJSON(port serial.Port) {
 	}
 }
 
-func (h *DisplayerHandler) PushQR(esp32IP string, bmp *Bitmap) error {
-    body := make([]byte, 4+len(bmp.Bytes))
-    binary.LittleEndian.PutUint16(body[0:2], uint16(bmp.Width))
-    binary.LittleEndian.PutUint16(body[2:4], uint16(bmp.Height))
-    copy(body[4:], bmp.Bytes)
+func (h *DisplayerHandler) PushQR(esp32IP string, bmp *Bitmap, amount float64, name string) error {
+	body := make([]byte, 4+len(bmp.Bytes))
+	binary.LittleEndian.PutUint16(body[0:2], uint16(bmp.Width))
+	binary.LittleEndian.PutUint16(body[2:4], uint16(bmp.Height))
+	copy(body[4:], bmp.Bytes)
 
-    hexString := hex.EncodeToString(body)
+	hexString := hex.EncodeToString(body)
 
-    url := fmt.Sprintf("http://%s/qr", esp32IP)
-    client := &http.Client{Timeout: 5 * time.Second}
+	// Construct JSON payload
+	payload := struct {
+		QR     string  `json:"qr"`
+		Amount float64 `json:"amount"`
+		Name   string  `json:"name"`
+	}{
+		QR:     hexString,
+		Amount: amount,
+		Name:   name,
+	}
 
-    // ส่งข้อความไปแบบ text/plain
-    resp, err := client.Post(url, "text/plain", strings.NewReader(hexString))
-    if err != nil {
-        return fmt.Errorf("POST to ESP32 at %s: %w", esp32IP, err)
-    }
-    defer resp.Body.Close()
+	jsonBytes, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("marshal displayer payload: %w", err)
+	}
 
-    if resp.StatusCode != http.StatusOK {
-        return fmt.Errorf("ESP32 returned HTTP %d", resp.StatusCode)
-    }
-    return nil
+	url := fmt.Sprintf("http://%s/qr", esp32IP)
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	resp, err := client.Post(url, "application/json", bytes.NewReader(jsonBytes))
+	if err != nil {
+		return fmt.Errorf("POST to ESP32 at %s: %w", esp32IP, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("ESP32 returned HTTP %d", resp.StatusCode)
+	}
+	return nil
+}
+
+func (h *DisplayerHandler) SetShopName(shopName string) error {
+	var ip string
+	err := db.DB.QueryRow(`SELECT value FROM settings WHERE key = 'qrcodedisplayer_ip'`).Scan(&ip)
+	if err != nil || ip == "" {
+		return fmt.Errorf("หน้าจอแสดงผล QR ยังไม่ได้ตั้งค่า WiFi หรือไม่พบ IP")
+	}
+
+	if shopName == "" {
+		_ = db.DB.QueryRow(`SELECT value FROM settings WHERE key = 'shop_name'`).Scan(&shopName)
+	}
+
+	payload := struct {
+		ShopName string `json:"shop_name"`
+	}{
+		ShopName: shopName,
+	}
+
+	jsonBytes, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("marshal set_shop_name payload: %w", err)
+	}
+
+	url := fmt.Sprintf("http://%s/set_shop_name", ip)
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	resp, err := client.Post(url, "application/json", bytes.NewReader(jsonBytes))
+	if err != nil {
+		return fmt.Errorf("POST to ESP32 at %s: %w", ip, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("ESP32 returned HTTP %d", resp.StatusCode)
+	}
+	return nil
+}
+
+func getEnvFromDotEnv(key string) string {
+	if val := os.Getenv(key); val != "" {
+		return val
+	}
+	if val := readEnvFromFile(".env", key); val != "" {
+		return val
+	}
+	return readEnvFromFile("frontend/.env", key)
+}
+
+func readEnvFromFile(filePath string, key string) string {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return ""
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		parts := strings.SplitN(line, "=", 2)
+		if len(parts) == 2 {
+			k := strings.TrimSpace(parts[0])
+			v := strings.TrimSpace(parts[1])
+			if (strings.HasPrefix(v, "\"") && strings.HasSuffix(v, "\"")) || 
+			   (strings.HasPrefix(v, "'") && strings.HasSuffix(v, "'")) {
+				v = v[1 : len(v)-1]
+			}
+			if k == key {
+				return v
+			}
+		}
+	}
+	return ""
 }

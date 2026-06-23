@@ -1,127 +1,77 @@
-import { useState, useEffect } from 'react'
-import { GetAllSettings, SaveAllSettings, ImportFromXlsx, DownloadImportTemplate } from 'wailsjs/go/handlers/SettingsHandler'
-import './SettingsPage.css'
-import QRDisplayerWiFiSetup from './components/QRDisplayerWiFiSetup'
+import { useState, useEffect } from 'react';
+import { GetAllSettings, SaveAllSettings } from 'wailsjs/go/handlers/SettingsHandler';
+import { SetShopName } from 'wailsjs/go/handlers/DisplayerHandler';
+import './SettingsPage.css';
+
+import ShopInfoSettings from './components/ShopInfoSettings';
+import PromptPaySettings from './components/PromptPaySettings';
+import GoldPriceSettings from './components/GoldPriceSettings';
+import InterestRateSettings from './components/InterestRateSettings';
+import TicketNumberSettings from './components/TicketNumberSettings';
+import IncomeExpensePresetsSettings from './components/IncomeExpensePresetsSettings';
+import ImportDataSettings from './components/ImportDataSettings';
+import PawnLegalTermsSettings from './components/PawnLegalTermsSettings';
+import QRDisplayerWiFiSetup from './components/QRDisplayerWiFiSetup';
 
 const DEFAULTS = {
-  shop_name:            '',
-  shop_address:         '',
-  shop_phone:           '',
-  buy_price_per_baht:   '',
-  sell_price_per_baht:  '',
-  buying_difference:    '0',
-  interest_rate_low:    '0.3',
-  interest_rate_high:   '0.2',
-  interest_threshold:   '10000',
-  min_interest_amount:  '20',
-  last_ticket_number:   '0',
-  pawn_legal_terms:     '',
+  shop_name:              '',
+  shop_address:           '',
+  shop_phone:             '',
+  buy_price_per_baht:     '',
+  sell_price_per_baht:    '',
+  buying_difference:      '0',
+  interest_rate_low:      '0.3',
+  interest_rate_high:     '0.2',
+  interest_threshold:     '10000',
+  min_interest_amount:    '20',
+  last_ticket_number:     '0',
+  pawn_legal_terms:       '',
   income_expense_presets: '[]',
-}
+  promptpay_number:       '',
+  promptpay_name:         '',
+};
 
 export default function SettingsPage() {
-  const [form,    setForm]    = useState(DEFAULTS)
-  const [loading, setLoading] = useState(true)
-  const [saving,  setSaving]  = useState(false)
-  const [saved,   setSaved]   = useState(false)
-  const [error,   setError]   = useState(null)
-
-  const [presets, setPresets] = useState([])
-  const [newCatName, setNewCatName] = useState('')
-  const [newCatType, setNewCatType] = useState('income')
-
-  // Import state
-  const [importing, setImporting] = useState(false)
-  const [importResult, setImportResult] = useState(null)
-  const [importError, setImportError] = useState(null)
-  const [newCatColor, setNewCatColor] = useState('#2ecc71')
+  const [settings, setSettings] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     GetAllSettings()
       .then(data => {
-        setForm(prev => ({ ...prev, ...data }))
-        try {
-          if (data.income_expense_presets) {
-            setPresets(JSON.parse(data.income_expense_presets))
-          }
-        } catch (e) {
-          console.error("Failed to parse presets:", e)
-        }
+        setSettings({ ...DEFAULTS, ...data });
       })
       .catch(e => setError('โหลดการตั้งค่าไม่สำเร็จ: ' + e))
-      .finally(() => setLoading(false))
-  }, [])
+      .finally(() => setLoading(false));
+  }, []);
 
-  // Sync presets state with the form state so it gets saved on handleSave
-  useEffect(() => {
-    setForm(p => ({ ...p, income_expense_presets: JSON.stringify(presets) }))
-  }, [presets])
+  const handleSaveSection = async (updatedValues) => {
+    await SaveAllSettings(updatedValues);
+    
+    // Check if shop_name changed to trigger displayer sync
+    const originalShopName = settings?.shop_name;
+    const newShopName = updatedValues.shop_name;
+    
+    setSettings(prev => ({ ...prev, ...updatedValues }));
 
-  const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
-
-  const handleAddPreset = () => {
-    if (!newCatName.trim()) return
-    if (presets.some(p => p.name.trim() === newCatName.trim() && p.type === newCatType)) {
-      alert('มีหมวดหมู่นี้ในระบบแล้ว')
-      return
-    }
-    const newPreset = {
-      name: newCatName.trim(),
-      type: newCatType,
-      color: newCatColor
-    }
-    setPresets(p => [...p, newPreset])
-    setNewCatName('')
-  }
-
-  const handleRemovePreset = (index) => {
-    setPresets(p => p.filter((_, i) => i !== index))
-  }
-
-  const handleSave = async () => {
-    setSaving(true)
-    setError(null)
-    setSaved(false)
-    try {
-      await SaveAllSettings(form)
-      setSaved(true)
-      setTimeout(() => setSaved(false), 3000)
-    } catch (e) {
-      setError('บันทึกไม่สำเร็จ: ' + e)
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  const handleImport = async () => {
-    setImporting(true)
-    setImportResult(null)
-    setImportError(null)
-    try {
-      const result = await ImportFromXlsx()
-      if (result && !result.cancelled) {
-        setImportResult(result)
+    if (newShopName !== undefined && newShopName !== originalShopName) {
+      try {
+        await SetShopName(newShopName);
+      } catch (err) {
+        console.warn('ส่งชื่อร้านไปยังหน้าจอแสดงผลไม่สำเร็จ:', err);
       }
-    } catch (e) {
-      setImportError('นำเข้าไม่สำเร็จ: ' + e)
-    } finally {
-      setImporting(false)
     }
-  }
+  };
 
-  const handleDownloadTemplate = async () => {
-    try {
-      await DownloadImportTemplate()
-    } catch (e) {
-      setImportError('ดาวน์โหลดแม่แบบไม่สำเร็จ: ' + e)
-    }
+  if (loading) {
+    return (
+      <div className="page-view">
+        <div className="empty-state">
+          <div className="empty-state-text">กำลังโหลด...</div>
+        </div>
+      </div>
+    );
   }
-
-  if (loading) return (
-    <div className="page-view">
-      <div className="empty-state"><div className="empty-state-text">กำลังโหลด...</div></div>
-    </div>
-  )
 
   return (
     <div className="page-view">
@@ -130,422 +80,81 @@ export default function SettingsPage() {
           <div className="page-title">ตั้งค่า</div>
           <div className="page-meta">ข้อมูลร้านและค่าพารามิเตอร์</div>
         </div>
-        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-          {saved && (
-            <span className="sp-saved-badge">
-              <IconCheck /> บันทึกแล้ว
-            </span>
-          )}
-          <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? 'กำลังบันทึก...' : 'บันทึกการตั้งค่า'}
-          </button>
-        </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
 
       <div className="sp-layout">
-        {/* ── Shop Info ── */}
-        <section className="card sp-section">
-          <div className="card-header">
-            <span className="card-title">ข้อมูลร้าน</span>
-          </div>
-          <div className="sp-fields">
-            <Field label="ชื่อร้าน" required>
-              <input
-                className="input"
-                value={form.shop_name}
-                onChange={e => set('shop_name', e.target.value)}
-                placeholder="ร้านทองสมศรี"
-              />
-            </Field>
-            <Field label="ที่อยู่ร้าน">
-              <input
-                className="input"
-                value={form.shop_address}
-                onChange={e => set('shop_address', e.target.value)}
-                placeholder="123/4 ถ.เชียงใหม่-ลำพูน ต.ช้างม่อย อ.เมือง จ.เชียงใหม่"
-              />
-            </Field>
-            <Field label="เบอร์โทรศัพท์">
-              <input
-                className="input"
-                value={form.shop_phone}
-                onChange={e => set('shop_phone', e.target.value)}
-                placeholder="053-123456"
-              />
-            </Field>
-          </div>
-        </section>
+        {/* Shop Info Settings */}
+        <ShopInfoSettings
+          initialValues={{
+            shop_name: settings.shop_name,
+            shop_address: settings.shop_address,
+            shop_phone: settings.shop_phone,
+          }}
+          onSave={handleSaveSection}
+        />
 
-        {/* ── Gold Prices ── */}
-        <section className="card sp-section">
-          <div className="card-header">
-            <span className="card-title">ราคาทองเริ่มต้น</span>
-            <span style={{ fontSize:12, color:'var(--text-muted)', fontWeight:400 }}>
-              ราคาจริงตั้งได้จากหน้าซื้อ-ขาย
-            </span>
-          </div>
-          <div className="sp-fields">
-            <div className="form-row form-row-2">
-              <Field label="ราคาขาย (บาท/บาท)">
-                <input
-                  className="input"
-                  type="number"
-                  value={form.sell_price_per_baht}
-                  onChange={e => set('sell_price_per_baht', e.target.value)}
-                  placeholder="32000"
-                />
-              </Field>
-              <Field label="ราคารับซื้อ (บาท/บาท)">
-                <input
-                  className="input"
-                  type="number"
-                  value={form.buy_price_per_baht}
-                  onChange={e => set('buy_price_per_baht', e.target.value)}
-                  placeholder="31500"
-                />
-              </Field>
-            </div>
-            <Field label="ส่วนต่างราคารับซื้อทองคำแท่ง (บาท/บาท)" hint="ใช้หักลบราคาอ้างอิงตอนคำนวณราคารับซื้อ">
-              <input
-                className="input"
-                type="number"
-                value={form.buying_difference}
-                onChange={e => set('buying_difference', e.target.value)}
-                placeholder="0"
-              />
-            </Field>
-          </div>
-        </section>
+        {/* PromptPay Settings */}
+        <PromptPaySettings
+          initialValues={{
+            promptpay_number: settings.promptpay_number,
+            promptpay_name: settings.promptpay_name,
+          }}
+          onSave={handleSaveSection}
+        />
 
-        {/* ── Interest Rates ── */}
-        <section className="card sp-section">
-          <div className="card-header">
-            <span className="card-title">อัตราดอกเบี้ยจำนำ</span>
-          </div>
-          <div className="sp-fields">
-            <div className="sp-rate-explainer">
-              <span>ต้นเงิน &lt; {parseInt(form.interest_threshold||0).toLocaleString('th-TH')} บาท</span>
-              <span className="sp-arrow">→</span>
-              <span className="sp-rate-val">{form.interest_rate_low}% / เดือน</span>
-              <span className="sp-divider">|</span>
-              <span>ต้นเงิน ≥ {parseInt(form.interest_threshold||0).toLocaleString('th-TH')} บาท</span>
-              <span className="sp-arrow">→</span>
-              <span className="sp-rate-val">{form.interest_rate_high}% / เดือน</span>
-            </div>
+        {/* Gold Prices Settings */}
+        <GoldPriceSettings
+          initialValues={{
+            sell_price_per_baht: settings.sell_price_per_baht,
+            buy_price_per_baht: settings.buy_price_per_baht,
+            buying_difference: settings.buying_difference,
+          }}
+          onSave={handleSaveSection}
+        />
 
-            <div className="form-row form-row-3">
-              <Field label="อัตราต่ำ (% / เดือน)" hint="ต้นต่ำกว่า threshold">
-                <input
-                  className="input"
-                  type="number"
-                  step="0.01"
-                  value={form.interest_rate_low}
-                  onChange={e => set('interest_rate_low', e.target.value)}
-                />
-              </Field>
-              <Field label="อัตราสูง (% / เดือน)" hint="ต้นตั้งแต่ threshold">
-                <input
-                  className="input"
-                  type="number"
-                  step="0.01"
-                  value={form.interest_rate_high}
-                  onChange={e => set('interest_rate_high', e.target.value)}
-                />
-              </Field>
-              <Field label="Threshold (บาท)">
-                <input
-                  className="input"
-                  type="number"
-                  step="1000"
-                  value={form.interest_threshold}
-                  onChange={e => set('interest_threshold', e.target.value)}
-                />
-              </Field>
-            </div>
+        {/* Interest Rates Settings */}
+        <InterestRateSettings
+          initialValues={{
+            interest_rate_low: settings.interest_rate_low,
+            interest_rate_high: settings.interest_rate_high,
+            interest_threshold: settings.interest_threshold,
+            min_interest_amount: settings.min_interest_amount,
+          }}
+          onSave={handleSaveSection}
+        />
 
-            <Field label="ดอกเบี้ยขั้นต่ำ (บาท/เดือน)">
-              <input
-                className="input"
-                type="number"
-                value={form.min_interest_amount}
-                onChange={e => set('min_interest_amount', e.target.value)}
-                style={{ maxWidth:180 }}
-              />
-            </Field>
-          </div>
-        </section>
+        {/* Ticket Number Settings */}
+        <TicketNumberSettings
+          initialValues={{
+            last_ticket_number: settings.last_ticket_number,
+          }}
+          onSave={handleSaveSection}
+        />
 
-        {/* ── Ticket Number ── */}
-        <section className="card sp-section">
-          <div className="card-header">
-            <span className="card-title">เลขตั๋ว</span>
-          </div>
-          <div className="sp-fields">
-            <Field
-              label="เลขตั๋วล่าสุด"
-              hint="ตั๋วถัดไปจะเป็นเลขนี้ + 1 (รีเซ็ตเป็น 1 หลังจาก 9999)"
-            >
-              <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-                <input
-                  className="input"
-                  type="number"
-                  min="0"
-                  max="9999"
-                  value={form.last_ticket_number}
-                  onChange={e => set('last_ticket_number', e.target.value)}
-                  style={{ maxWidth:140 }}
-                />
-                <span style={{ fontSize:13, color:'var(--text-muted)' }}>
-                  ตั๋วถัดไป:{' '}
-                  <strong style={{ color:'var(--gold)', fontFamily:'Courier New' }}>
-                    {String((parseInt(form.last_ticket_number||0) % 9999) + 1).padStart(4,'0')}
-                  </strong>
-                </span>
-              </div>
-            </Field>
-          </div>
-        </section>
+        {/* Income/Expense Presets Settings */}
+        <IncomeExpensePresetsSettings
+          initialValues={{
+            income_expense_presets: settings.income_expense_presets,
+          }}
+          onSave={handleSaveSection}
+        />
 
-        {/* ── Income/Expense Presets ── */}
-        <section className="card sp-section">
-          <div className="card-header">
-            <span className="card-title">หมวดหมู่รายรับ-รายจ่าย</span>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 400 }}>
-              ตั้งค่าหมวดหมู่และสีสำหรับบันทึกรายรับ-รายจ่าย
-            </span>
-          </div>
-          <div className="sp-fields">
-            {/* Presets List */}
-            <div className="sp-presets-list">
-              {presets.length === 0 ? (
-                <div className="sp-presets-empty">ยังไม่มีหมวดหมู่ที่ตั้งไว้</div>
-              ) : (
-                presets.map((p, idx) => (
-                  <div key={idx} className="sp-preset-item">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span 
-                        className="sp-preset-color-badge" 
-                        style={{ backgroundColor: p.color || '#95a5a6' }} 
-                      />
-                      <span className="sp-preset-name">{p.name}</span>
-                      <span className={`badge ${p.type === 'income' ? 'badge-green' : 'badge-red'}`}>
-                        {p.type === 'income' ? 'รายรับ' : 'รายจ่าย'}
-                      </span>
-                    </div>
-                    <button 
-                      type="button" 
-                      className="btn btn-xs btn-danger-ghost" 
-                      onClick={() => handleRemovePreset(idx)}
-                    >
-                      ลบ
-                    </button>
-                  </div>
-                ))
-              )}
-            </div>
+        {/* Import Data Settings */}
+        <ImportDataSettings />
 
-            {/* Add New Preset Row */}
-            <div className="sp-presets-add-form" style={{ marginTop: 10, paddingTop: 16, borderTop: '1px solid var(--divider)' }}>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
-                <div className="form-group" style={{ flex: 1, minWidth: 150 }}>
-                  <label className="form-label">ชื่อหมวดหมู่</label>
-                  <input
-                    className="input"
-                    placeholder="เช่น ค่าขนส่ง, ปันผล..."
-                    value={newCatName}
-                    onChange={e => setNewCatName(e.target.value)}
-                  />
-                </div>
-                <div className="form-group" style={{ width: 110 }}>
-                  <label className="form-label">ประเภท</label>
-                  <select
-                    className="input"
-                    value={newCatType}
-                    onChange={e => setNewCatType(e.target.value)}
-                  >
-                    <option value="income">รายรับ</option>
-                    <option value="expense">รายจ่าย</option>
-                  </select>
-                </div>
-                <div className="form-group" style={{ width: 110 }}>
-                  <label className="form-label">สี</label>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, height: 40 }}>
-                    <input
-                      type="color"
-                      className="sp-color-input"
-                      value={newCatColor}
-                      onChange={e => setNewCatColor(e.target.value)}
-                      style={{
-                        border: '1px solid var(--border)',
-                        borderRadius: '4px',
-                        width: '34px',
-                        height: '34px',
-                        cursor: 'pointer',
-                        padding: 0,
-                        background: 'transparent'
-                      }}
-                    />
-                    <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'var(--text-muted)' }}>
-                      {newCatColor.toUpperCase()}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  className="btn btn-primary"
-                  style={{ height: 40 }}
-                  onClick={handleAddPreset}
-                >
-                  เพิ่มหมวดหมู่
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Pawn Legal Terms Settings */}
+        <PawnLegalTermsSettings
+          initialValues={{
+            pawn_legal_terms: settings.pawn_legal_terms,
+          }}
+          onSave={handleSaveSection}
+        />
 
-        {/* ── Import Data ── */}
-        <section className="card sp-section">
-          <div className="card-header">
-            <span className="card-title">นำเข้าข้อมูล</span>
-            <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 400 }}>
-              นำเข้าข้อมูลจากไฟล์ Excel (.xlsx) เพื่อรวมกับฐานข้อมูลปัจจุบัน
-            </span>
-          </div>
-          <div className="sp-fields">
-            <div className="sp-import-desc">
-              <p>รองรับไฟล์ Excel ที่มีชีทตามแม่แบบ:</p>
-              <ul>
-                <li><strong>ลูกค้า</strong> — ข้อมูลลูกค้า (ชื่อ, ที่อยู่, เลขบัตรประชาชน)</li>
-                <li><strong>รายการจำนำ</strong> — รายการตั๋วจำนำ</li>
-                <li><strong>การชำระดอกเบี้ย</strong> — ประวัติการชำระดอกเบี้ย</li>
-                <li><strong>การเปลี่ยนแปลงเงินต้น</strong> — การลด/เพิ่มเงินต้น</li>
-              </ul>
-              <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                ข้อมูลที่ซ้ำจะถูกข้ามไป ข้อมูลที่มีอยู่แล้วจะไม่ถูกเขียนทับ · ชีทที่ไม่มีในไฟล์จะถูกข้ามไป
-              </p>
-            </div>
-
-            <div className="sp-import-actions">
-              <button
-                type="button"
-                className="btn sp-import-template-btn"
-                onClick={handleDownloadTemplate}
-              >
-                <IconDownload /> ดาวน์โหลดแม่แบบ (.xlsx)
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary sp-import-btn"
-                onClick={handleImport}
-                disabled={importing}
-              >
-                <IconUpload /> {importing ? 'กำลังนำเข้า...' : 'เลือกไฟล์และนำเข้า'}
-              </button>
-            </div>
-
-            {importError && (
-              <div className="alert alert-error">{importError}</div>
-            )}
-
-            {importResult && (
-              <div className="sp-import-result">
-                <div className="sp-import-result-title">✅ นำเข้าสำเร็จ</div>
-                <div className="sp-import-result-counts">
-                  <div className="sp-import-count-item">
-                    <span className="sp-import-count-num">{importResult.customers_imported}</span>
-                    <span className="sp-import-count-label">ลูกค้า</span>
-                  </div>
-                  <div className="sp-import-count-item">
-                    <span className="sp-import-count-num">{importResult.pawn_records_imported}</span>
-                    <span className="sp-import-count-label">ตั๋วจำนำ</span>
-                  </div>
-                  <div className="sp-import-count-item">
-                    <span className="sp-import-count-num">{importResult.pawn_payments_imported}</span>
-                    <span className="sp-import-count-label">การชำระ</span>
-                  </div>
-                  <div className="sp-import-count-item">
-                    <span className="sp-import-count-num">{importResult.principal_changes_imported}</span>
-                    <span className="sp-import-count-label">เปลี่ยนเงินต้น</span>
-                  </div>
-                </div>
-                {importResult.warnings && importResult.warnings.length > 0 && (
-                  <details className="sp-import-warnings">
-                    <summary>⚠️ คำเตือน ({importResult.warnings.length} รายการ)</summary>
-                    <ul>
-                      {importResult.warnings.map((w, i) => (
-                        <li key={i}>{w}</li>
-                      ))}
-                    </ul>
-                  </details>
-                )}
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* ── Pawn Legal Terms ── */}
-        <section className="card sp-section">
-          <div className="card-header">
-            <span className="card-title">เงื่อนไขและข้อตกลงตั๋วจำนำ</span>
-          </div>
-          <div className="sp-fields">
-            <Field
-              label="ข้อความเงื่อนไข"
-              hint="สามารถเน้นข้อความตัวหนาด้วย <bold>ข้อความ</bold> และขีดเส้นใต้ด้วย <underline>ข้อความ</underline> ได้"
-            >
-              <textarea
-                className="input"
-                style={{ height: 'auto', minHeight: '120px', lineHeight: '1.6', resize: 'vertical' }}
-                value={form.pawn_legal_terms || ''}
-                onChange={e => set('pawn_legal_terms', e.target.value)}
-                placeholder="กรอกข้อความเงื่อนไขทางกฎหมายสำหรับแสดงบนตั๋วจำนำ..."
-              />
-            </Field>
-          </div>
-        </section>
-
-        {/* ── QR Displayer WiFi Setup ── */}
-        <QRDisplayerWiFiSetup />
+        {/* WiFi Displayer Setup */}
+        <QRDisplayerWiFiSetup shopName={settings.shop_name} />
       </div>
     </div>
-  )
-}
-
-function Field({ label, hint, required, children }) {
-  return (
-    <div className="form-group sp-field">
-      <label className="form-label">
-        {label}
-        {required && <span style={{ color:'var(--red)' }}> *</span>}
-      </label>
-      {children}
-      {hint && <div className="sp-hint">{hint}</div>}
-    </div>
-  )
-}
-
-function IconCheck() {
-  return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-}
-
-function IconUpload() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-      <polyline points="17 8 12 3 7 8"/>
-      <line x1="12" y1="3" x2="12" y2="15"/>
-    </svg>
-  )
-}
-
-function IconDownload() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
-      <polyline points="7 10 12 15 17 10"/>
-      <line x1="12" y1="15" x2="12" y2="3"/>
-    </svg>
-  )
+  );
 }
