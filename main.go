@@ -41,6 +41,7 @@ func main() {
 	purchaseHandler := handlers.NewPurchaseHandler()
 	dashboardHandler := handlers.NewDashboardHandler()
 	settingsHandler := handlers.NewSettingsHandler()
+	displayerHandler := handlers.NewDisplayerHandler()
 
 	err := wails.Run(&options.App{
 		Title:  "CervusLedger",
@@ -62,6 +63,7 @@ func main() {
 			purchaseHandler.Startup(ctx)
 			dashboardHandler.Startup(ctx)
 			settingsHandler.Startup(ctx)
+			displayerHandler.Startup(ctx)
 			
 			// Start background polling worker
 			go goldPriceHandler.StartPolling(2 * time.Minute)
@@ -78,6 +80,7 @@ func main() {
 			purchaseHandler,
 			dashboardHandler,
 			settingsHandler,
+			displayerHandler,
 		},
 	})
 

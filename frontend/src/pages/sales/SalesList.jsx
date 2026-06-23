@@ -6,6 +6,7 @@ import './SalesList.css'
 import GoldPriceDashboard from '@/components/GoldPriceDashboard'
 import { CreateSale, GetSetting } from 'wailsjs/go/handlers/SaleHandler.js'
 import { RecordPayment } from 'wailsjs/go/handlers/PawnHandler.js'
+import { SendQRToDisplay } from 'wailsjs/go/handlers/DisplayerHandler.js'
 import PromptPayQR from './components/saleList/PromptPayQR'
 import SalesCart from './components/saleList/SalesCart'
 
@@ -20,6 +21,8 @@ export default function SalesList({ cartItems, setCartItems }) {
   const [showQr, setShowQr] = useState(false)
   const [savingCart, setSavingCart] = useState(false)
   const [error, setError] = useState(null)
+  const [displayStatus, setDisplayStatus] = useState('idle') // idle | sending | done | error
+  const [displayError, setDisplayError] = useState(null)
   const [promptpayNumber, setPromptpayNumber] = useState(import.meta.env.VITE_DEFAULT_PROMPTPAY_NUMBER || '')
   const [promptpayName, setPromptpayName] = useState(import.meta.env.VITE_DEFAULT_PROMPTPAY_NAME || '')
 
@@ -62,9 +65,38 @@ export default function SalesList({ cartItems, setCartItems }) {
     setCartItems(prev => prev.filter((_, i) => i !== idx))
   }
 
-  const handleGenerateQR = () => {
+  const handleGenerateQR = async () => {
     setQrAmount(mainTotalAmount)
     setShowQr(true)
+
+    if (promptpayNumber && mainTotalAmount > 0) {
+      setDisplayStatus('sending')
+      setDisplayError(null)
+      try {
+        const safeAmount = Number(mainTotalAmount).toFixed(2)
+        const url = `https://promptpay.io/${promptpayNumber}/${safeAmount}.png`
+
+        const response = await fetch(url)
+        if (!response.ok) {
+          throw new Error(`โหลดคิวอาร์ล้มเหลว (${response.status})`)
+        }
+
+        const blob = await response.blob()
+        const base64PNG = await new Promise((resolve, reject) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result)
+          reader.onerror = reject
+          reader.readAsDataURL(blob)
+        })
+
+        await SendQRToDisplay(base64PNG)
+        setDisplayStatus('done')
+      } catch (err) {
+        console.error('Failed to send QR to display:', err)
+        setDisplayStatus('error')
+        setDisplayError(err.message || String(err))
+      }
+    }
   }
 
   const handleSaveAllSales = async () => {
@@ -218,8 +250,10 @@ export default function SalesList({ cartItems, setCartItems }) {
           promptpayNumber={promptpayNumber}
           promptpayName={promptpayName}
           savingCart={savingCart}
-          onCloseQr={() => { setQrAmount(0); setShowQr(false); }}
+          onCloseQr={() => { setQrAmount(0); setShowQr(false); setDisplayStatus('idle'); setDisplayError(null); }}
           onSaveAllSales={handleSaveAllSales}
+          displayStatus={displayStatus}
+          displayError={displayError}
         />
       </div>
 

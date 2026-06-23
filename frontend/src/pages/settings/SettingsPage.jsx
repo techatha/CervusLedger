@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { GetAllSettings, SaveAllSettings, ImportFromXlsx, DownloadImportTemplate } from 'wailsjs/go/handlers/SettingsHandler'
 import './SettingsPage.css'
+import QRDisplayerWiFiSetup from './components/QRDisplayerWiFiSetup'
 
 const DEFAULTS = {
   shop_name:            '',
@@ -504,6 +505,9 @@ export default function SettingsPage() {
             </Field>
           </div>
         </section>
+
+        {/* ── QR Displayer WiFi Setup ── */}
+        <QRDisplayerWiFiSetup />
       </div>
     </div>
   )
