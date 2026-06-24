@@ -4,7 +4,6 @@ import { SetShopName } from 'wailsjs/go/handlers/DisplayerHandler';
 import './SettingsPage.css';
 
 import ShopInfoSettings from './components/ShopInfoSettings';
-import PromptPaySettings from './components/PromptPaySettings';
 import GoldPriceSettings from './components/GoldPriceSettings';
 import InterestRateSettings from './components/InterestRateSettings';
 import TicketNumberSettings from './components/TicketNumberSettings';
@@ -29,6 +28,8 @@ const DEFAULTS = {
   income_expense_presets: '[]',
   promptpay_number:       '',
   promptpay_name:         '',
+  bank_name:              '',
+  bank_account:           '',
 };
 
 export default function SettingsPage() {
@@ -95,15 +96,6 @@ export default function SettingsPage() {
           onSave={handleSaveSection}
         />
 
-        {/* PromptPay Settings */}
-        <PromptPaySettings
-          initialValues={{
-            promptpay_number: settings.promptpay_number,
-            promptpay_name: settings.promptpay_name,
-          }}
-          onSave={handleSaveSection}
-        />
-
         {/* Gold Prices Settings */}
         <GoldPriceSettings
           initialValues={{
@@ -152,8 +144,17 @@ export default function SettingsPage() {
           onSave={handleSaveSection}
         />
 
-        {/* WiFi Displayer Setup */}
-        <QRDisplayerWiFiSetup shopName={settings.shop_name} />
+        {/* WiFi Displayer & PromptPay Setup */}
+        <QRDisplayerWiFiSetup
+          initialValues={{
+            promptpay_number: settings.promptpay_number,
+            promptpay_name: settings.promptpay_name,
+            bank_name: settings.bank_name,
+            bank_account: settings.bank_account,
+          }}
+          onSave={handleSaveSection}
+          shopName={settings.shop_name}
+        />
       </div>
     </div>
   );

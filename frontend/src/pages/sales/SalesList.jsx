@@ -6,7 +6,7 @@ import './SalesList.css'
 import GoldPriceDashboard from '@/components/GoldPriceDashboard'
 import { CreateSale, GetSetting } from 'wailsjs/go/handlers/SaleHandler.js'
 import { RecordPayment } from 'wailsjs/go/handlers/PawnHandler.js'
-import { SendQRToDisplay } from 'wailsjs/go/handlers/DisplayerHandler.js'
+import { SendQRToDisplay, SendSuccessToDisplay, SendFailToDisplay } from 'wailsjs/go/handlers/DisplayerHandler.js'
 import PromptPayQR from './components/saleList/PromptPayQR'
 import SalesCart from './components/saleList/SalesCart'
 
@@ -25,6 +25,8 @@ export default function SalesList({ cartItems, setCartItems }) {
   const [displayError, setDisplayError] = useState(null)
   const [promptpayNumber, setPromptpayNumber] = useState(import.meta.env.VITE_DEFAULT_PROMPTPAY_NUMBER || '')
   const [promptpayName, setPromptpayName] = useState(import.meta.env.VITE_DEFAULT_PROMPTPAY_NAME || '')
+  const [bankName, setBankName] = useState('')
+  const [bankAccount, setBankAccount] = useState('')
 
   const priceDashboardRef = useRef()
   const processedStateRef = useRef(null)
@@ -43,6 +45,20 @@ export default function SalesList({ cartItems, setCartItems }) {
       })
       .catch(err => {
         console.error('Failed to load promptpay_name settings:', err)
+      })
+    GetSetting('bank_name')
+      .then(val => {
+        if (val) setBankName(val)
+      })
+      .catch(err => {
+        console.error('Failed to load bank_name settings:', err)
+      })
+    GetSetting('bank_account')
+      .then(val => {
+        if (val) setBankAccount(val)
+      })
+      .catch(err => {
+        console.error('Failed to load bank_account settings:', err)
       })
   }, [])
 
@@ -171,6 +187,14 @@ export default function SalesList({ cartItems, setCartItems }) {
         }
       }
 
+      if (showQr) {
+        try {
+          await SendSuccessToDisplay()
+        } catch (displayErr) {
+          console.error('Failed to send success to display:', displayErr)
+        }
+      }
+
       setCartItems([])
       setQrAmount(0)
       setShowQr(false)
@@ -233,8 +257,20 @@ export default function SalesList({ cartItems, setCartItems }) {
           qrAmount={qrAmount}
           promptpayNumber={promptpayNumber}
           promptpayName={promptpayName}
+          bankName={bankName}
+          bankAccount={bankAccount}
           savingCart={savingCart}
-          onCloseQr={() => { setQrAmount(0); setShowQr(false); setDisplayStatus('idle'); setDisplayError(null); }}
+          onCloseQr={async () => {
+            setQrAmount(0);
+            setShowQr(false);
+            setDisplayStatus('idle');
+            setDisplayError(null);
+            try {
+              await SendFailToDisplay();
+            } catch (err) {
+              console.error('Failed to send fail to display:', err);
+            }
+          }}
           onSaveAllSales={handleSaveAllSales}
           displayStatus={displayStatus}
           displayError={displayError}

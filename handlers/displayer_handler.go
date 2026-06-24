@@ -160,7 +160,12 @@ func (h *DisplayerHandler) SendQRToDisplay(promptpayID string, amount float64) e
 		return fmt.Errorf("convert QR to bitmap: %w", err)
 	}
 
-	if err := h.PushQR(ip, bmp, amount, promptpayName); err != nil {
+	// Fetch bank details from settings
+	var bankName, bankAccount string
+	_ = db.DB.QueryRow(`SELECT value FROM settings WHERE key = 'bank_name'`).Scan(&bankName)
+	_ = db.DB.QueryRow(`SELECT value FROM settings WHERE key = 'bank_account'`).Scan(&bankAccount)
+
+	if err := h.PushQR(ip, bmp, amount, promptpayName, bankName, bankAccount); err != nil {
 		return fmt.Errorf("ส่ง QR ไปหน้าจอไม่ได้: %w", err)
 	}
 
@@ -333,7 +338,7 @@ func (h *DisplayerHandler) drainNonJSON(port serial.Port) {
 	}
 }
 
-func (h *DisplayerHandler) PushQR(esp32IP string, bmp *Bitmap, amount float64, name string) error {
+func (h *DisplayerHandler) PushQR(esp32IP string, bmp *Bitmap, amount float64, name string, bank string, account string) error {
 	body := make([]byte, 4+len(bmp.Bytes))
 	binary.LittleEndian.PutUint16(body[0:2], uint16(bmp.Width))
 	binary.LittleEndian.PutUint16(body[2:4], uint16(bmp.Height))
@@ -343,13 +348,17 @@ func (h *DisplayerHandler) PushQR(esp32IP string, bmp *Bitmap, amount float64, n
 
 	// Construct JSON payload
 	payload := struct {
-		QR     string  `json:"qr"`
-		Amount float64 `json:"amount"`
-		Name   string  `json:"name"`
+		QR      string  `json:"qr"`
+		Amount  float64 `json:"amount"`
+		Name    string  `json:"name"`
+		Bank    string  `json:"bank"`
+		Account string  `json:"account"`
 	}{
-		QR:     hexString,
-		Amount: amount,
-		Name:   name,
+		QR:      hexString,
+		Amount:  amount,
+		Name:    name,
+		Bank:    bank,
+		Account: account,
 	}
 
 	jsonBytes, err := json.Marshal(payload)
@@ -405,6 +414,50 @@ func (h *DisplayerHandler) SetShopName(shopName string) error {
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("ESP32 returned HTTP %d", resp.StatusCode)
+	}
+	return nil
+}
+
+func (h *DisplayerHandler) SendSuccessToDisplay() error {
+	var ip string
+	err := db.DB.QueryRow(`SELECT value FROM settings WHERE key = 'qrcodedisplayer_ip'`).Scan(&ip)
+	if err != nil || ip == "" {
+		return fmt.Errorf("หน้าจอแสดงผล QR ยังไม่ได้ตั้งค่า WiFi หรือไม่พบ IP")
+	}
+
+	url := fmt.Sprintf("http://%s/success", ip)
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	resp, err := client.Post(url, "application/json", bytes.NewReader([]byte("{}")))
+	if err != nil {
+		return fmt.Errorf("POST to ESP32 success endpoint at %s: %w", url, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("ESP32 success endpoint returned HTTP %d", resp.StatusCode)
+	}
+	return nil
+}
+
+func (h *DisplayerHandler) SendFailToDisplay() error {
+	var ip string
+	err := db.DB.QueryRow(`SELECT value FROM settings WHERE key = 'qrcodedisplayer_ip'`).Scan(&ip)
+	if err != nil || ip == "" {
+		return fmt.Errorf("หน้าจอแสดงผล QR ยังไม่ได้ตั้งค่า WiFi หรือไม่พบ IP")
+	}
+
+	url := fmt.Sprintf("http://%s/fail", ip)
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	resp, err := client.Post(url, "application/json", bytes.NewReader([]byte("{}")))
+	if err != nil {
+		return fmt.Errorf("POST to ESP32 fail endpoint at %s: %w", url, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("ESP32 fail endpoint returned HTTP %d", resp.StatusCode)
 	}
 	return nil
 }

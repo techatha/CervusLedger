@@ -22,8 +22,8 @@ export function ProvisionWiFiAuto(arg1, arg2) {
   return window['go']['handlers']['DisplayerHandler']['ProvisionWiFiAuto'](arg1, arg2);
 }
 
-export function PushQR(arg1, arg2, arg3, arg4) {
-  return window['go']['handlers']['DisplayerHandler']['PushQR'](arg1, arg2, arg3, arg4);
+export function PushQR(arg1, arg2, arg3, arg4, arg5, arg6) {
+  return window['go']['handlers']['DisplayerHandler']['PushQR'](arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
 export function SaveWiFiCredentials(arg1, arg2, arg3) {
@@ -34,8 +34,16 @@ export function SaveWiFiCredentialsAuto(arg1, arg2) {
   return window['go']['handlers']['DisplayerHandler']['SaveWiFiCredentialsAuto'](arg1, arg2);
 }
 
+export function SendFailToDisplay() {
+  return window['go']['handlers']['DisplayerHandler']['SendFailToDisplay']();
+}
+
 export function SendQRToDisplay(arg1, arg2) {
   return window['go']['handlers']['DisplayerHandler']['SendQRToDisplay'](arg1, arg2);
+}
+
+export function SendSuccessToDisplay() {
+  return window['go']['handlers']['DisplayerHandler']['SendSuccessToDisplay']();
 }
 
 export function SetShopName(arg1) {

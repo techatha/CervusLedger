@@ -13,13 +13,17 @@ export function ProvisionWiFi(arg1:string,arg2:string,arg3:string):Promise<strin
 
 export function ProvisionWiFiAuto(arg1:string,arg2:string):Promise<string>;
 
-export function PushQR(arg1:string,arg2:handlers.Bitmap,arg3:number,arg4:string):Promise<void>;
+export function PushQR(arg1:string,arg2:handlers.Bitmap,arg3:number,arg4:string,arg5:string,arg6:string):Promise<void>;
 
 export function SaveWiFiCredentials(arg1:string,arg2:string,arg3:string):Promise<string>;
 
 export function SaveWiFiCredentialsAuto(arg1:string,arg2:string):Promise<string>;
 
+export function SendFailToDisplay():Promise<void>;
+
 export function SendQRToDisplay(arg1:string,arg2:number):Promise<void>;
+
+export function SendSuccessToDisplay():Promise<void>;
 
 export function SetShopName(arg1:string):Promise<void>;
 

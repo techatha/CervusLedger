@@ -8,6 +8,8 @@ export default function PromptPayQR({
   qrAmount,
   promptpayNumber,
   promptpayName,
+  bankName,
+  bankAccount,
   savingCart,
   onCloseQr,
   onSaveAllSales,
@@ -49,6 +51,11 @@ export default function PromptPayQR({
                   {promptpayName && (
                     <span style={{ fontSize: '12px', fontWeight: '500', color: 'var(--text-secondary)', display: 'block', marginTop: '2px' }}>
                       ชื่อบัญชี: {promptpayName}
+                    </span>
+                  )}
+                  {(bankName || bankAccount) && (
+                    <span style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'block', marginTop: '2px' }}>
+                      {bankName && `ธนาคาร: ${bankName}`} {bankAccount && `(เลขบัญชี: ${bankAccount})`}
                     </span>
                   )}
                   {displayStatus === 'sending' && (
