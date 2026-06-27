@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
-import { GetWiFiDisplayerIP, TestWiFiDisplayerConnection, SaveWiFiCredentialsAuto, SetShopName } from 'wailsjs/go/handlers/DisplayerHandler.js';
+import { GetWiFiDisplayerIP, TestWiFiDisplayerConnection, SaveWiFiCredentialsAuto, SetShopName, SendStaticQRToDisplay } from 'wailsjs/go/handlers/DisplayerHandler.js';
 import SettingBox, { Field } from './SettingBox';
+import { syncDevice } from '@/utils/esp32Sync';
+import { EventsOn } from 'wailsjs/runtime/runtime.js';
 
 export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }) {
   // PromptPay states
@@ -8,6 +10,8 @@ export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }
   const [promptpayName, setPromptpayName] = useState(initialValues?.promptpay_name || '');
   const [bankName, setBankName] = useState(initialValues?.bank_name || '');
   const [bankAccount, setBankAccount] = useState(initialValues?.bank_account || '');
+  const [sendingFallbackQR, setSendingFallbackQR] = useState(false);
+  const [fallbackQRSuccess, setFallbackQRSuccess] = useState(null); // null | true | false
 
   // WiFi states
   const [ssid, setSsid] = useState('');
@@ -17,6 +21,7 @@ export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }
   const [savedIP, setSavedIP] = useState(null);
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionSuccess, setConnectionSuccess] = useState(null); // null | true | false
+  const [disconnectedAlert, setDisconnectedAlert] = useState(false);
 
   // Fetch saved IP on mount
   useEffect(() => {
@@ -33,17 +38,78 @@ export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }
     loadSavedIP();
   }, []);
 
+  // Listen to disconnection events
+  useEffect(() => {
+    const onDisconnect = () => {
+      setSavedIP(null);
+      setStatus('idle');
+      setConnectionSuccess(null);
+      setFallbackQRSuccess(null);
+      setDisconnectedAlert(true);
+    };
+
+    // 1. Listen directly to Wails event
+    const unsubscribe = EventsOn("esp32:disconnected", onDisconnect);
+
+    // 2. Listen to custom window event
+    window.addEventListener('esp32:disconnected', onDisconnect);
+
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+      window.removeEventListener('esp32:disconnected', onDisconnect);
+    };
+  }, []);
+
   const handleSavePromptPay = async () => {
     if (!promptpayNumber.trim()) {
       throw new Error('กรุณากรอกหมายเลขพร้อมเพย์');
     }
+    setFallbackQRSuccess(null);
+    setConnectionSuccess(null);
     await onSave({
       promptpay_number: promptpayNumber,
       promptpay_name: promptpayName,
       bank_name: bankName,
       bank_account: bankAccount
     });
+
+    if (savedIP) {
+      try {
+        setSendingFallbackQR(true);
+        await SendStaticQRToDisplay(promptpayNumber, promptpayName, bankName, bankAccount);
+        setFallbackQRSuccess(true);
+      } catch (err) {
+        setFallbackQRSuccess(false);
+        console.warn("ส่ง QR ตั้งต้นไปยังหน้าจอไม่สำเร็จ:", err);
+        setError('บันทึกการตั้งค่าแล้ว แต่ส่ง QR ตั้งต้นไปยังหน้าจอไม่สำเร็จ: ' + (err.message || String(err)));
+      } finally {
+        setSendingFallbackQR(false);
+      }
+    }
   };
+
+  const handleSendFallbackQR = useCallback(async () => {
+    if (!promptpayNumber.trim()) {
+      setError('กรุณากรอกหมายเลขพร้อมเพย์ก่อนส่ง QR ตั้งต้น');
+      return;
+    }
+    setSendingFallbackQR(true);
+    setFallbackQRSuccess(null);
+    setConnectionSuccess(null);
+    setError(null);
+    try {
+      await SendStaticQRToDisplay(promptpayNumber, promptpayName, bankName, bankAccount);
+      setFallbackQRSuccess(true);
+    } catch (err) {
+      setFallbackQRSuccess(false);
+      setError('ส่ง QR ตั้งต้นไม่สำเร็จ: ' + (err.message || String(err)));
+    } finally {
+      setSendingFallbackQR(false);
+    }
+  }, [promptpayNumber, promptpayName, bankName, bankAccount]);
+
 
   const handleTestConnection = useCallback(async () => {
     if (!savedIP) return;
@@ -75,6 +141,7 @@ export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }
     setStatus('connecting');
     setError(null);
     setConnectionSuccess(null); // Reset connection test state
+    setDisconnectedAlert(false);
 
     try {
       console.log("Waiting save wifi credentials...")
@@ -89,6 +156,9 @@ export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }
           console.warn("ส่งชื่อร้านไปยังหน้าจอแสดงผลไม่สำเร็จ:", sendErr);
         }
       }
+      
+      // Call syncDevice to register webhook immediately
+      await syncDevice();
       
       setStatus('done');
     } catch (err) {
@@ -144,6 +214,26 @@ export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }
             />
           </Field>
         </div>
+        {savedIP && (
+          <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+            <button
+              type="button"
+              className="btn"
+              onClick={handleSendFallbackQR}
+              disabled={sendingFallbackQR}
+              style={{
+                fontSize: 12,
+                padding: '6px 12px',
+                height: 'auto',
+                backgroundColor: 'var(--bg-card, #ffffff)',
+                border: '1px solid var(--border-color, #cbd5e1)',
+                cursor: 'pointer'
+              }}
+            >
+              {sendingFallbackQR ? 'กำลังส่ง QR ตั้งต้น...' : 'ส่ง QR ตั้งต้น (Fallback QR) ไปยังหน้าจอ'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ── WiFi Setup ── */}
@@ -155,7 +245,29 @@ export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }
           ตั้งค่าการเชื่อมต่อ WiFi เพื่อให้อุปกรณ์สามารถสื่อสารกับระบบและแสดง QR Code ได้
         </div>
 
+        {disconnectedAlert && (
+          <div className="alert alert-error" style={{
+            marginBottom: '16px',
+            padding: '12px 16px',
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '10px'
+          }}>
+            <span style={{ fontSize: '18px', lineHeight: 1 }}>🚨</span>
+            <div>
+              <strong style={{ display: 'block', marginBottom: '2px' }}>หน้าจอแสดงผล QR Code ถูกยกเลิกการเชื่อมต่อแล้ว (QR Display Disconnected)</strong>
+              <span style={{ fontSize: '12px', opacity: 0.9 }}>
+                อุปกรณ์ถูกรีเซ็ตค่าจากโรงงาน (Factory Reset) ทำให้ถูกตัดการเชื่อมต่อจากระบบ กรุณาเชื่อมต่อสายและตั้งค่า WiFi ใหม่อีกครั้ง
+              </span>
+            </div>
+          </div>
+        )}
         {error && <div className="alert alert-error" style={{ marginBottom: '16px' }}>{error}</div>}
+        {fallbackQRSuccess === true && (
+          <div className="alert alert-success" style={{ marginBottom: '16px' }}>
+            ส่ง QR ตั้งต้น (Fallback QR) ไปยังหน้าจอสำเร็จ!
+          </div>
+        )}
         {status === 'done' && savedIP && (
           <div className="alert alert-success" style={{ marginBottom: '16px' }}>
             เชื่อมต่อสำเร็จ — IP ของหน้าจอ: {savedIP}
@@ -211,7 +323,10 @@ export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }
             <input
               className="input"
               value={ssid}
-              onChange={(e) => setSsid(e.target.value)}
+              onChange={(e) => {
+                setSsid(e.target.value);
+                setDisconnectedAlert(false);
+              }}
               placeholder="ชื่อเครือข่าย WiFi"
               disabled={status === 'connecting'}
               style={{ fontFamily: 'sans-serif' }}
@@ -223,7 +338,10 @@ export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }
               className="input"
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setDisconnectedAlert(false);
+              }}
               placeholder="รหัสผ่าน WiFi"
               disabled={status === 'connecting'}
               style={{ fontFamily: 'sans-serif' }}

@@ -15,6 +15,7 @@ import (
 
 	"CervusLedger/db"
 
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"go.bug.st/serial"
 )
 
@@ -34,6 +35,7 @@ func NewDisplayerHandler() *DisplayerHandler {
 
 func (h *DisplayerHandler) Startup(ctx context.Context) {
 	h.ctx = ctx
+	go h.startLocalServer()
 }
 
 type serialCommand struct {
@@ -46,6 +48,60 @@ type SerialResponse struct {
 	Status  string `json:"status"`
 	IP      string `json:"ip,omitempty"`
 	Message string `json:"message,omitempty"`
+}
+
+// startLocalServer listens for incoming requests from the ESP32 on the local network
+func (h *DisplayerHandler) startLocalServer() {
+    http.HandleFunc("/esp_disconnected", func(w http.ResponseWriter, r *http.Request) {
+        if r.Method == http.MethodPost {
+            fmt.Println("\n[Go Backend] 🚨 Received factory reset webhook from ESP32!")
+            
+            // 1. Wipe the IP from the local database so the app knows it's disconnected
+            _, _ = db.DB.Exec(`DELETE FROM settings WHERE key = 'qrcodedisplayer_ip'`)
+            
+            // 2. Fire an event to the Wails frontend UI to show a "Device Disconnected" alert
+            if h.ctx != nil {
+                runtime.EventsEmit(h.ctx, "esp32:disconnected", map[string]string{
+                    "status": "reset",
+                    "message": "The display was reset to factory settings.",
+                })
+            }
+            
+            w.WriteHeader(http.StatusOK)
+            w.Write([]byte("Acknowledged"))
+            return
+        }
+        w.WriteHeader(http.StatusMethodNotAllowed)
+    })
+
+    fmt.Println("[Go Backend] Listening for ESP32 webhooks on port 8080...")
+    if err := http.ListenAndServe(":8080", nil); err != nil {
+        fmt.Printf("Error starting local HTTP server: %v\n", err)
+    }
+}
+
+// RegisterWebhook tells the ESP32 where to send the goodbye packet
+// Call this function whenever you pair/connect to your ESP32 IP
+func (h *DisplayerHandler) RegisterWebhook(espIP string) error {
+    // Dynamically grab this PC's local IP
+    myLocalIP := getLocalIP() 
+    webhookTarget := fmt.Sprintf("http://%s:8080/esp_disconnected", myLocalIP)
+    
+    fmt.Printf("[Go Backend] Registering webhook target with ESP32: %s\n", webhookTarget)
+
+    payload := map[string]string{"url": webhookTarget}
+    jsonPayload, _ := json.Marshal(payload)
+
+    espUrl := fmt.Sprintf("http://%s/set_webhook", espIP)
+    
+    // Send it as plain text to match your ESP32 server.arg("plain") logic
+    resp, err := http.Post(espUrl, "text/plain", bytes.NewBuffer(jsonPayload))
+    if err != nil {
+        return fmt.Errorf("failed to register webhook: %w", err)
+    }
+    defer resp.Body.Close()
+    
+    return nil
 }
 
 func (h *DisplayerHandler) ListSerialPorts() ([]string, error) {
@@ -169,6 +225,116 @@ func (h *DisplayerHandler) SendQRToDisplay(promptpayID string, amount float64) e
 		return fmt.Errorf("ส่ง QR ไปหน้าจอไม่ได้: %w", err)
 	}
 
+	return nil
+}
+
+func (h *DisplayerHandler) SendStaticQRToDisplay(promptpayID string, promptpayName string, bankName string, bankAccount string) error {
+	var ip string
+	err := db.DB.QueryRow(`SELECT value FROM settings WHERE key = 'qrcodedisplayer_ip'`).Scan(&ip)
+	if err != nil || ip == "" {
+		return fmt.Errorf("หน้าจอแสดงผล QR ยังไม่ได้ตั้งค่า WiFi หรือไม่พบ IP")
+	}
+
+	if promptpayID == "" {
+		_ = db.DB.QueryRow(`SELECT value FROM settings WHERE key = 'promptpay_number'`).Scan(&promptpayID)
+	}
+	if promptpayID == "" {
+		promptpayID = getEnvFromDotEnv("PROMPTPAY_NUMBER")
+		if promptpayID == "" {
+			promptpayID = getEnvFromDotEnv("VITE_DEFAULT_PROMPTPAY_NUMBER")
+		}
+	}
+	if promptpayID == "" {
+		return fmt.Errorf("ไม่พบหมายเลขพร้อมเพย์ กรุณาตั้งค่าในหน้าตั้งค่าหรือไฟล์ .env")
+	}
+
+	if promptpayName == "" {
+		_ = db.DB.QueryRow(`SELECT value FROM settings WHERE key = 'promptpay_name'`).Scan(&promptpayName)
+		if promptpayName == "" {
+			promptpayName = getEnvFromDotEnv("PROMPTPAY_NAME")
+			if promptpayName == "" {
+				promptpayName = getEnvFromDotEnv("VITE_DEFAULT_PROMPTPAY_NAME")
+			}
+		}
+	}
+
+	if bankName == "" {
+		_ = db.DB.QueryRow(`SELECT value FROM settings WHERE key = 'bank_name'`).Scan(&bankName)
+	}
+	if bankAccount == "" {
+		_ = db.DB.QueryRow(`SELECT value FROM settings WHERE key = 'bank_account'`).Scan(&bankAccount)
+	}
+
+	// Download static QR from promptpay.io (no amount) directly from backend to avoid CORS restrictions
+	url := fmt.Sprintf("https://promptpay.io/%s.png", promptpayID)
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(url)
+	if err != nil {
+		return fmt.Errorf("ดาวน์โหลด QR Code จาก promptpay.io ล้มเหลว: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("ดาวน์โหลด QR Code ล้มเหลว: http %d", resp.StatusCode)
+	}
+
+	var buf bytes.Buffer
+	if _, err := buf.ReadFrom(resp.Body); err != nil {
+		return fmt.Errorf("อ่านข้อมูลรูปภาพ QR ล้มเหลว: %w", err)
+	}
+	pngBytes := buf.Bytes()
+
+	bmp, err := QRToBitmap(pngBytes)
+	if err != nil {
+		return fmt.Errorf("convert QR to bitmap: %w", err)
+	}
+
+	if err := h.PushStaticQR(ip, bmp, promptpayName, bankName, bankAccount); err != nil {
+		return fmt.Errorf("ส่ง static QR ไปหน้าจอไม่ได้: %w", err)
+	}
+
+	return nil
+}
+
+func (h *DisplayerHandler) PushStaticQR(esp32IP string, bmp *Bitmap, name string, bank string, account string) error {
+	body := make([]byte, 4+len(bmp.Bytes))
+	binary.LittleEndian.PutUint16(body[0:2], uint16(bmp.Width))
+	binary.LittleEndian.PutUint16(body[2:4], uint16(bmp.Height))
+	copy(body[4:], bmp.Bytes)
+
+	hexString := hex.EncodeToString(body)
+
+	// Construct JSON payload
+	payload := struct {
+		Name    string `json:"name"`
+		Bank    string `json:"bank"`
+		Account string `json:"account"`
+		QR      string `json:"qr"`
+	}{
+		Name:    name,
+		Bank:    bank,
+		Account: account,
+		QR:      hexString,
+	}
+
+	jsonBytes, err := json.Marshal(payload)
+	if err != nil {
+		return fmt.Errorf("marshal displayer payload: %w", err)
+	}
+
+	url := fmt.Sprintf("http://%s/set_main_qr", esp32IP)
+	client := &http.Client{Timeout: 5 * time.Second}
+
+	// Send POST with text/plain content type
+	resp, err := client.Post(url, "text/plain", bytes.NewReader(jsonBytes))
+	if err != nil {
+		return fmt.Errorf("POST to ESP32 at %s: %w", url, err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("ESP32 returned HTTP %d", resp.StatusCode)
+	}
 	return nil
 }
 

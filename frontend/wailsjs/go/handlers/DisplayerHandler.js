@@ -26,6 +26,14 @@ export function PushQR(arg1, arg2, arg3, arg4, arg5, arg6) {
   return window['go']['handlers']['DisplayerHandler']['PushQR'](arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
+export function PushStaticQR(arg1, arg2, arg3, arg4, arg5) {
+  return window['go']['handlers']['DisplayerHandler']['PushStaticQR'](arg1, arg2, arg3, arg4, arg5);
+}
+
+export function RegisterWebhook(arg1) {
+  return window['go']['handlers']['DisplayerHandler']['RegisterWebhook'](arg1);
+}
+
 export function SaveWiFiCredentials(arg1, arg2, arg3) {
   return window['go']['handlers']['DisplayerHandler']['SaveWiFiCredentials'](arg1, arg2, arg3);
 }
@@ -40,6 +48,10 @@ export function SendFailToDisplay() {
 
 export function SendQRToDisplay(arg1, arg2) {
   return window['go']['handlers']['DisplayerHandler']['SendQRToDisplay'](arg1, arg2);
+}
+
+export function SendStaticQRToDisplay(arg1, arg2, arg3, arg4) {
+  return window['go']['handlers']['DisplayerHandler']['SendStaticQRToDisplay'](arg1, arg2, arg3, arg4);
 }
 
 export function SendSuccessToDisplay() {

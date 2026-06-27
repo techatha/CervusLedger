@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"net"
 	"image"
 	"image/png"
 
@@ -66,4 +67,14 @@ func QRToBitmap(pngBytes []byte) (*Bitmap, error) {
 	}
 
 	return &Bitmap{Width: TargetWidth, Height: TargetHeight, Bytes: packed}, nil
+}
+
+func getLocalIP() string {
+    conn, err := net.Dial("udp", "8.8.8.8:80")
+    if err != nil {
+        return "127.0.0.1" // Fallback
+    }
+    defer conn.Close()
+    localAddr := conn.LocalAddr().(*net.UDPAddr)
+    return localAddr.IP.String()
 }

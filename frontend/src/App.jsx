@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import Sidebar         from './components/Sidebar'
 import SmartCardWatcher from './components/SmartCardWatcher'
@@ -14,6 +14,8 @@ import PurchaseHistory from './pages/purchase_his/PurchaseHistory'
 import IncomePage      from './pages/income/IncomePage'
 import SettingsPage    from './pages/settings/SettingsPage'
 import SmartCardTest   from './pages/smartcard/SmartCardTest'
+import { EventsOn }    from 'wailsjs/runtime/runtime.js'
+import { syncDevice }  from './utils/esp32Sync'
 import './App.css'
 
 const Placeholder = ({ title }) => (
@@ -35,6 +37,24 @@ function AppContent() {
   const [registerCardData, setRegisterCardData] = useState(null)
   const [cartItems, setCartItems] = useState([])
   const navigate = useNavigate()
+
+  useEffect(() => {
+    // 1. Sync device webhook on application start
+    syncDevice();
+
+    // 2. Listen for factory reset/disconnection event from ESP32
+    const unsubscribe = EventsOn("esp32:disconnected", (data) => {
+      alert("The QR Display was manually reset and has disconnected");
+      // Dispatch a custom event to notify components that the device has disconnected
+      window.dispatchEvent(new CustomEvent('esp32:disconnected'));
+    });
+
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
+  }, []);
 
   return (
     <div className="app-shell">
