@@ -81,6 +81,8 @@ func (h *DisplayerHandler) FindESP32Port() (string, error) {
 		return "", err
 	}
 
+	fmt.Printf("\n[Serial Debug] 🔌 Raw ports detected by OS: %v\n", ports)
+
 	// 1. Clean up expired blacklisted ports
 	h.blacklistMutex.Lock()
 	now := time.Now()
