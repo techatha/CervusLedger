@@ -5,7 +5,7 @@ import {
   SaveWiFiCredentialsAuto,
   SetShopName,
   SendStaticQRToDisplay,
-  ListSerialPorts,
+  CheckPhysicalConnection,
 } from 'wailsjs/go/displayer_handler/DisplayerHandler.js';
 import SettingBox, { Field } from './SettingBox';
 import { syncDevice } from '@/utils/esp32Sync';
@@ -101,7 +101,6 @@ export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }
   const [sendingQR, setSendingQR] = useState(false);
   const [qrFeedback, setQRFeedback] = useState(null); // null | 'ok' | 'err'
 
-  const scanTimer = useRef(null);
   const portLatched = useRef(false);
 
   /* 1. Auto-probe on mount */
@@ -118,54 +117,42 @@ export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }
   }, []);
 
   /* 2. Serial scanner — active only while this page is mounted */
+  /* 2. Serial scanner — active only while this page is mounted */
   useEffect(() => {
+    let cancelled = false;
+    let timeoutId = null;
+
     async function scan() {
+      if (cancelled) return;
+
+      // Port already latched — slow heartbeat as safety net
       if (portLatched.current) {
-        console.log('[Scanner] Port is already latched. Current port:', portName);
+        timeoutId = setTimeout(scan, 30_000);
         return;
       }
-      
-      console.log('[Scanner] Polling for physically connected ESP32...');
 
       try {
-        // 1. Dynamically import the handlers
-        const handlers = await import('wailsjs/go/displayer_handler/DisplayerHandler.js').catch((err) => {
-          console.error('[Scanner] ❌ Failed to import Wails bindings:', err);
-          return {};
-        });
-
-        console.log('[Scanner] 🔍 Available Wails handlers:', Object.keys(handlers));
-
-        // 2. Look for our smart checking function, fallback to FindESP32Port if needed
-        const checker = handlers.CheckPhysicalConnection || handlers.FindESP32Port;
-
-        if (typeof checker !== 'function') {
-          console.error('[Scanner] ❌ Checker function not found! Did you restart `wails dev` to regenerate bindings?');
-          return;
-        }
-
-        console.log('[Scanner] 📡 Executing checker function...');
-        const foundPort = await checker();
-        
-        console.log('[Scanner] ✅ Device found on port:', foundPort);
-        
-        if (foundPort) {
+        const foundPort = await CheckPhysicalConnection();
+        if (foundPort && !cancelled) {
           portLatched.current = true;
           setPortName(foundPort);
         }
-      } catch (err) {
-        // FindESP32Port returns an error in Go if no device is found, which throws an exception in JS
-        console.log('[Scanner] ℹ️ Device not found or checker threw error:', err);
-        setPortName(null);
+      } catch (_) {
+        // Device not found — expected when nothing is plugged in
+        if (!cancelled) setPortName(null);
+      }
+
+      // Schedule next poll (only after current one finishes → no stacking)
+      if (!cancelled) {
+        timeoutId = setTimeout(scan, 5_000);
       }
     }
 
     scan();
-    scanTimer.current = setInterval(scan, 5000);
-    
+
     return () => {
-      console.log('[Scanner] Cleaning up scanner timer...');
-      clearInterval(scanTimer.current);
+      cancelled = true;
+      clearTimeout(timeoutId);
     };
   }, []);
 

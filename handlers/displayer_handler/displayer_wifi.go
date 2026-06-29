@@ -75,52 +75,58 @@ func (h *DisplayerHandler) TestWiFiDisplayerConnection(ip string) (bool, error) 
 }
 
 // FindESP32Port scans ports for the ESP32 connection
+// FindESP32Port scans ports for the ESP32 connection
 func (h *DisplayerHandler) FindESP32Port() (string, error) {
-	ports, err := serial.GetPortsList()
-	if err != nil {
-		return "", err
-	}
+    ports, err := serial.GetPortsList()
+    if err != nil {
+        return "", err
+    }
 
-	fmt.Printf("\n[Serial Debug] 🔌 Raw ports detected by OS: %v\n", ports)
+    fmt.Printf("\n[Serial Debug] 🔌 Raw ports detected by OS: %v\n", ports)
 
-	// 1. Clean up expired blacklisted ports
-	h.blacklistMutex.Lock()
-	now := time.Now()
-	for k, v := range h.portBlacklist {
-		if now.After(v) {
-			delete(h.portBlacklist, k)
-		}
-	}
-	h.blacklistMutex.Unlock()
+    // 1. Clean up expired blacklisted ports
+    h.blacklistMutex.Lock()
+    now := time.Now()
+    for k, v := range h.portBlacklist {
+        if now.After(v) {
+            delete(h.portBlacklist, k)
+        }
+    }
+    h.blacklistMutex.Unlock()
 
-	for _, portName := range ports {
-		// Ignore common non-ESP32 ports
-		if strings.Contains(portName, "Bluetooth") || strings.Contains(portName, "Incoming") {
-			continue
-		}
+    for _, portName := range ports {
+        // Ignore common non-ESP32 ports
+        if strings.Contains(portName, "Bluetooth") || strings.Contains(portName, "Incoming") {
+            continue
+        }
 
-		// 2. Check Blacklist
-		h.blacklistMutex.Lock()
-		blacklistedTime, isBlacklisted := h.portBlacklist[portName]
-		h.blacklistMutex.Unlock()
+        // 2. Check Blacklist
+        h.blacklistMutex.Lock()
+        blacklistedTime, isBlacklisted := h.portBlacklist[portName]
+        h.blacklistMutex.Unlock()
 
-		if isBlacklisted && now.Before(blacklistedTime) {
-			continue // Skip this port for now, it recently failed
-		}
+        if isBlacklisted && now.Before(blacklistedTime) {
+            timeLeft := time.Until(blacklistedTime).Round(time.Second)
+            fmt.Printf("[Serial Debug] ⏭️  Skipping %s (on blacklist for %v more)\n", portName, timeLeft)
+            continue // Skip this port for now, it recently failed
+        }
 
-		// 3. Test the port
-		_, err := h.testPortForESP32WithTimeout(portName, 3*time.Second) // Reduced timeout for snappier UI
-		if err == nil {
-			return portName, nil
-		} else {
-			// 4. Blacklist failed ports for 30 seconds
-			h.blacklistMutex.Lock()
-			h.portBlacklist[portName] = time.Now().Add(30 * time.Second)
-			h.blacklistMutex.Unlock()
-		}
-	}
+        // 3. Test the port
+        fmt.Printf("[Serial Debug] 🔍 Testing port: %s\n", portName)
+        _, err := h.testPortForESP32WithTimeout(portName, 5*time.Second) // Reduced timeout for snappier UI
+        if err == nil {
+            fmt.Printf("[Serial Debug] ✅ ESP32 found on port: %s\n", portName)
+            return portName, nil
+        } else {
+            // 4. Blacklist failed ports for 30 seconds
+            h.blacklistMutex.Lock()
+            h.portBlacklist[portName] = time.Now().Add(30 * time.Second)
+            h.blacklistMutex.Unlock()
+            fmt.Printf("[Serial Debug] 🚫 Failed to connect to %s (%v). Adding to blacklist for 30s.\n", portName, err)
+        }
+    }
 
-	return "", fmt.Errorf("ไม่พบอุปกรณ์หน้าจอแสดงผล QR เชื่อมต่ออยู่")
+    return "", fmt.Errorf("ไม่พบอุปกรณ์หน้าจอแสดงผล QR เชื่อมต่ออยู่")
 }
 
 func (h *DisplayerHandler) testPortForESP32WithTimeout(portName string, timeout time.Duration) (string, error) {
