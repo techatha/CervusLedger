@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { GetDashboardStats } from 'wailsjs/go/handlers/DashboardHandler'
+import { GetDashboardStats } from 'wailsjs/go/dashboard_handler/DashboardHandler.js'
 import { toBE, formatBaht, formatTicket } from '@/utils/thai'
 import GoldPriceDashboard from '@/components/GoldPriceDashboard'
 import StatCard from '@/components/StatCard'

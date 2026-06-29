@@ -1,4 +1,4 @@
-package handlers
+package dashboard_handler
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"CervusLedger/db"
+	"CervusLedger/handlers"
 	"CervusLedger/models"
 )
 
@@ -21,17 +22,16 @@ func (h *DashboardHandler) Startup(ctx context.Context) {
 	h.ctx = ctx
 }
 
-
-func(h *DashboardHandler) GetDashboardStats() (models.DashboardStats, error) {
+func (h *DashboardHandler) GetDashboardStats() (models.DashboardStats, error) {
 	var s models.DashboardStats
 	today := time.Now().Format("2006-01-02")
 	month := time.Now().Format("01")
-	year  := time.Now().Format("2006")
+	year := time.Now().Format("2006")
 	monthStart := fmt.Sprintf("%s-%s-01", year, month)
-	monthEnd   := fmt.Sprintf("%s-%s-%02d", year, month, daysInMonth())
+	monthEnd := fmt.Sprintf("%s-%s-%02d", year, month, daysInMonth())
 
 	// ── Gold price ──────────────────────────────────────────────────
-	gpH := NewGoldPriceHandler()
+	gpH := handlers.NewGoldPriceHandler()
 	price, err := gpH.GetTodayPrice()
 	if err == nil {
 		s.TodayPrice = price
