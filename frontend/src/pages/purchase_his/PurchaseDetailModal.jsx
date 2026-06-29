@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { toBE, formatBaht } from '@/utils/thai.js'
 import { useNavigate } from 'react-router-dom'
-import { UpdateNotes, ToggleStillExists, CastToInventory } from 'wailsjs/go/handlers/PurchaseHandler.js'
+import { UpdateNotes, ToggleStillExists, CastToInventory } from 'wailsjs/go/purchase_handler/PurchaseHandler.js'
 import GoldTypeSelectSection from '@/components/GoldTypeSelectSection.jsx'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPenToSquare, faCheck, faXmark, faBoxArchive, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons'

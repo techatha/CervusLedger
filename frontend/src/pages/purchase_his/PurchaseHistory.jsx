@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ListPurchasedGold, ToggleStillExists } from 'wailsjs/go/handlers/PurchaseHandler.js'
+import { ListPurchasedGold, ToggleStillExists } from 'wailsjs/go/purchase_handler/PurchaseHandler.js'
 import { toBE, formatBaht } from '@/utils/thai.js'
 import StatCard from '@/components/StatCard'
 import NewPurchaseModal from './NewPurchaseModal.jsx'

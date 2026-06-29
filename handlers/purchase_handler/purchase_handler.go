@@ -1,4 +1,4 @@
-package handlers
+package purchase_handler
 
 import (
 	"context"
@@ -180,5 +180,3 @@ func (h *PurchaseHandler) CastToInventory(purchaseID int, goldItemID int) error 
 
 	return tx.Commit()
 }
-
-
