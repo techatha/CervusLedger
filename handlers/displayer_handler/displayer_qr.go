@@ -352,5 +352,8 @@ func readEnvFromFile(filePath string, key string) string {
 			}
 		}
 	}
+	if err := scanner.Err(); err != nil {
+		fmt.Printf("error reading env file %s: %v\n", filePath, err)
+	}
 	return ""
 }
