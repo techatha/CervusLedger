@@ -5,7 +5,7 @@ import {
   DeleteIncomeExpense,
   ExportIncomeExpense,
   ListDailyCash,
-} from 'wailsjs/go/handlers/IncomeExpenseHandler.js'
+} from 'wailsjs/go/income_expense_handler/IncomeExpenseHandler.js'
 import { GetAllSettings } from 'wailsjs/go/handlers/SettingsHandler'
 import { formatBaht } from '@/utils/thai'
 import ManualEntryModal from './ManualEntryModal'

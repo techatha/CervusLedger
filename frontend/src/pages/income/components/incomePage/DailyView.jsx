@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, Fragment } from 'react'
 import { toBE, formatBaht } from '@/utils/thai'
-import { GetDailyCash, SaveDailyCash } from 'wailsjs/go/handlers/IncomeExpenseHandler.js'
+import { GetDailyCash, SaveDailyCash } from 'wailsjs/go/income_expense_handler/IncomeExpenseHandler.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faAngleLeft, faAngleRight, faPenToSquare, faCircleCheck, faCircleXmark, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { faCalendarDays, faClipboard, faTrashCan } from '@fortawesome/free-regular-svg-icons'
