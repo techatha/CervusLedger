@@ -6,8 +6,8 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/PuerkitoBio/goquery v1.12.0
 	github.com/ebfe/scard v0.0.0-20241214075232-7af069cabc25
-	github.com/mattn/go-sqlite3 v1.14.44
 	github.com/wailsapp/wails/v2 v2.12.0
+	modernc.org/sqlite v1.33.0
 	github.com/xuri/excelize/v2 v2.10.1
 	go.bug.st/serial v1.7.1
 	golang.org/x/image v0.25.0
