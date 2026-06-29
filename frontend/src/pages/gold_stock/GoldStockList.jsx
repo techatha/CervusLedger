@@ -3,7 +3,7 @@ import {
   ListGoldItems,
   DeleteGoldItem,
   ListStockLogs,
-} from 'wailsjs/go/handlers/GoldItemHandler'
+} from 'wailsjs/go/gold_item_handler/GoldItemHandler'
 import GoldStockForm from './GoldStockForm'
 import GoldStockWizard from './component/GoldStockWizard'
 import GoldStockHistory from './GoldStockHistory'

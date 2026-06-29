@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { ListGoldItems, GetGoldMainTypes } from 'wailsjs/go/handlers/GoldItemHandler.js'
+import { ListGoldItems, GetGoldMainTypes } from 'wailsjs/go/gold_item_handler/GoldItemHandler.js'
 
 export default function GoldTypeSelectSection({
   goldItemId,    

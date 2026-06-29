@@ -15,6 +15,7 @@ import (
 	"CervusLedger/handlers"
 	"CervusLedger/handlers/customer_handler"
 	"CervusLedger/handlers/displayer_handler"
+	"CervusLedger/handlers/gold_item_handler"
 	"CervusLedger/handlers/smartcard_handler"
 )
 
@@ -37,7 +38,7 @@ func main() {
 	customerHandler := customer_handler.NewCustomerHandler()
 	pawnHandler := handlers.NewPawnHandler()
 	smartCardHandler := smartcard_handler.NewSmartCardHandler()
-	goldItemHandler := handlers.NewGoldItemHandler()
+	goldItemHandler := gold_item_handler.NewGoldItemHandler()
 	saleHandler := handlers.NewSaleHandler()
 	incomeExpenseHandler := handlers.NewIncomeExpenseHandler()
 	goldPriceHandler := handlers.NewGoldPriceHandler()

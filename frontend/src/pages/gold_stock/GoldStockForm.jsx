@@ -3,7 +3,7 @@ import {
   CreateGoldItem,
   UpdateGoldItem,
   GetGoldMainTypes,
-} from 'wailsjs/go/handlers/GoldItemHandler'
+} from 'wailsjs/go/gold_item_handler/GoldItemHandler'
 import './GoldStockForm.css'
 
 // ─── Constants ────────────────────────────────────────────────────────────────

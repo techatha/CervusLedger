@@ -8,7 +8,7 @@ import {
   faMinus,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons'
-import { RecordStockLog } from 'wailsjs/go/handlers/GoldItemHandler'
+import { RecordStockLog } from 'wailsjs/go/gold_item_handler/GoldItemHandler'
 import { formatShortThaiDate } from '@/utils/thai'
 import { getLocalISOString } from '@/utils/date'
 import './GoldStockWizard.css'

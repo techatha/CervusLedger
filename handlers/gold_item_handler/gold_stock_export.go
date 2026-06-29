@@ -1,4 +1,4 @@
-package handlers
+package gold_item_handler
 
 import (
 	"CervusLedger/db"
@@ -41,10 +41,7 @@ func (h *GoldItemHandler) ExportGoldStock(startDate, endDate string) error {
 }
 
 // ExportGoldStockToXlsx writes gold stock history to an xlsx file.
-// Each month in the range gets its own sheet. Rows = gold items, columns = days.
-// Empty days carry forward the last known value; if no prior log → "—".
 func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate, filePath string) error {
-	// ── Parse date range ──
 	start, err := time.Parse("2006-01-02", startDate)
 	if err != nil {
 		return fmt.Errorf("parse start date: %w", err)
@@ -54,7 +51,6 @@ func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate, filePath str
 		return fmt.Errorf("parse end date: %w", err)
 	}
 
-	// ── Fetch all gold items ──
 	items, err := h.ListGoldItems("")
 	if err != nil {
 		return fmt.Errorf("list gold items for export: %w", err)
@@ -63,7 +59,6 @@ func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate, filePath str
 		return fmt.Errorf("ไม่มีรายการทองคำในระบบ")
 	}
 
-	// ── Fetch all logs in the date range ──
 	logRows, err := db.DB.Query(`
 		SELECT gold_item_id, amount, log_date
 		FROM gold_stock_logs
@@ -75,7 +70,6 @@ func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate, filePath str
 	}
 	defer logRows.Close()
 
-	// Build map: itemID → date(YYYY-MM-DD) → amount
 	logMap := make(map[int]map[string]int)
 	for logRows.Next() {
 		var itemID, amount int
@@ -90,8 +84,7 @@ func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate, filePath str
 		logMap[itemID][logDate] = amount
 	}
 
-	// ── Fetch the latest log BEFORE startDate per item (fill-forward seed) ──
-	seedMap := make(map[int]int) // itemID → last known amount before range
+	seedMap := make(map[int]int)
 	seedRows, err := db.DB.Query(`
 		SELECT l.gold_item_id, l.amount
 		FROM gold_stock_logs l
@@ -113,7 +106,6 @@ func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate, filePath str
 		seedMap[itemID] = amount
 	}
 
-	// ── Build list of months to export ──
 	type monthYear struct {
 		year  int
 		month time.Month
@@ -126,11 +118,9 @@ func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate, filePath str
 		cur = cur.AddDate(0, 1, 0)
 	}
 
-	// ── Create Excel file ──
 	f := excelize.NewFile()
 	defer f.Close()
 
-	// Styles
 	titleStyle, _ := f.NewStyle(&excelize.Style{Font: &excelize.Font{Bold: true, Size: 14}})
 	headerStyle, _ := f.NewStyle(&excelize.Style{
 		Font:      &excelize.Font{Bold: true, Color: "FFFFFF", Size: 10},
@@ -148,15 +138,13 @@ func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate, filePath str
 		Alignment: &excelize.Alignment{Horizontal: "center"},
 		Font:      &excelize.Font{Color: "AAAAAA"},
 	})
-	// Style for fill-forward values (slightly dimmer to distinguish from actual logs)
 	fillFwdStyle, _ := f.NewStyle(&excelize.Style{
 		Alignment: &excelize.Alignment{Horizontal: "center"},
 		Font:      &excelize.Font{Color: "999999"},
 	})
 
-	// Track carry-forward values per item across months
-	carryForward := make(map[int]int)   // itemID → last value
-	hasEverLogged := make(map[int]bool) // itemID → whether we've ever seen a log
+	carryForward := make(map[int]int)
+	hasEverLogged := make(map[int]bool)
 	for itemID, amount := range seedMap {
 		carryForward[itemID] = amount
 		hasEverLogged[itemID] = true
@@ -165,7 +153,6 @@ func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate, filePath str
 	generated := time.Now().Format("พิมพ์เมื่อ 02/01/2006 15:04")
 
 	for mi, my := range months {
-		// ── Sheet name: Thai month abbr + BE year ──
 		beYear := my.year + 543
 		sheetName := fmt.Sprintf("%s %d", thaiMonthAbbr[my.month-1], beYear)
 
@@ -178,7 +165,6 @@ func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate, filePath str
 		totalDays := goldDaysInMonth(my.year, int(my.month))
 		lastCol, _ := excelize.ColumnNumberToName(totalDays + 1)
 
-		// ── Title rows ──
 		f.SetCellValue(sheetName, "A1", "รายงานสต็อกทองคำ")
 		f.SetCellStyle(sheetName, "A1", "A1", titleStyle)
 		f.MergeCell(sheetName, "A1", fmt.Sprintf("%s1", lastCol))
@@ -189,7 +175,6 @@ func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate, filePath str
 		f.SetCellValue(sheetName, "A3", generated)
 		f.MergeCell(sheetName, "A3", fmt.Sprintf("%s3", lastCol))
 
-		// ── Header row (row 5): "รายการ" | 1 | 2 | 3 | ... ──
 		f.SetCellValue(sheetName, "A5", "รายการ")
 		f.SetCellStyle(sheetName, "A5", "A5", headerStyle)
 		f.SetColWidth(sheetName, "A", "A", 28)
@@ -201,11 +186,9 @@ func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate, filePath str
 			f.SetColWidth(sheetName, col, col, 6)
 		}
 
-		// ── Data rows (row 6+): one per gold item ──
 		for i, item := range items {
 			r := i + 6
 
-			// Item label: "type subtype" + optional weight/purity
 			label := fmt.Sprintf("%s %s", item.Type, item.Subtype)
 			if item.WeightGrams > 0 && item.Purity != "" {
 				label += fmt.Sprintf(" (%.2f ก. · %s%%)", item.WeightGrams, item.Purity)
@@ -224,17 +207,14 @@ func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate, filePath str
 				cell := fmt.Sprintf("%s%d", col, r)
 
 				if amt, ok := logMap[item.ID][dateStr]; ok {
-					// Actual log exists for this day
 					f.SetCellValue(sheetName, cell, amt)
 					f.SetCellStyle(sheetName, cell, cell, cellCenter)
 					carryForward[item.ID] = amt
 					hasEverLogged[item.ID] = true
 				} else if hasEverLogged[item.ID] {
-					// Fill forward with last known value
 					f.SetCellValue(sheetName, cell, carryForward[item.ID])
 					f.SetCellStyle(sheetName, cell, cell, fillFwdStyle)
 				} else {
-					// No log has ever been recorded → dash
 					f.SetCellValue(sheetName, cell, "—")
 					f.SetCellStyle(sheetName, cell, cell, dashStyle)
 				}
@@ -245,7 +225,6 @@ func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate, filePath str
 	return f.SaveAs(filePath)
 }
 
-// goldDaysInMonth returns the number of days in a given month.
 func goldDaysInMonth(year, month int) int {
 	return time.Date(year, time.Month(month+1), 0, 0, 0, 0, 0, time.UTC).Day()
 }

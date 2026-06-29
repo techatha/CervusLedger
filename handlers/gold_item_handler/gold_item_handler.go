@@ -1,4 +1,4 @@
-package handlers
+package gold_item_handler
 
 import (
 	"context"
@@ -225,10 +225,6 @@ func (h *GoldItemHandler) DeleteStockLog(id int) error {
 	return nil
 }
 
-// ---------------------------------------------------------------------------
-// Other handlers
-// ---------------------------------------------------------------------------
-
 // SetGoldItemStatus is deprecated but kept for backwards compatibility.
 func (h *GoldItemHandler) SetGoldItemStatus(id int, status string) error {
 	return nil
@@ -300,4 +296,3 @@ func (h *GoldItemHandler) GetGoldSubtypes(mainType string) ([]string, error) {
 	}
 	return subtypes, nil
 }
-
