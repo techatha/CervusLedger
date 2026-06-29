@@ -46,25 +46,40 @@ func (h *DashboardHandler) GetDashboardStats() (models.DashboardStats, error) {
 					SELECT pc.new_principal FROM principal_changes pc
 					WHERE pc.pawn_record_id = pr.id
 					ORDER BY pc.date DESC, pc.id DESC LIMIT 1
-				), pr.initial_principal)
+				), pr.principal_amount)
 			), 0)
 		FROM pawn_records pr
 		WHERE pr.status = 'active'
 	`).Scan(&s.ActivePawnCount, &s.ActivePawnPrincipal)
 
-	// ── Paid / unpaid this month (active pawns only) ─────────────────
-	db.DB.QueryRow(`
-		SELECT COUNT(*) FROM pawn_records pr
+	// ── Paid / unpaid overdue check (active pawns only) ──────────────
+	rows, err := db.DB.Query(`
+		SELECT
+			pr.pawned_date,
+			(SELECT pp.month FROM pawn_payments pp
+			 WHERE pp.pawn_record_id = pr.id
+			 ORDER BY pp.year DESC, pp.month DESC LIMIT 1) AS last_paid_month,
+			(SELECT pp.year FROM pawn_payments pp
+			 WHERE pp.pawn_record_id = pr.id
+			 ORDER BY pp.year DESC, pp.month DESC LIMIT 1) AS last_paid_year
+		FROM pawn_records pr
 		WHERE pr.status = 'active'
-		AND EXISTS (
-			SELECT 1 FROM pawn_payments pp
-			WHERE pp.pawn_record_id = pr.id
-			  AND pp.month = CAST(? AS INTEGER)
-			  AND pp.year  = CAST(? AS INTEGER)
-		)
-	`, time.Now().Month(), time.Now().Year()).Scan(&s.PaidThisMonth)
-
-	s.UnpaidThisMonth = s.ActivePawnCount - s.PaidThisMonth
+	`)
+	if err == nil {
+		defer rows.Close()
+		unpaidCount := 0
+		for rows.Next() {
+			var pawnedDate string
+			var lastPaidMonth, lastPaidYear *int
+			if err := rows.Scan(&pawnedDate, &lastPaidMonth, &lastPaidYear); err == nil {
+				if isPawnOverdue(pawnedDate, lastPaidMonth, lastPaidYear) {
+					unpaidCount++
+				}
+			}
+		}
+		s.UnpaidThisMonth = unpaidCount
+		s.PaidThisMonth = s.ActivePawnCount - s.UnpaidThisMonth
+	}
 
 	// ── Today income / expense ──────────────────────────────────────
 	db.DB.QueryRow(`
@@ -86,17 +101,17 @@ func (h *DashboardHandler) GetDashboardStats() (models.DashboardStats, error) {
 	`, monthStart, monthEnd).Scan(&s.MonthInterestCollected)
 
 	// ── Recent 5 active pawns ───────────────────────────────────────
-	rows, err := db.DB.Query(`
+	rows, err = db.DB.Query(`
 		SELECT
 			pr.id, pr.ticket_number, pr.customer_id,
 			(c.prefix||' '||c.firstname||' '||c.lastname) AS customer_name,
 			pr.item_type, pr.weight_grams, pr.description,
-			pr.pawned_date, pr.initial_principal,
+			pr.pawned_date, pr.principal_amount AS initial_principal,
 			COALESCE((
 				SELECT pc.new_principal FROM principal_changes pc
 				WHERE pc.pawn_record_id = pr.id
 				ORDER BY pc.date DESC, pc.id DESC LIMIT 1
-			), pr.initial_principal) AS current_principal,
+			), pr.principal_amount) AS current_principal,
 			pr.monthly_interest_rate, pr.interest_amount,
 			pr.status, pr.ticket_status, pr.created_at
 		FROM pawn_records pr
@@ -141,4 +156,44 @@ func (h *DashboardHandler) GetDashboardStats() (models.DashboardStats, error) {
 func daysInMonth() int {
 	now := time.Now()
 	return time.Date(now.Year(), now.Month()+1, 0, 0, 0, 0, 0, time.Local).Day()
+}
+
+func isPawnOverdue(pawnedDateStr string, lastPaidMonth *int, lastPaidYear *int) bool {
+	if len(pawnedDateStr) < 10 {
+		return false
+	}
+	pawnDate, err := time.Parse("2006-01-02", pawnedDateStr[:10])
+	if err != nil {
+		return false
+	}
+
+	dueDay := pawnDate.Day()
+	latestMonth := int(pawnDate.Month())
+	latestYear := pawnDate.Year()
+
+	if lastPaidMonth != nil && lastPaidYear != nil {
+		latestMonth = *lastPaidMonth
+		latestYear = *lastPaidYear
+	}
+
+	checkMonth := latestMonth + 1
+	checkYear := latestYear
+
+	if checkMonth > 12 {
+		checkMonth = 1
+		checkYear++
+	}
+
+	maxDaysInCheckMonth := time.Date(checkYear, time.Month(checkMonth+1), 0, 0, 0, 0, 0, time.UTC).Day()
+	actualDueDay := dueDay
+	if actualDueDay > maxDaysInCheckMonth {
+		actualDueDay = maxDaysInCheckMonth
+	}
+
+	checkDueDate := time.Date(checkYear, time.Month(checkMonth), actualDueDay, 0, 0, 0, 0, time.Local)
+
+	now := time.Now()
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.Local)
+
+	return !today.Before(checkDueDate)
 }
