@@ -2,6 +2,7 @@ package settings_handler
 
 import (
 	"CervusLedger/db"
+	"database/sql"
 	"fmt"
 	"strconv"
 	"strings"
@@ -136,8 +137,24 @@ func (h *SettingsHandler) ImportFromXlsx() (*ImportResult, error) {
 				idCard = &idCardVal
 			}
 
-			_, err := tx.Exec(`
-				INSERT OR IGNORE INTO customers (prefix, firstname, lastname, phone, id_card, address_no, address_line, moo, road, tambon, amphoe, province)
+			var existingID int
+			var checkErr error
+			if idCard != nil {
+				checkErr = tx.QueryRow(`SELECT id FROM customers WHERE id_card = ?`, *idCard).Scan(&existingID)
+			} else {
+				checkErr = tx.QueryRow(`SELECT id FROM customers WHERE firstname = ? AND lastname = ?`, firstname, lastname).Scan(&existingID)
+			}
+
+			if checkErr == nil {
+				// Customer already exists, skip inserting
+				continue
+			} else if checkErr != sql.ErrNoRows {
+				res.Warnings = append(res.Warnings, fmt.Sprintf("ลูกค้า แถว %d: ตรวจสอบข้อมูลซ้ำล้มเหลว: %v", i+1, checkErr))
+				continue
+			}
+
+			_, err = tx.Exec(`
+				INSERT INTO customers (prefix, firstname, lastname, phone, id_card, address_no, address_line, moo, road, tambon, amphoe, province)
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 				prefix, firstname, lastname, phone, idCard, addressNo, addressLine, moo, road, tambon, amphoe, province,
 			)
@@ -194,8 +211,23 @@ func (h *SettingsHandler) ImportFromXlsx() (*ImportResult, error) {
 				continue
 			}
 
+			// Check for duplicate pawn record (same ticket_number, customer_id, pawned_date)
+			var existingPawnID int
+			checkErr := tx.QueryRow(`
+				SELECT id FROM pawn_records 
+				WHERE ticket_number = ? AND customer_id = ? AND pawned_date = ?
+			`, ticketNumber, customerID, pawnedDate).Scan(&existingPawnID)
+
+			if checkErr == nil {
+				// Pawn record already exists, skip
+				continue
+			} else if checkErr != sql.ErrNoRows {
+				res.Warnings = append(res.Warnings, fmt.Sprintf("รายการจำนำ แถว %d: ตรวจสอบข้อมูลซ้ำล้มเหลว: %v", i+1, checkErr))
+				continue
+			}
+
 			_, err = tx.Exec(`
-				INSERT OR IGNORE INTO pawn_records 
+				INSERT INTO pawn_records 
 				(ticket_number, customer_id, item_type, weight_grams, description,
 				 pawned_date, principal_amount, interest_amount, monthly_interest_rate,
 				 status, ticket_status)
@@ -235,13 +267,44 @@ func (h *SettingsHandler) ImportFromXlsx() (*ImportResult, error) {
 			paidDate := thaiToCE(cellStr(row, 3))
 			notes := cellStr(row, 4)
 
-			// Look up pawn record by ticket number
+			// Look up pawn record by ticket number and paidDate (date-based matching)
 			var pawnID int
-			err := db.DB.QueryRow(
-				`SELECT id FROM pawn_records WHERE ticket_number = ?`, ticketNumber,
-			).Scan(&pawnID)
-			if err != nil {
+			var lookupErr error
+			if paidDate != "" {
+				lookupErr = tx.QueryRow(`
+					SELECT id FROM pawn_records 
+					WHERE ticket_number = ? AND pawned_date <= ?
+					ORDER BY pawned_date DESC 
+					LIMIT 1`, ticketNumber, paidDate,
+				).Scan(&pawnID)
+			}
+
+			if paidDate == "" || lookupErr == sql.ErrNoRows {
+				lookupErr = tx.QueryRow(`
+					SELECT id FROM pawn_records 
+					WHERE ticket_number = ?
+					ORDER BY pawned_date DESC 
+					LIMIT 1`, ticketNumber,
+				).Scan(&pawnID)
+			}
+
+			if lookupErr != nil {
 				res.Warnings = append(res.Warnings, fmt.Sprintf("การชำระดอกเบี้ย แถว %d: ไม่พบตั๋วเลขที่ %s", i+1, ticketNumber))
+				continue
+			}
+
+			// Check for duplicate payment (same pawn_record_id, month, year)
+			var existingPaymentID int
+			checkErr := tx.QueryRow(`
+				SELECT id FROM pawn_payments 
+				WHERE pawn_record_id = ? AND month = ? AND year = ?
+			`, pawnID, month, year).Scan(&existingPaymentID)
+
+			if checkErr == nil {
+				// Payment already exists, skip
+				continue
+			} else if checkErr != sql.ErrNoRows {
+				res.Warnings = append(res.Warnings, fmt.Sprintf("การชำระดอกเบี้ย แถว %d: ตรวจสอบข้อมูลซ้ำล้มเหลว: %v", i+1, checkErr))
 				continue
 			}
 
@@ -282,12 +345,44 @@ func (h *SettingsHandler) ImportFromXlsx() (*ImportResult, error) {
 			}
 			notes := cellStr(row, 5)
 
+			// Look up pawn record by ticket number and date (date-based matching)
 			var pawnID int
-			err := db.DB.QueryRow(
-				`SELECT id FROM pawn_records WHERE ticket_number = ?`, ticketNumber,
-			).Scan(&pawnID)
-			if err != nil {
+			var lookupErr error
+			if date != "" {
+				lookupErr = tx.QueryRow(`
+					SELECT id FROM pawn_records 
+					WHERE ticket_number = ? AND pawned_date <= ?
+					ORDER BY pawned_date DESC 
+					LIMIT 1`, ticketNumber, date,
+				).Scan(&pawnID)
+			}
+
+			if date == "" || lookupErr == sql.ErrNoRows {
+				lookupErr = tx.QueryRow(`
+					SELECT id FROM pawn_records 
+					WHERE ticket_number = ?
+					ORDER BY pawned_date DESC 
+					LIMIT 1`, ticketNumber,
+				).Scan(&pawnID)
+			}
+
+			if lookupErr != nil {
 				res.Warnings = append(res.Warnings, fmt.Sprintf("การเปลี่ยนแปลงเงินต้น แถว %d: ไม่พบตั๋วเลขที่ %s", i+1, ticketNumber))
+				continue
+			}
+
+			// Check for duplicate principal change (same pawn_record_id, date, change_type, amount)
+			var existingChangeID int
+			checkErr := tx.QueryRow(`
+				SELECT id FROM principal_changes 
+				WHERE pawn_record_id = ? AND date(date) = date(?) AND change_type = ? AND amount = ?
+			`, pawnID, date, changeType, amount).Scan(&existingChangeID)
+
+			if checkErr == nil {
+				// Principal change already exists, skip
+				continue
+			} else if checkErr != sql.ErrNoRows {
+				res.Warnings = append(res.Warnings, fmt.Sprintf("การเปลี่ยนแปลงเงินต้น แถว %d: ตรวจสอบข้อมูลซ้ำล้มเหลว: %v", i+1, checkErr))
 				continue
 			}
 
