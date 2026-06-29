@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { GetAllSettings, SaveAllSettings } from 'wailsjs/go/handlers/SettingsHandler';
-import { SetShopName } from 'wailsjs/go/handlers/DisplayerHandler';
+import { GetAllSettings, SaveAllSettings } from 'wailsjs/go/settings_handler/SettingsHandler';
+import { SetShopName } from 'wailsjs/go/displayer_handler/DisplayerHandler';
 import './SettingsPage.css';
 
 import ShopInfoSettings from './components/ShopInfoSettings';

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ImportFromXlsx, DownloadImportTemplate } from 'wailsjs/go/handlers/SettingsHandler';
+import { ImportFromXlsx, DownloadImportTemplate } from 'wailsjs/go/settings_handler/SettingsHandler';
 import SettingBox from './SettingBox';
 
 export default function ImportDataSettings() {

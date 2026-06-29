@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { CreateIncomeExpense } from 'wailsjs/go/income_expense_handler/IncomeExpenseHandler'
-import { GetAllSettings } from 'wailsjs/go/handlers/SettingsHandler'
+import { GetAllSettings } from 'wailsjs/go/settings_handler/SettingsHandler'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faArrowTrendUp,faArrowTrendDown, faPlus } from '@fortawesome/free-solid-svg-icons'
 

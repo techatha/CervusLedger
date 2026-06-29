@@ -1,4 +1,4 @@
-package handlers
+package settings_handler
 
 import (
 	"CervusLedger/db"
@@ -105,4 +105,3 @@ func (h *SettingsHandler) SetLastTicketNumber(n int) error {
 	`, strconv.Itoa(n))
 	return err
 }
-

@@ -6,7 +6,7 @@ import {
   ExportIncomeExpense,
   ListDailyCash,
 } from 'wailsjs/go/income_expense_handler/IncomeExpenseHandler.js'
-import { GetAllSettings } from 'wailsjs/go/handlers/SettingsHandler'
+import { GetAllSettings } from 'wailsjs/go/settings_handler/SettingsHandler'
 import { formatBaht } from '@/utils/thai'
 import ManualEntryModal from './ManualEntryModal'
 import CalendarGrid from './components/incomePage/CalendarGrid'

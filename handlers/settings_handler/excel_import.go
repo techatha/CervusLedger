@@ -1,4 +1,4 @@
-package handlers
+package settings_handler
 
 import (
 	"CervusLedger/db"

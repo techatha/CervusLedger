@@ -12,7 +12,6 @@ import (
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 
 	"CervusLedger/db"
-	"CervusLedger/handlers"
 	"CervusLedger/handlers/customer_handler"
 	"CervusLedger/handlers/dashboard_handler"
 	"CervusLedger/handlers/displayer_handler"
@@ -22,6 +21,7 @@ import (
 	"CervusLedger/handlers/pawn_handler"
 	"CervusLedger/handlers/purchase_handler"
 	"CervusLedger/handlers/sale_handler"
+	"CervusLedger/handlers/settings_handler"
 	"CervusLedger/handlers/smartcard_handler"
 )
 
@@ -50,7 +50,7 @@ func main() {
 	goldPriceHandler := gold_price_handler.NewGoldPriceHandler()
 	purchaseHandler := purchase_handler.NewPurchaseHandler()
 	dashboardHandler := dashboard_handler.NewDashboardHandler()
-	settingsHandler := handlers.NewSettingsHandler()
+	settingsHandler := settings_handler.NewSettingsHandler()
 	displayerHandler := displayer_handler.NewDisplayerHandler()
 
 	err := wails.Run(&options.App{

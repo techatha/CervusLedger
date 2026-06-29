@@ -3,7 +3,7 @@ import {
   GetPawnSettings,
   CreatePawn,
 } from 'wailsjs/go/pawn_handler/PawnHandler'
-import { SetLastTicketNumber } from 'wailsjs/go/handlers/SettingsHandler'
+import { SetLastTicketNumber } from 'wailsjs/go/settings_handler/SettingsHandler'
 import { GetCustomers } from 'wailsjs/go/customer_handler/CustomerHandler'
 import { formatBaht, fullName } from '@/utils/thai'
 import { getLocalISOString } from '@/utils/date'

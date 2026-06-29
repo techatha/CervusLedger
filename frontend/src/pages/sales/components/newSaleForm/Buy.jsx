@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPen, faRotateLeft, faCheck } from '@fortawesome/free-solid-svg-icons'
 import CustomerNoteSection from './CustomerNote.jsx'
 import GoldTypeSelectSection from '@/components/GoldTypeSelectSection.jsx'
-import { GetBuyingDifference } from 'wailsjs/go/handlers/SettingsHandler'
+import { GetBuyingDifference } from 'wailsjs/go/settings_handler/SettingsHandler'
 
 export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
   const setBuyField = (k, v) => setFormData(p => ({ ...p, [k]: v }))

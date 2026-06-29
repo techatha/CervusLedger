@@ -10,7 +10,7 @@ import {
   UpdateTicketStatus,
 } from 'wailsjs/go/pawn_handler/PawnHandler'
 import { GetCustomer } from 'wailsjs/go/customer_handler/CustomerHandler'
-import { GetAllSettings } from 'wailsjs/go/handlers/SettingsHandler'
+import { GetAllSettings } from 'wailsjs/go/settings_handler/SettingsHandler'
 import PawnTicket from './PawnTicket'
 import PawnInfoCard from './components/pawnDetail/PawnInfoCard'
 import PawnFinancialCard from './components/pawnDetail/PawnFinancialCard'

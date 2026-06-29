@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom'
 import { useState, useEffect } from 'react'
-import { GetAllSettings } from 'wailsjs/go/handlers/SettingsHandler'
+import { GetAllSettings } from 'wailsjs/go/settings_handler/SettingsHandler'
 import './Sidebar.css'
 import { SMARTCARD_EVENTS } from '@/utils/smartcard'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
