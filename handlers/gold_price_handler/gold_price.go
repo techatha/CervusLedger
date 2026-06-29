@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"CervusLedger/models"
+
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 var timeRegex = regexp.MustCompile(`\d{2}:\d{2}`)
@@ -77,7 +79,7 @@ func (h *GoldPriceHandler) savePriceIfNewer(date, updateTime string, barBuy, bar
 		}
 	}
 
-	return models.GoldPrice{
+	gp := models.GoldPrice{
 		ID:               int(id),
 		Date:             date,
 		UpdateTime:       updateTime,
@@ -85,7 +87,13 @@ func (h *GoldPriceHandler) savePriceIfNewer(date, updateTime string, barBuy, bar
 		SellPricePerBaht: barSell,
 		OmBuyPrice:       omBuy,
 		OmSellPrice:      omSell,
-	}, nil
+	}
+
+	if h.ctx != nil {
+		runtime.EventsEmit(h.ctx, "gold-price:updated", gp)
+	}
+
+	return gp, nil
 }
 
 // GetTodayPrice returns today's gold_prices row.

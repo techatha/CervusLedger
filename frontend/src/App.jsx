@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { HashRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import Sidebar         from './components/Sidebar'
 import SmartCardWatcher from './components/SmartCardWatcher'
@@ -15,6 +15,7 @@ import IncomePage      from './pages/income/IncomePage'
 import SettingsPage    from './pages/settings/SettingsPage'
 import SmartCardTest   from './pages/smartcard/SmartCardTest'
 import { EventsOn }    from 'wailsjs/runtime/runtime.js'
+import { GetPriceHistory } from 'wailsjs/go/gold_price_handler/GoldPriceHandler.js'
 import { syncDevice }  from './utils/esp32Sync'
 import './App.css'
 
@@ -37,10 +38,20 @@ function AppContent() {
   const [registerCardData, setRegisterCardData] = useState(null)
   const [cartItems, setCartItems] = useState([])
   const navigate = useNavigate()
+  const lastPriceRef = useRef(null)
 
   useEffect(() => {
     // 1. Sync device webhook on application start
     syncDevice();
+
+    // Seed the initial gold price state from database on startup
+    GetPriceHistory(1).then((history) => {
+      if (history && history.length > 0) {
+        lastPriceRef.current = history[0];
+      }
+    }).catch(err => {
+      console.error("Failed to fetch initial gold price:", err);
+    });
 
     // 2. Listen for factory reset/disconnection event from ESP32
     const unsubscribe = EventsOn("esp32:disconnected", (data) => {
@@ -49,9 +60,41 @@ function AppContent() {
       window.dispatchEvent(new CustomEvent('esp32:disconnected'));
     });
 
+    // 3. Listen for gold price updates from background scraper
+    const unsubscribeGold = EventsOn("gold-price:updated", (newPrice) => {
+      const currentPrice = lastPriceRef.current;
+
+      if (currentPrice && newPrice) {
+        const latest = newPrice.sell_price_per_baht || 0;
+        const previous = currentPrice.sell_price_per_baht || 0;
+
+        let soundPath = null;
+        if (latest > previous) {
+          soundPath = '/assets/up.mp3';
+        } else if (latest < previous) {
+          soundPath = '/assets/down.mp3';
+        }
+
+        if (soundPath) {
+          const audio = new Audio(soundPath);
+          audio.play().catch((err) => {
+            console.warn("Audio playback failed (usually due to user interaction restrictions):", err);
+          });
+        }
+      }
+
+      // Always update our local state reference to the newest price
+      if (newPrice) {
+        lastPriceRef.current = newPrice;
+      }
+    });
+
     return () => {
       if (typeof unsubscribe === 'function') {
         unsubscribe();
+      }
+      if (typeof unsubscribeGold === 'function') {
+        unsubscribeGold();
       }
     };
   }, []);
