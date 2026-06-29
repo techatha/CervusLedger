@@ -501,3 +501,278 @@ func (h *SettingsHandler) DownloadImportTemplate() error {
 
 	return f.SaveAs(filePath)
 }
+
+// ExportResult holds the result of an Excel export operation.
+type ExportResult struct {
+	CustomersExported        int  `json:"customers_exported"`
+	PawnRecordsExported      int  `json:"pawn_records_exported"`
+	PawnPaymentsExported     int  `json:"pawn_payments_exported"`
+	PrincipalChangesExported int  `json:"principal_changes_exported"`
+	Cancelled                bool `json:"cancelled"`
+}
+
+// ceToThai converts a CE date string to Thai Buddhist Era.
+// Input: "2025-01-15" → Output: "2568-01-15"
+func ceToThai(ceDate string) string {
+	if ceDate == "" {
+		return ""
+	}
+	parts := strings.Split(strings.TrimSpace(ceDate), "-")
+	if len(parts) != 3 {
+		// Try splitting by space in case of datetime
+		subParts := strings.Split(strings.TrimSpace(ceDate), " ")
+		if len(subParts) > 0 {
+			parts = strings.Split(subParts[0], "-")
+		}
+	}
+	if len(parts) != 3 {
+		return ceDate
+	}
+	year, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return ceDate
+	}
+	thaiYear := year + 543
+	return fmt.Sprintf("%d-%s-%s", thaiYear, parts[1], parts[2])
+}
+
+// ExportToXlsx exports the entire database into an Excel file matching the import format.
+func (h *SettingsHandler) ExportToXlsx() (*ExportResult, error) {
+	// 1. Save dialog
+	filePath, err := runtime.SaveFileDialog(h.ctx, runtime.SaveDialogOptions{
+		Title:           "ส่งออกข้อมูลเป็นไฟล์ Excel",
+		DefaultFilename: "ข้อมูลส่งออก_CervusLedger.xlsx",
+		Filters: []runtime.FileFilter{
+			{DisplayName: "Excel Files (*.xlsx)", Pattern: "*.xlsx"},
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("dialog error: %w", err)
+	}
+	if filePath == "" {
+		return &ExportResult{Cancelled: true}, nil // User cancelled
+	}
+
+	f := excelize.NewFile()
+	defer f.Close()
+
+	// ── Styles ──
+	headerStyle, _ := f.NewStyle(&excelize.Style{
+		Font:      &excelize.Font{Bold: true, Color: "FFFFFF", Size: 11},
+		Fill:      excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{"3A3020"}},
+		Alignment: &excelize.Alignment{Horizontal: "center", Vertical: "center"},
+	})
+
+	res := &ExportResult{}
+
+	// ── Sheet 1: ลูกค้า ──
+	f.SetSheetName("Sheet1", sheetCustomers)
+	custHeaders := []string{"คำนำหน้า", "ชื่อ", "นามสกุล", "เบอร์โทร", "เลขบัตรประชาชน", "บ้านเลขที่", "ที่อยู่", "หมู่", "ถนน", "ตำบล", "อำเภอ", "จังหวัด"}
+	for i, hName := range custHeaders {
+		col, _ := excelize.ColumnNumberToName(i + 1)
+		f.SetCellValue(sheetCustomers, fmt.Sprintf("%s1", col), hName)
+		f.SetCellStyle(sheetCustomers, fmt.Sprintf("%s1", col), fmt.Sprintf("%s1", col), headerStyle)
+		f.SetColWidth(sheetCustomers, col, col, 18)
+	}
+
+	custRows, err := db.DB.Query(`
+		SELECT prefix, firstname, lastname, phone, id_card, address_no, address_line, moo, road, tambon, amphoe, province 
+		FROM customers
+		ORDER BY id ASC
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("query customers error: %w", err)
+	}
+	defer custRows.Close()
+
+	rowIdx := 2
+	for custRows.Next() {
+		var prefix, phone, idCard, addressNo, addressLine, moo, road, tambon, amphoe, province *string
+		var firstname, lastname string
+		err := custRows.Scan(
+			&prefix, &firstname, &lastname, &phone, &idCard,
+			&addressNo, &addressLine, &moo, &road, &tambon, &amphoe, &province,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scan customer error: %w", err)
+		}
+
+		vals := []interface{}{
+			ptrStr(prefix), firstname, lastname, ptrStr(phone), ptrStr(idCard),
+			ptrStr(addressNo), ptrStr(addressLine), ptrStr(moo), ptrStr(road),
+			ptrStr(tambon), ptrStr(amphoe), ptrStr(province),
+		}
+		for colI, val := range vals {
+			col, _ := excelize.ColumnNumberToName(colI + 1)
+			f.SetCellValue(sheetCustomers, fmt.Sprintf("%s%d", col, rowIdx), val)
+		}
+		res.CustomersExported++
+		rowIdx++
+	}
+
+	// ── Sheet 2: รายการจำนำ ──
+	f.NewSheet(sheetPawnRecords)
+	pawnHeaders := []string{"เลขตั๋ว", "เลขบัตรลูกค้า", "ประเภททอง", "น้ำหนัก(กรัม)", "รายละเอียด", "วันจำนำ", "เงินต้น", "อัตราดอกเบี้ย(%)", "สถานะ", "สถานะตั๋ว"}
+	for i, hName := range pawnHeaders {
+		col, _ := excelize.ColumnNumberToName(i + 1)
+		f.SetCellValue(sheetPawnRecords, fmt.Sprintf("%s1", col), hName)
+		f.SetCellStyle(sheetPawnRecords, fmt.Sprintf("%s1", col), fmt.Sprintf("%s1", col), headerStyle)
+		f.SetColWidth(sheetPawnRecords, col, col, 20)
+	}
+
+	pawnRows, err := db.DB.Query(`
+		SELECT pr.ticket_number, c.id_card, pr.item_type, pr.weight_grams, pr.description,
+		       pr.pawned_date, pr.principal_amount, pr.monthly_interest_rate, pr.status, pr.ticket_status
+		FROM pawn_records pr
+		LEFT JOIN customers c ON pr.customer_id = c.id
+		ORDER BY pr.id ASC
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("query pawn_records error: %w", err)
+	}
+	defer pawnRows.Close()
+
+	rowIdx = 2
+	for pawnRows.Next() {
+		var ticketNumber *int
+		var idCard, itemType, description, pawnedDate, status, ticketStatus *string
+		var weightGrams, principalAmount, monthlyInterestRate *float64
+		err := pawnRows.Scan(
+			&ticketNumber, &idCard, &itemType, &weightGrams, &description,
+			&pawnedDate, &principalAmount, &monthlyInterestRate, &status, &ticketStatus,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("scan pawn_record error: %w", err)
+		}
+
+		vals := []interface{}{
+			ptrInt(ticketNumber), ptrStr(idCard), ptrStr(itemType), ptrFloat(weightGrams), ptrStr(description),
+			ceToThai(ptrStr(pawnedDate)), ptrFloat(principalAmount), ptrFloat(monthlyInterestRate), ptrStr(status), ptrStr(ticketStatus),
+		}
+		for colI, val := range vals {
+			col, _ := excelize.ColumnNumberToName(colI + 1)
+			f.SetCellValue(sheetPawnRecords, fmt.Sprintf("%s%d", col, rowIdx), val)
+		}
+		res.PawnRecordsExported++
+		rowIdx++
+	}
+
+	// ── Sheet 3: การชำระดอกเบี้ย ──
+	f.NewSheet(sheetPawnPayments)
+	payHeaders := []string{"เลขตั๋ว", "เดือน", "ปี(พ.ศ.)", "วันที่ชำระ", "หมายเหตุ"}
+	for i, hName := range payHeaders {
+		col, _ := excelize.ColumnNumberToName(i + 1)
+		f.SetCellValue(sheetPawnPayments, fmt.Sprintf("%s1", col), hName)
+		f.SetCellStyle(sheetPawnPayments, fmt.Sprintf("%s1", col), fmt.Sprintf("%s1", col), headerStyle)
+		f.SetColWidth(sheetPawnPayments, col, col, 18)
+	}
+
+	payRows, err := db.DB.Query(`
+		SELECT pr.ticket_number, pp.month, pp.year, pp.paid_date, pp.notes
+		FROM pawn_payments pp
+		LEFT JOIN pawn_records pr ON pp.pawn_record_id = pr.id
+		ORDER BY pp.id ASC
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("query pawn_payments error: %w", err)
+	}
+	defer payRows.Close()
+
+	rowIdx = 2
+	for payRows.Next() {
+		var ticketNumber, month, year *int
+		var paidDate, notes *string
+		err := payRows.Scan(&ticketNumber, &month, &year, &paidDate, &notes)
+		if err != nil {
+			return nil, fmt.Errorf("scan pawn_payment error: %w", err)
+		}
+
+		vals := []interface{}{
+			ptrInt(ticketNumber), ptrInt(month), ptrIntAdd(year, 543), ceToThai(ptrStr(paidDate)), ptrStr(notes),
+		}
+		for colI, val := range vals {
+			col, _ := excelize.ColumnNumberToName(colI + 1)
+			f.SetCellValue(sheetPawnPayments, fmt.Sprintf("%s%d", col, rowIdx), val)
+		}
+		res.PawnPaymentsExported++
+		rowIdx++
+	}
+
+	// ── Sheet 4: การเปลี่ยนแปลงเงินต้น ──
+	f.NewSheet(sheetPrincipalChanges)
+	pcHeaders := []string{"เลขตั๋ว", "วันที่", "ประเภท", "จำนวนเงิน", "เงินต้นใหม่", "หมายเหตุ"}
+	for i, hName := range pcHeaders {
+		col, _ := excelize.ColumnNumberToName(i + 1)
+		f.SetCellValue(sheetPrincipalChanges, fmt.Sprintf("%s1", col), hName)
+		f.SetCellStyle(sheetPrincipalChanges, fmt.Sprintf("%s1", col), fmt.Sprintf("%s1", col), headerStyle)
+		f.SetColWidth(sheetPrincipalChanges, col, col, 20)
+	}
+
+	pcRows, err := db.DB.Query(`
+		SELECT pr.ticket_number, pc.date, pc.change_type, pc.amount, pc.new_principal, pc.notes
+		FROM principal_changes pc
+		LEFT JOIN pawn_records pr ON pc.pawn_record_id = pr.id
+		ORDER BY pc.id ASC
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("query principal_changes error: %w", err)
+	}
+	defer pcRows.Close()
+
+	rowIdx = 2
+	for pcRows.Next() {
+		var ticketNumber *int
+		var date, changeType, notes *string
+		var amount, newPrincipal *float64
+		err := pcRows.Scan(&ticketNumber, &date, &changeType, &amount, &newPrincipal, &notes)
+		if err != nil {
+			return nil, fmt.Errorf("scan principal_change error: %w", err)
+		}
+
+		vals := []interface{}{
+			ptrInt(ticketNumber), ceToThai(ptrStr(date)), ptrStr(changeType), ptrFloat(amount), ptrFloat(newPrincipal), ptrStr(notes),
+		}
+		for colI, val := range vals {
+			col, _ := excelize.ColumnNumberToName(colI + 1)
+			f.SetCellValue(sheetPrincipalChanges, fmt.Sprintf("%s%d", col, rowIdx), val)
+		}
+		res.PrincipalChangesExported++
+		rowIdx++
+	}
+
+	err = f.SaveAs(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("save file error: %w", err)
+	}
+
+	return res, nil
+}
+
+func ptrStr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+func ptrInt(i *int) interface{} {
+	if i == nil {
+		return ""
+	}
+	return *i
+}
+
+func ptrIntAdd(i *int, add int) interface{} {
+	if i == nil {
+		return ""
+	}
+	return *i + add
+}
+
+func ptrFloat(f *float64) interface{} {
+	if f == nil {
+		return ""
+	}
+	return *f
+}
+

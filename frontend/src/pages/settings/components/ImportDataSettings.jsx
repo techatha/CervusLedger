@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { ImportFromXlsx, DownloadImportTemplate } from 'wailsjs/go/settings_handler/SettingsHandler';
+import { ImportFromXlsx, DownloadImportTemplate, ExportToXlsx } from 'wailsjs/go/settings_handler/SettingsHandler';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faDownload, faUpload, faFileArrowDown } from '@fortawesome/free-solid-svg-icons';
 import SettingBox from './SettingBox';
 
 export default function ImportDataSettings() {
@@ -7,10 +9,16 @@ export default function ImportDataSettings() {
   const [importResult, setImportResult] = useState(null);
   const [importError, setImportError] = useState(null);
 
+  const [exporting, setExporting] = useState(false);
+  const [exportResult, setExportResult] = useState(null);
+  const [exportError, setExportError] = useState(null);
+
   const handleImport = async () => {
     setImporting(true);
     setImportResult(null);
     setImportError(null);
+    setExportResult(null);
+    setExportError(null);
     try {
       const result = await ImportFromXlsx();
       if (result && !result.cancelled) {
@@ -31,10 +39,28 @@ export default function ImportDataSettings() {
     }
   };
 
+  const handleExport = async () => {
+    setExporting(true);
+    setExportResult(null);
+    setExportError(null);
+    setImportResult(null);
+    setImportError(null);
+    try {
+      const result = await ExportToXlsx();
+      if (result && !result.cancelled) {
+        setExportResult(result);
+      }
+    } catch (e) {
+      setExportError('ส่งออกไม่สำเร็จ: ' + e);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <SettingBox
-      title="นำเข้าข้อมูล"
-      description="นำเข้าข้อมูลจากไฟล์ Excel (.xlsx) เพื่อรวมกับฐานข้อมูลปัจจุบัน"
+      title="นำเข้าและส่งออกข้อมูล"
+      description="นำเข้าหรือส่งออกข้อมูลลูกค้า รายการจำนำ ดอกเบี้ย และเงินต้น ผ่านไฟล์ Excel (.xlsx)"
       showSave={false}
     >
       <div className="sp-import-desc">
@@ -46,7 +72,7 @@ export default function ImportDataSettings() {
           <li><strong>การเปลี่ยนแปลงเงินต้น</strong> — การลด/เพิ่มเงินต้น</li>
         </ul>
         <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-          ข้อมูลที่ซ้ำจะถูกข้ามไป ข้อมูลที่มีอยู่แล้วจะไม่ถูกเขียนทับ · ชีทที่ไม่มีในไฟล์จะถูกข้ามไป
+          เมื่อนำเข้า: ข้อมูลที่ซ้ำจะถูกข้ามไป ข้อมูลที่มีอยู่แล้วจะไม่ถูกเขียนทับ · ชีทที่ไม่มีในไฟล์จะถูกข้ามไป
         </p>
       </div>
 
@@ -55,21 +81,35 @@ export default function ImportDataSettings() {
           type="button"
           className="btn sp-import-template-btn"
           onClick={handleDownloadTemplate}
+          disabled={importing || exporting}
         >
-          <IconDownload /> ดาวน์โหลดแม่แบบ (.xlsx)
+          <FontAwesomeIcon icon={faFileArrowDown} /> ดาวน์โหลดแม่แบบ (.xlsx)
+        </button>
+        <button
+          type="button"
+          className="btn sp-import-template-btn"
+          style={{ background: 'var(--green-bg)', borderColor: 'var(--green)', color: 'var(--green)' }}
+          onClick={handleExport}
+          disabled={importing || exporting}
+        >
+          <FontAwesomeIcon icon={faUpload} /> {exporting ? 'กำลังส่งออก...' : 'ส่งออกข้อมูล (.xlsx)'}
         </button>
         <button
           type="button"
           className="btn btn-primary sp-import-btn"
           onClick={handleImport}
-          disabled={importing}
+          disabled={importing || exporting}
         >
-          <IconUpload /> {importing ? 'กำลังนำเข้า...' : 'เลือกไฟล์และนำเข้า'}
+          <FontAwesomeIcon icon={faDownload} /> {importing ? 'กำลังนำเข้า...' : 'เลือกไฟล์และนำเข้า'}
         </button>
       </div>
 
       {importError && (
         <div className="alert alert-error" style={{ marginTop: '12px' }}>{importError}</div>
+      )}
+
+      {exportError && (
+        <div className="alert alert-error" style={{ marginTop: '12px' }}>{exportError}</div>
       )}
 
       {importResult && (
@@ -103,6 +143,30 @@ export default function ImportDataSettings() {
               </ul>
             </details>
           )}
+        </div>
+      )}
+
+      {exportResult && (
+        <div className="sp-import-result" style={{ marginTop: '12px', borderColor: 'rgba(91, 175, 130, 0.25)' }}>
+          <div className="sp-import-result-title" style={{ color: 'var(--green)' }}>✅ ส่งออกสำเร็จ</div>
+          <div className="sp-import-result-counts">
+            <div className="sp-import-count-item">
+              <span className="sp-import-count-num">{exportResult.customers_exported}</span>
+              <span className="sp-import-count-label">ลูกค้า</span>
+            </div>
+            <div className="sp-import-count-item">
+              <span className="sp-import-count-num">{exportResult.pawn_records_exported}</span>
+              <span className="sp-import-count-label">ตั๋วจำนำ</span>
+            </div>
+            <div className="sp-import-count-item">
+              <span className="sp-import-count-num">{exportResult.pawn_payments_exported}</span>
+              <span className="sp-import-count-label">การชำระ</span>
+            </div>
+            <div className="sp-import-count-item">
+              <span className="sp-import-count-num">{exportResult.principal_changes_exported}</span>
+              <span className="sp-import-count-label">เปลี่ยนเงินต้น</span>
+            </div>
+          </div>
         </div>
       )}
     </SettingBox>

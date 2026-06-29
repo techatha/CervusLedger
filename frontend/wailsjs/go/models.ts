@@ -645,6 +645,26 @@ export namespace models {
 
 export namespace settings_handler {
 	
+	export class ExportResult {
+	    customers_exported: number;
+	    pawn_records_exported: number;
+	    pawn_payments_exported: number;
+	    principal_changes_exported: number;
+	    cancelled: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ExportResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.customers_exported = source["customers_exported"];
+	        this.pawn_records_exported = source["pawn_records_exported"];
+	        this.pawn_payments_exported = source["pawn_payments_exported"];
+	        this.principal_changes_exported = source["principal_changes_exported"];
+	        this.cancelled = source["cancelled"];
+	    }
+	}
 	export class ImportResult {
 	    customers_imported: number;
 	    pawn_records_imported: number;

@@ -6,6 +6,10 @@ export function DownloadImportTemplate() {
   return window['go']['settings_handler']['SettingsHandler']['DownloadImportTemplate']();
 }
 
+export function ExportToXlsx() {
+  return window['go']['settings_handler']['SettingsHandler']['ExportToXlsx']();
+}
+
 export function GetAllSettings() {
   return window['go']['settings_handler']['SettingsHandler']['GetAllSettings']();
 }

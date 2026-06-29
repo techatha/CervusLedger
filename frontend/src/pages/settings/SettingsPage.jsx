@@ -16,8 +16,6 @@ const DEFAULTS = {
   shop_name:              '',
   shop_address:           '',
   shop_phone:             '',
-  buy_price_per_baht:     '',
-  sell_price_per_baht:    '',
   buying_difference:      '0',
   interest_rate_low:      '0.3',
   interest_rate_high:     '0.2',
@@ -99,8 +97,6 @@ export default function SettingsPage() {
         {/* Gold Prices Settings */}
         <GoldPriceSettings
           initialValues={{
-            sell_price_per_baht: settings.sell_price_per_baht,
-            buy_price_per_baht: settings.buy_price_per_baht,
             buying_difference: settings.buying_difference,
           }}
           onSave={handleSaveSection}

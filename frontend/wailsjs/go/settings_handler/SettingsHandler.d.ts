@@ -5,6 +5,8 @@ import {context} from '../models';
 
 export function DownloadImportTemplate():Promise<void>;
 
+export function ExportToXlsx():Promise<settings_handler.ExportResult>;
+
 export function GetAllSettings():Promise<Record<string, string>>;
 
 export function GetBuyingDifference():Promise<number>;
