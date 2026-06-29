@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"CervusLedger/db"
-	"CervusLedger/handlers"
+	"CervusLedger/handlers/gold_price_handler"
 	"CervusLedger/models"
 )
 
@@ -31,7 +31,7 @@ func (h *DashboardHandler) GetDashboardStats() (models.DashboardStats, error) {
 	monthEnd := fmt.Sprintf("%s-%s-%02d", year, month, daysInMonth())
 
 	// ── Gold price ──────────────────────────────────────────────────
-	gpH := handlers.NewGoldPriceHandler()
+	gpH := gold_price_handler.NewGoldPriceHandler()
 	price, err := gpH.GetTodayPrice()
 	if err == nil {
 		s.TodayPrice = price

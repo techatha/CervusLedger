@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { GetTodayPrice } from 'wailsjs/go/handlers/GoldPriceHandler.js'
+import { GetTodayPrice } from 'wailsjs/go/gold_price_handler/GoldPriceHandler.js'
 import NewSaleFormBuy from '../sales/components/newSaleForm/Buy.jsx'
 import '../sales/NewSaleForm.css'
 

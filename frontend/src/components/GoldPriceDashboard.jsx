@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react'
-import { GetTodayPrice, ForceScrapePrice, GetPriceHistory } from 'wailsjs/go/handlers/GoldPriceHandler.js'
+import { GetTodayPrice, ForceScrapePrice, GetPriceHistory } from 'wailsjs/go/gold_price_handler/GoldPriceHandler.js'
 import { formatDate } from '@/utils/date.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faJar, faRing, faArrowsRotate, faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons'

@@ -1,4 +1,4 @@
-package handlers
+package gold_price_handler
 
 import (
 	"fmt"

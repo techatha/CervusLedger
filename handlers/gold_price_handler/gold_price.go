@@ -1,4 +1,4 @@
-package handlers
+package gold_price_handler
 
 import (
 	"CervusLedger/db"
@@ -136,15 +136,15 @@ func (h *GoldPriceHandler) GetTodayPrice() (models.GoldPrice, error) {
 
 	// Hard ceiling: Absolute baseline return if system database is brand new
 	// 4. ABSOLUTE LAST RESORT -> Complete fallback to 0.0 if the DB is completely empty
-    return models.GoldPrice{
-        ID:               0,
-        Date:             today,
-        UpdateTime:       "MANUAL",
-        BuyPricePerBaht:  0.0,
-        SellPricePerBaht: 0.0,
-        OmBuyPrice:       0.0,
-        OmSellPrice:      0.0,
-    }, nil
+	return models.GoldPrice{
+		ID:               0,
+		Date:             today,
+		UpdateTime:       "MANUAL",
+		BuyPricePerBaht:  0.0,
+		SellPricePerBaht: 0.0,
+		OmBuyPrice:       0.0,
+		OmSellPrice:      0.0,
+	}, nil
 }
 
 // ForceScrapePrice triggers an immediate scrape of the website and returns it
@@ -160,7 +160,7 @@ func (h *GoldPriceHandler) ForceScrapePrice() (models.GoldPrice, error) {
 // fetchAndSaveLatest reaches out to the API (or scraper) and saves to the DB unconditionally if newer.
 func (h *GoldPriceHandler) fetchAndSaveLatest() {
 	today := time.Now().Format("2006-01-02")
-	
+
 	barBuy, barSell, omBuy, omSell, updateTime, err := h.scrapeGoldTradersWebsite()
 	if err != nil {
 		barBuy, barSell, omBuy, omSell, updateTime, err = h.fetchPricesFromAPI()
