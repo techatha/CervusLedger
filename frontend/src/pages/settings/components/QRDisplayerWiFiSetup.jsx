@@ -11,7 +11,7 @@ import SettingBox, { Field } from './SettingBox';
 import { syncDevice } from '@/utils/esp32Sync';
 import { EventsOn } from 'wailsjs/runtime/runtime.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faWifi } from '@fortawesome/free-solid-svg-icons';
+import { faWifi, faQrcode } from '@fortawesome/free-solid-svg-icons';
 import { faUsb } from '@fortawesome/free-brands-svg-icons';
 
 import './QRDisplayerWiFiSetup.css';
@@ -273,10 +273,7 @@ export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }
       {isOnline && (
         <div className="qrd-subsection">
           <div className="qrd-subsection__label">
-            <svg className="qrd-subsection__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <rect x="2" y="5" width="20" height="14" rx="2" /><line x1="2" y1="10" x2="22" y2="10" />
-            </svg>
-            PromptPay &amp; QR ร้านค้า
+            <FontAwesomeIcon icon={faQrcode} /> PromptPay &amp; QR ร้านค้า
           </div>
 
           <div className="form-row form-row-2">

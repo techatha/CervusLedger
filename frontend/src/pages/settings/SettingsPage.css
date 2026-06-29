@@ -57,53 +57,233 @@
   border: 1px solid rgba(61,154,104,0.25);
 }
 
-/* ─── Presets List Manager ───────────────────────────── */
-.sp-presets-list {
+/* ─── Income/Expense Presets — Tabbed Layout ────────── */
+
+/* Full-width tab bar */
+.iep-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg-hover);
+}
+
+.iep-tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  font-family: var(--font);
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition);
+  letter-spacing: 0.02em;
+}
+.iep-tab:first-child {
+  border-right: 1px solid var(--border);
+}
+
+.iep-tab:hover:not(.iep-tab--active) {
+  color: var(--text-secondary);
+  background: var(--bg-selected);
+}
+
+.iep-tab--active.iep-tab--income {
+  background: var(--bg-card);
+  color: var(--green);
+  box-shadow: inset 0 -2px 0 var(--green);
+}
+
+.iep-tab--active.iep-tab--expense {
+  background: var(--bg-card);
+  color: var(--red);
+  box-shadow: inset 0 -2px 0 var(--red);
+}
+
+.iep-tab__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.iep-tab__dot--income { background: var(--green); }
+.iep-tab__dot--expense { background: var(--red); }
+
+.iep-tab__count {
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: rgba(0,0,0,0.06);
+  color: inherit;
+  line-height: 1.4;
+}
+.iep-tab--active .iep-tab__count {
+  background: rgba(0,0,0,0.08);
+}
+
+/* Bordered item list */
+.iep-list-box {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  position: relative;
+}
+
+.iep-empty {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  max-height: 240px;
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.sp-presets-empty {
-  font-size: 13.5px;
+  align-items: center;
+  gap: 6px;
+  padding: 28px 16px;
   color: var(--text-muted);
-  text-align: center;
-  padding: 20px 0;
-  background: var(--bg-hover);
-  border-radius: var(--radius-sm);
-  border: 1px dashed var(--border);
+  font-size: 13.5px;
+}
+.iep-empty__icon {
+  font-size: 22px;
+  opacity: 0.5;
 }
 
-.sp-preset-item {
+.iep-item-wrap {
+  position: relative;
+}
+.iep-item-wrap:not(:last-child) {
+  border-bottom: 1px solid var(--divider);
+}
+
+.iep-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  transition: all var(--transition);
+  transition: background var(--transition);
 }
-.sp-preset-item:hover {
-  border-color: var(--border-light);
+.iep-item:hover {
   background: var(--bg-hover);
 }
 
-.sp-preset-color-badge {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+.iep-item__left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.sp-preset-name {
+.iep-item__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Simple color dot (non-interactive) */
+.iep-color-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.5);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+  flex-shrink: 0;
+}
+
+.iep-item__name {
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
-  min-width: 120px;
+}
+
+.iep-item__hex {
+  font-size: 11px;
+  font-family: 'Courier New', monospace;
+  color: var(--text-disabled);
+  letter-spacing: 0.02em;
+}
+
+/* ─── Edit bubble (upside-down talk bubble) ──────── */
+.iep-bubble {
+  position: absolute;
+  bottom: 100%;
+  left: 14px;
+  right: 14px;
+  z-index: 20;
+  margin-bottom: 8px;
+  animation: iep-bubble-in 0.15s ease-out;
+}
+
+@keyframes iep-bubble-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Downward-pointing triangle (the "tail" of the bubble) */
+.iep-bubble__arrow {
+  position: absolute;
+  bottom: -6px;
+  left: 24px;
+  width: 12px;
+  height: 12px;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  transform: rotate(45deg);
+  z-index: 1;
+}
+
+.iep-bubble__body {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  z-index: 2;
+}
+
+.iep-bubble__row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.iep-bubble__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+/* Add form */
+.iep-add-form {
+  margin-top: 10px;
+  padding-top: 16px;
+  border-top: 1px solid var(--divider);
+}
+
+.iep-add-form__row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.iep-add-color-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+}
+
+.iep-add-color-hex {
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text-muted);
 }
 
 .sp-color-input {
@@ -113,6 +293,8 @@
 .sp-color-input:focus {
   border-color: var(--gold) !important;
 }
+
+
 
 /* ─── Import Data Section ───────────────────────────── */
 .sp-import-desc {
