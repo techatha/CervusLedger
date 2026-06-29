@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { formatBaht } from '@/utils/thai'
-import { UpdatePawnInterest } from 'wailsjs/go/handlers/PawnHandler'
+import { UpdatePawnInterest } from 'wailsjs/go/pawn_handler/PawnHandler'
 
 function PdRow({ label, value }) {
   return (

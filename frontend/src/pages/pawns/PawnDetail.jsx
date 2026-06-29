@@ -8,7 +8,7 @@ import {
   RedeemPawn,
   ForfeitPawn,
   UpdateTicketStatus,
-} from 'wailsjs/go/handlers/PawnHandler'
+} from 'wailsjs/go/pawn_handler/PawnHandler'
 import { GetCustomer } from 'wailsjs/go/customer_handler/CustomerHandler'
 import { GetAllSettings } from 'wailsjs/go/handlers/SettingsHandler'
 import PawnTicket from './PawnTicket'

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { GetCustomer } from 'wailsjs/go/customer_handler/CustomerHandler'
-import { GetCustomerPawnRecords } from 'wailsjs/go/handlers/PawnHandler'
+import { GetCustomerPawnRecords } from 'wailsjs/go/pawn_handler/PawnHandler'
 import { GetCustomerPurchaseRecords } from 'wailsjs/go/purchase_handler/PurchaseHandler'
 import { fullName, formatBaht } from '@/utils/thai'
 import { getPendingMonths } from '@/utils/pawn'

@@ -1,4 +1,4 @@
-package handlers
+package pawn_handler
 
 import (
 	"fmt"
@@ -89,8 +89,7 @@ func (h *PawnHandler) DeletePayment(paymentID int) error {
 	return err
 }
 
-// ─── Status changes ────────────────────────────────────────────────────────
-
+// RedeemPawn transitions pawn status to redeemed ('ถอน').
 func (h *PawnHandler) RedeemPawn(id int) error {
 	res, err := db.DB.Exec(`UPDATE pawn_records SET status = 'ถอน' WHERE id = ? AND status = 'active'`, id)
 	if err != nil {
@@ -156,4 +155,3 @@ func (h *PawnHandler) UpdateTicketStatus(id int, ticketStatus string) error {
 	_, err := db.DB.Exec(`UPDATE pawn_records SET ticket_status = ? WHERE id = ?`, ticketStatus, id)
 	return err
 }
-

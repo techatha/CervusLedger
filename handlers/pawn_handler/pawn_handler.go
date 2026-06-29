@@ -1,4 +1,4 @@
-package handlers
+package pawn_handler
 
 import (
 	"CervusLedger/db"
@@ -144,8 +144,7 @@ func (h *PawnHandler) GetCustomerPawnRecords(id int) ([]models.PawnRecord, error
 	return records, nil
 }
 
-// ─── Settings helpers ──────────────────────────────────────────────────────
-
+// GetPawnSettings returns the pawn-related settings parameters.
 func (h *PawnHandler) GetPawnSettings() (models.PawnSettings, error) {
 	rows, err := db.DB.Query(`
 		SELECT key, value FROM settings
@@ -186,9 +185,7 @@ func (h *PawnHandler) GetPawnSettings() (models.PawnSettings, error) {
 	return s, nil
 }
 
-
-// ─── Create ────────────────────────────────────────────────────────────────
-
+// CreatePawn registers a new pawn record, logs the cash outlay, and returns it.
 func (h *PawnHandler) CreatePawn(input models.PawnInput) (models.PawnRecord, error) {
 	tx, err := db.DB.Begin()
 	if err != nil {
@@ -244,7 +241,7 @@ func (h *PawnHandler) CreatePawn(input models.PawnInput) (models.PawnRecord, err
 	// 3. Fetch customer name safely
 	var prefix, firstname, lastname string
 	_ = tx.QueryRow(`SELECT COALESCE(prefix, ''), firstname, lastname FROM customers WHERE id = ?`, input.CustomerID).Scan(&prefix, &firstname, &lastname)
-	
+
 	customerName := ""
 	if prefix != "" {
 		customerName = prefix + " "
@@ -267,8 +264,6 @@ func (h *PawnHandler) CreatePawn(input models.PawnInput) (models.PawnRecord, err
 
 	return h.GetPawn(int(id))
 }
-
-// ─── Read ──────────────────────────────────────────────────────────────────
 
 func (h *PawnHandler) GetPawn(id int) (models.PawnRecord, error) {
 	var r models.PawnRecord
@@ -459,4 +454,3 @@ func (h *PawnHandler) UpdatePawnInterest(id int, rate float64, amount float64) e
 	`, rate, amount, id)
 	return err
 }
-

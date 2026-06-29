@@ -1,7 +1,7 @@
 // ─── RecordPaymentModal ───────────────────────────────────────────────────
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { RecordPayment } from 'wailsjs/go/handlers/PawnHandler'
+import { RecordPayment } from 'wailsjs/go/pawn_handler/PawnHandler'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCartArrowDown } from '@fortawesome/free-solid-svg-icons'
 import { formatBaht } from '@/utils/thai'
@@ -141,7 +141,7 @@ export function RecordPaymentModal({ pawn, customerName, onSaved, onClose }) {
 
 // ─── PrincipalChangeForm ─────────────────────────────────────────────────
 import { useEffect } from 'react'
-import { AddPrincipalChange, GetPawnSettings } from 'wailsjs/go/handlers/PawnHandler'
+import { AddPrincipalChange, GetPawnSettings } from 'wailsjs/go/pawn_handler/PawnHandler'
 
 export function PrincipalChangeForm({ pawn, onSaved, onClose }) {
   const [settings,   setSettings]   = useState(null)

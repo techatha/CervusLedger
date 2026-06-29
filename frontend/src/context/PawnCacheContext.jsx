@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { ListPawnsSorted } from 'wailsjs/go/handlers/PawnHandler'
+import { ListPawnsSorted } from 'wailsjs/go/pawn_handler/PawnHandler'
 
 const PawnCacheContext = createContext(null)
 
