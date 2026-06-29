@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { ReadSmartCard } from 'wailsjs/go/handlers/SmartCardHandler'
-import { GetCustomers } from 'wailsjs/go/handlers/CustomerHandler'
+import { GetCustomers } from 'wailsjs/go/customer_handler/CustomerHandler'
 import {
   dispatchReaderStatus,
   dispatchCardInsert,

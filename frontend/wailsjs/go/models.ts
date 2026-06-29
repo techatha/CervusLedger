@@ -1,4 +1,4 @@
-export namespace handlers {
+export namespace displayer_handler {
 	
 	export class Bitmap {
 	    Width: number;
@@ -16,6 +16,11 @@ export namespace handlers {
 	        this.Bytes = source["Bytes"];
 	    }
 	}
+
+}
+
+export namespace handlers {
+	
 	export class ImportResult {
 	    customers_imported: number;
 	    pawn_records_imported: number;

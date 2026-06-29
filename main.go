@@ -13,6 +13,8 @@ import (
 
 	"CervusLedger/db"
 	"CervusLedger/handlers"
+	"CervusLedger/handlers/customer_handler"
+	"CervusLedger/handlers/displayer_handler"
 )
 
 //go:embed all:frontend/dist
@@ -31,7 +33,7 @@ func main() {
 
 	// Create app instance
 	app := NewApp()
-	customerHandler := handlers.NewCustomerHandler()
+	customerHandler := customer_handler.NewCustomerHandler()
 	pawnHandler := handlers.NewPawnHandler()
 	smartCardHandler := handlers.NewSmartCardHandler()
 	goldItemHandler := handlers.NewGoldItemHandler()
@@ -41,7 +43,7 @@ func main() {
 	purchaseHandler := handlers.NewPurchaseHandler()
 	dashboardHandler := handlers.NewDashboardHandler()
 	settingsHandler := handlers.NewSettingsHandler()
-	displayerHandler := handlers.NewDisplayerHandler()
+	displayerHandler := displayer_handler.NewDisplayerHandler()
 
 	err := wails.Run(&options.App{
 		Title:  "CervusLedger",

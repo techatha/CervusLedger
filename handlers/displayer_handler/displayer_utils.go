@@ -1,12 +1,12 @@
-package handlers
+package displayer_handler
 
 import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
-	"net"
 	"image"
 	"image/png"
+	"net"
 
 	"golang.org/x/image/draw"
 )
@@ -70,11 +70,11 @@ func QRToBitmap(pngBytes []byte) (*Bitmap, error) {
 }
 
 func getLocalIP() string {
-    conn, err := net.Dial("udp", "8.8.8.8:80")
-    if err != nil {
-        return "127.0.0.1" // Fallback
-    }
-    defer conn.Close()
-    localAddr := conn.LocalAddr().(*net.UDPAddr)
-    return localAddr.IP.String()
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		return "127.0.0.1" // Fallback
+	}
+	defer conn.Close()
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	return localAddr.IP.String()
 }

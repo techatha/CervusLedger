@@ -3,7 +3,7 @@ import {
   GetCustomer,
   CreateCustomer,
   UpdateCustomer,
-} from 'wailsjs/go/handlers/CustomerHandler'
+} from 'wailsjs/go/customer_handler/CustomerHandler'
 import {
   ReadSmartCard,
 } from 'wailsjs/go/handlers/SmartCardHandler'

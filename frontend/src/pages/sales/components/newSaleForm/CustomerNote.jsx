@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { GetCustomers } from 'wailsjs/go/handlers/CustomerHandler.js'
+import { GetCustomers } from 'wailsjs/go/customer_handler/CustomerHandler.js'
 import { fullName } from '@/utils/thai.js'
 import { SMARTCARD_EVENTS } from '@/utils/smartcard'
 

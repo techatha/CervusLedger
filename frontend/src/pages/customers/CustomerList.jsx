@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   GetCustomers,
   DeleteCustomer,
-} from 'wailsjs/go/handlers/CustomerHandler'
+} from 'wailsjs/go/customer_handler/CustomerHandler'
 import { fullName, toBE } from '@/utils/thai'
 import CustomerForm from './CustomerForm'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'

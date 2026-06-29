@@ -4,7 +4,7 @@ import {
   CreatePawn,
 } from 'wailsjs/go/handlers/PawnHandler'
 import { SetLastTicketNumber } from 'wailsjs/go/handlers/SettingsHandler'
-import { GetCustomers } from 'wailsjs/go/handlers/CustomerHandler'
+import { GetCustomers } from 'wailsjs/go/customer_handler/CustomerHandler'
 import { formatBaht, fullName } from '@/utils/thai'
 import { getLocalISOString } from '@/utils/date'
 import { SMARTCARD_EVENTS } from '@/utils/smartcard'

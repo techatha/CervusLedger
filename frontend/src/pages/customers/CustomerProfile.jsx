@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { GetCustomer } from 'wailsjs/go/handlers/CustomerHandler'
+import { GetCustomer } from 'wailsjs/go/customer_handler/CustomerHandler'
 import { GetCustomerPawnRecords } from 'wailsjs/go/handlers/PawnHandler'
 import { GetCustomerPurchaseRecords } from 'wailsjs/go/handlers/PurchaseHandler'
 import { fullName, formatBaht } from '@/utils/thai'

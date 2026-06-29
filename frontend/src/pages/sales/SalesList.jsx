@@ -6,7 +6,7 @@ import './SalesList.css'
 import GoldPriceDashboard from '@/components/GoldPriceDashboard'
 import { CreateSale, GetSetting } from 'wailsjs/go/handlers/SaleHandler.js'
 import { RecordPayment } from 'wailsjs/go/handlers/PawnHandler.js'
-import { SendQRToDisplay, SendSuccessToDisplay, SendFailToDisplay } from 'wailsjs/go/handlers/DisplayerHandler.js'
+import { SendQRToDisplay, SendSuccessToDisplay, SendFailToDisplay } from 'wailsjs/go/displayer_handler/DisplayerHandler.js'
 import PromptPayQR from './components/saleList/PromptPayQR'
 import SalesCart from './components/saleList/SalesCart'
 

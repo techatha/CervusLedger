@@ -1,4 +1,4 @@
-import { GetWiFiDisplayerIP, RegisterWebhook } from 'wailsjs/go/handlers/DisplayerHandler.js';
+import { GetWiFiDisplayerIP, RegisterWebhook } from 'wailsjs/go/displayer_handler/DisplayerHandler.js';
 
 export async function syncDevice() {
     try {
