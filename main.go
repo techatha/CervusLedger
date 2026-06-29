@@ -15,6 +15,7 @@ import (
 	"CervusLedger/handlers"
 	"CervusLedger/handlers/customer_handler"
 	"CervusLedger/handlers/displayer_handler"
+	"CervusLedger/handlers/smartcard_handler"
 )
 
 //go:embed all:frontend/dist
@@ -35,7 +36,7 @@ func main() {
 	app := NewApp()
 	customerHandler := customer_handler.NewCustomerHandler()
 	pawnHandler := handlers.NewPawnHandler()
-	smartCardHandler := handlers.NewSmartCardHandler()
+	smartCardHandler := smartcard_handler.NewSmartCardHandler()
 	goldItemHandler := handlers.NewGoldItemHandler()
 	saleHandler := handlers.NewSaleHandler()
 	incomeExpenseHandler := handlers.NewIncomeExpenseHandler()

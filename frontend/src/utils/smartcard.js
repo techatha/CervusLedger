@@ -1,4 +1,4 @@
-import { ReadSmartCard } from 'wailsjs/go/handlers/SmartCardHandler'
+import { ReadSmartCard } from 'wailsjs/go/smartcard_handler/SmartCardHandler'
 
 /**
  * Event constants for Smart Card operations

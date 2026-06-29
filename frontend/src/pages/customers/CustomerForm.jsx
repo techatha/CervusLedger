@@ -6,7 +6,7 @@ import {
 } from 'wailsjs/go/customer_handler/CustomerHandler'
 import {
   ReadSmartCard,
-} from 'wailsjs/go/handlers/SmartCardHandler'
+} from 'wailsjs/go/smartcard_handler/SmartCardHandler'
 import { mapCardToCustomer, SMARTCARD_EVENTS, dispatchPawnSelect, dispatchSaleSelect } from '@/utils/smartcard'
 import { PREFIXES, PROVINCES } from '@/utils/thai'
 import { useNavigate } from 'react-router-dom'
