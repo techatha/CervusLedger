@@ -114,7 +114,7 @@ export default function Sidebar({ cartItems }) {
 
       {/* Footer */}
       <div className="sidebar-footer">
-        <div className="sidebar-version">v0.1.0</div>
+        <div className="sidebar-version">v1.0.1</div>
         <div
           className="sidebar-reader-status"
           title={readerConnected ? "เครื่องอ่านบัตร: เชื่อมต่ออยู่" : "เครื่องอ่านบัตร: ไม่พบอุปกรณ์"}

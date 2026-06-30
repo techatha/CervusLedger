@@ -1,11 +1,10 @@
-package test
+package income_expense_handler
 
 import (
 	"testing"
 	"time"
 
 	"CervusLedger/db"
-	"CervusLedger/handlers"
 	"CervusLedger/models"
 	"fmt"
 
@@ -15,7 +14,7 @@ import (
 // ─── Pure Function Test ──────────────────────────────────────────────────
 
 func TestCeDateToBE(t *testing.T) {
-	h := &handlers.IncomeExpenseHandler{}
+	h := &IncomeExpenseHandler{}
 
 	tests := []struct {
 		name     string
@@ -48,7 +47,7 @@ func TestListIncomeExpense(t *testing.T) {
 	defer dbMock.Close()
 	db.DB = dbMock
 
-	h := &handlers.IncomeExpenseHandler{}
+	h := &IncomeExpenseHandler{}
 	now := time.Now()
 
 	// 2. Set up the expected rows we want the mock DB to return
@@ -93,7 +92,7 @@ func TestCreateIncomeExpense(t *testing.T) {
 	defer dbMock.Close()
 	db.DB = dbMock
 
-	h := &handlers.IncomeExpenseHandler{}
+	h := &IncomeExpenseHandler{}
 	input := models.IncomeExpenseInput{
 		Type:     "income",
 		Category: "Service",
@@ -144,7 +143,7 @@ func TestGetIncomeExpenseSummary(t *testing.T) {
 	defer dbMock.Close()
 	db.DB = dbMock
 
-	h := &handlers.IncomeExpenseHandler{}
+	h := &IncomeExpenseHandler{}
 
 	// ─── Scenario 1: User provides Start and End Dates ─────────────────────
 	t.Run("With Date Filters", func(t *testing.T) {
@@ -219,7 +218,7 @@ func TestGetDailyCash(t *testing.T) {
 	defer dbMock.Close()
 	db.DB = dbMock
 
-	h := &handlers.IncomeExpenseHandler{}
+	h := &IncomeExpenseHandler{}
 	date := "2026-05-31"
 
 	t.Run("Found in DB", func(t *testing.T) {
@@ -297,7 +296,7 @@ func TestSaveDailyCash(t *testing.T) {
 	defer dbMock.Close()
 	db.DB = dbMock
 
-	h := &handlers.IncomeExpenseHandler{}
+	h := &IncomeExpenseHandler{}
 	input := models.DailyCashInput{
 		Date:         "2026-05-31",
 		ActualAmount: 5800.0,

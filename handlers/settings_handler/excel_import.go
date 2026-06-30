@@ -109,8 +109,8 @@ func (h *SettingsHandler) ImportFromXlsx() (*ImportResult, error) {
 			if i == 0 {
 				continue // skip header
 			}
-			if len(row) < 12 {
-				res.Warnings = append(res.Warnings, fmt.Sprintf("ลูกค้า แถว %d: คอลัมน์ไม่ครบ (ต้องการ 12, ได้ %d)", i+1, len(row)))
+			if len(row) < 3 {
+				res.Warnings = append(res.Warnings, fmt.Sprintf("ลูกค้า แถว %d: คอลัมน์ไม่ครบ (ต้องการอย่างน้อย 3 คอลัมน์)", i+1))
 				continue
 			}
 
@@ -127,8 +127,8 @@ func (h *SettingsHandler) ImportFromXlsx() (*ImportResult, error) {
 			amphoe := cellStr(row, 10)
 			province := cellStr(row, 11)
 
-			if firstname == "" || lastname == "" {
-				res.Warnings = append(res.Warnings, fmt.Sprintf("ลูกค้า แถว %d: ไม่มีชื่อหรือนามสกุล", i+1))
+			if firstname == "" {
+				res.Warnings = append(res.Warnings, fmt.Sprintf("ลูกค้า แถว %d: ไม่มีชื่อ", i+1))
 				continue
 			}
 
@@ -172,8 +172,8 @@ func (h *SettingsHandler) ImportFromXlsx() (*ImportResult, error) {
 			if i == 0 {
 				continue
 			}
-			if len(row) < 10 {
-				res.Warnings = append(res.Warnings, fmt.Sprintf("รายการจำนำ แถว %d: คอลัมน์ไม่ครบ (ต้องการ 10, ได้ %d)", i+1, len(row)))
+			if len(row) < 8 {
+				res.Warnings = append(res.Warnings, fmt.Sprintf("รายการจำนำ แถว %d: คอลัมน์ไม่ครบ (ต้องการอย่างน้อย 8 คอลัมน์)", i+1))
 				continue
 			}
 
@@ -195,15 +195,21 @@ func (h *SettingsHandler) ImportFromXlsx() (*ImportResult, error) {
 				interestRate = "0"
 			}
 			status := cellStr(row, 8)
+			if status == "" {
+				status = "active"
+			}
 			ticketStatus := cellStr(row, 9)
+			if ticketStatus == "" {
+				ticketStatus = "active"
+			}
 
 			principalF, _ := strconv.ParseFloat(principal, 64)
 			rateF, _ := strconv.ParseFloat(interestRate, 64)
 			interestAmt := principalF * rateF / 100
 
-			// Look up customer by ID card
+			// Look up customer by ID card within the transaction
 			var customerID int
-			err := db.DB.QueryRow(
+			err := tx.QueryRow(
 				`SELECT id FROM customers WHERE id_card = ?`, customerIDCard,
 			).Scan(&customerID)
 			if err != nil {
@@ -250,8 +256,8 @@ func (h *SettingsHandler) ImportFromXlsx() (*ImportResult, error) {
 			if i == 0 {
 				continue
 			}
-			if len(row) < 5 {
-				res.Warnings = append(res.Warnings, fmt.Sprintf("การชำระดอกเบี้ย แถว %d: คอลัมน์ไม่ครบ (ต้องการ 5, ได้ %d)", i+1, len(row)))
+			if len(row) < 4 {
+				res.Warnings = append(res.Warnings, fmt.Sprintf("การชำระดอกเบี้ย แถว %d: คอลัมน์ไม่ครบ (ต้องการอย่างน้อย 4 คอลัมน์)", i+1))
 				continue
 			}
 
@@ -327,8 +333,8 @@ func (h *SettingsHandler) ImportFromXlsx() (*ImportResult, error) {
 			if i == 0 {
 				continue
 			}
-			if len(row) < 6 {
-				res.Warnings = append(res.Warnings, fmt.Sprintf("การเปลี่ยนแปลงเงินต้น แถว %d: คอลัมน์ไม่ครบ (ต้องการ 6, ได้ %d)", i+1, len(row)))
+			if len(row) < 5 {
+				res.Warnings = append(res.Warnings, fmt.Sprintf("การเปลี่ยนแปลงเงินต้น แถว %d: คอลัมน์ไม่ครบ (ต้องการอย่างน้อย 5 คอลัมน์)", i+1))
 				continue
 			}
 
