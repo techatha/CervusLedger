@@ -416,3 +416,43 @@
   color: var(--text-disabled);
   margin-top: 1px;
 }
+
+/* ─── Gold Stepper ────────────────────────────────────────── */
+.db-gold-stepper {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* Adds space between buttons and selected date */
+}
+
+.db-stepper-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0;
+  transition: all var(--transition);
+}
+
+.db-stepper-btn:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.db-stepper-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.db-stepper-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  user-select: none;
+}

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { EventsOn } from 'wailsjs/runtime/runtime.js'
 import { useNavigate } from 'react-router-dom'
 import Chart from 'chart.js/auto'
 
@@ -167,6 +168,22 @@ export default function Dashboard() {
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  // Listen for real-time gold price updates to refresh the chart
+  useEffect(() => {
+    const unsubscribe = EventsOn("gold-price:updated", async () => {
+      try {
+        const goldRaw = await GetPriceHistory(30)
+        setGoldHistory((goldRaw || []).slice().reverse())
+        priceDashboardRef.current?.refresh()
+      } catch (e) {
+        console.error('Failed to refresh gold history:', e)
+      }
+    })
+    return () => {
+      if (typeof unsubscribe === 'function') unsubscribe()
+    }
+  }, [])
 
   if (loading) return (
     <div className="page-view">
@@ -487,8 +504,7 @@ function GoldLineChart({ history }) {
               color: '#8B8074',
               padding: 8,
               callback: v => {
-                const decimals = Math.round(v) % 100 === 0 ? 1 : 2
-                return (v / 1000).toFixed(decimals) + 'k'
+                return (v / 1000).toFixed(2) + 'k'
               },
             },
           },

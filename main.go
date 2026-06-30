@@ -54,9 +54,10 @@ func main() {
 	displayerHandler := displayer_handler.NewDisplayerHandler()
 
 	err := wails.Run(&options.App{
-		Title:  "CervusLedger",
-		Width:  1280,
-		Height: 800,
+		Title:            "CervusLedger",
+		Width:            1024,
+		Height:           720,
+		WindowStartState: options.Maximised,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

@@ -30,6 +30,10 @@ const buildYearOptions = () => {
   return years
 }
 
+const formatDateStr = (d) => {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export default function IncomePage() {
   const now = new Date()
   const [year,  setYear]  = useState(now.getFullYear())
@@ -44,7 +48,7 @@ export default function IncomePage() {
   const [confirmDel, setConfirmDel] = useState(null)
   const [dailyCashList, setDailyCashList] = useState([])
 
-  const [selectedDate, setSelectedDate] = useState(null)
+  const [selectedDate, setSelectedDate] = useState(formatDateStr(now))
   const [typeFilter,   setTypeFilter]   = useState('')
   const [sourceFilter, setSourceFilter] = useState('')
   const [presets,      setPresets]      = useState([])

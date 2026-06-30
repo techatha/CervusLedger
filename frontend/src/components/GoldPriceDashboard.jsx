@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react'
 import { GetTodayPrice, ForceScrapePrice, GetPriceHistory } from 'wailsjs/go/gold_price_handler/GoldPriceHandler.js'
+import { EventsOn } from 'wailsjs/runtime/runtime.js'
 import { formatDate } from '@/utils/date.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faJar, faRing, faArrowsRotate, faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons'
@@ -71,6 +72,18 @@ const GoldPriceDashboard = forwardRef(({ onPriceLoaded }, ref) => {
 
   useEffect(() => {
     loadPrice()
+  }, [loadPrice])
+
+  // Listen for real-time gold price updates from the backend scraper
+  useEffect(() => {
+    const unsubscribe = EventsOn("gold-price:updated", () => {
+      loadPrice()
+    })
+    return () => {
+      if (typeof unsubscribe === 'function') {
+        unsubscribe()
+      }
+    }
   }, [loadPrice])
 
   const renderPriceCell = (label, curr, prev) => {
