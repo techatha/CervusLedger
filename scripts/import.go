@@ -36,8 +36,12 @@ func main() {
 // Convert Thai Buddhist Era date to CE
 // Input: "2568-01-15" → Output: "2025-01-15"
 func thaiToCE(thaiDate string) string {
+	thaiDate = strings.TrimSpace(thaiDate)
 	if thaiDate == "" {
 		return ""
+	}
+	if idx := strings.IndexAny(thaiDate, "T "); idx != -1 {
+		thaiDate = thaiDate[:idx]
 	}
 	parts := strings.Split(thaiDate, "-")
 	if len(parts) != 3 {

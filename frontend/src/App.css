@@ -167,7 +167,7 @@ body {
 
 .btn-primary {
   background: var(--gold);
-  color: #1A1200;
+  color: #FFF8F0;
 }
 
 .btn-primary:hover:not(:disabled) {

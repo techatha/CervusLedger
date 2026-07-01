@@ -27,9 +27,6 @@ export function pawnStatusBadge(status) {
 
 export { formatBaht, formatTicket } from './number'
 
-/**
- * ฟังก์ชันจัดฟอร์แมตที่อยู่ลูกค้าตามเงื่อนไข (ตัดฟิลด์ที่ว่างออกอัตโนมัติ)
- */
 export function formatCustomerAddress(c) {
   if (!c) return '—';
   const parts = [];
@@ -38,9 +35,41 @@ export function formatCustomerAddress(c) {
   if (c.address_line) parts.push(c.address_line);
   if (c.moo) parts.push(`หมู่ ${c.moo}`);
   if (c.road) parts.push(`ถ. ${c.road}`);
-  if (c.tambon) parts.push(`ต. ${c.tambon}`);
-  if (c.amphoe) parts.push(`อ. ${c.amphoe}`);
-  if (c.province) parts.push(`จ. ${c.province}`);
+
+  const isBkk = c.province && (
+    c.province.includes('กรุงเทพมหานคร') || 
+    c.province.includes('กรุงเทพฯ') || 
+    c.province.includes('กทม')
+  );
+
+  if (c.tambon) {
+    if (isBkk) {
+      const tb = c.tambon.startsWith('แขวง') ? c.tambon : `แขวง${c.tambon}`;
+      parts.push(tb);
+    } else {
+      const tb = c.tambon.startsWith('ต.') || c.tambon.startsWith('ตำบล') ? c.tambon : `ต. ${c.tambon}`;
+      parts.push(tb);
+    }
+  }
+
+  if (c.amphoe) {
+    if (isBkk) {
+      const am = c.amphoe.startsWith('เขต') ? c.amphoe : `เขต${c.amphoe}`;
+      parts.push(am);
+    } else {
+      const am = c.amphoe.startsWith('อ.') || c.amphoe.startsWith('อำเภอ') ? c.amphoe : `อ. ${c.amphoe}`;
+      parts.push(am);
+    }
+  }
+
+  if (c.province) {
+    if (isBkk) {
+      parts.push(c.province); // No "จ." prefix for Bangkok
+    } else {
+      const pr = c.province.startsWith('จ.') || c.province.startsWith('จังหวัด') ? c.province : `จ. ${c.province}`;
+      parts.push(pr);
+    }
+  }
   
   return parts.filter(Boolean).join(' ') || '—';
 }

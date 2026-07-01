@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faTag, faCheck, faPen, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { ListStockLogs } from 'wailsjs/go/gold_item_handler/GoldItemHandler.js'
 import { formatBaht, fullName, toBE } from '@/utils/thai.js'
 import { formatNumberInput, formatCurrency } from '@/utils/number.js'
 import CustomerNoteSection from './CustomerNote.jsx'
@@ -60,6 +61,34 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
     }
   }, [todayPrice])
 
+  // Keep formData.stock_quantity in sync — display now lives in the pinned footer
+  useEffect(() => {
+    if (formData.gold_item_id > 0) {
+      ListStockLogs('')
+        .then(logs => {
+          const itemLogs = (logs || []).filter(log => log.gold_item_id === formData.gold_item_id)
+          if (itemLogs.length > 0) {
+            itemLogs.sort((a, b) => b.log_date.localeCompare(a.log_date))
+            const latestAmount = itemLogs[0].amount
+            setFormData(prev => ({ ...prev, stock_quantity: latestAmount }))
+          } else {
+            setFormData(prev => ({ ...prev, stock_quantity: 0 }))
+          }
+        })
+        .catch(err => {
+          console.error('Failed to load stock quantity:', err)
+          setFormData(prev => ({ ...prev, stock_quantity: 0 }))
+        })
+    } else {
+      setFormData(prev => {
+        if (prev.stock_quantity !== undefined && prev.stock_quantity !== null) {
+          return { ...prev, stock_quantity: null }
+        }
+        return prev
+      })
+    }
+  }, [formData.gold_item_id, setFormData])
+
   return (
     <>
       <GoldTypeSelectSection
@@ -104,39 +133,18 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
         </div>
       </div>
 
-      {/* ─── Total + Negotiation ─────────────────────────────────── */}
+      {/* ─── Breakdown + Negotiation (final total now lives in the pinned footer) ── */}
       {sellTotal > 0 && (
         <>
-          {/* Total preview */}
-          <div className="nsf-total nsf-total-gold" style={{ marginTop: '16px' }}>
-            <span className="nsf-total-label">ยอดรวมสุทธิ</span>
-            <div className="nsf-total-right">
-              {hasDiscount ? (
-                <>
-                  <div className="nsf-discount-row">
-                    <span className="nsf-price-old">{formatBaht(sellTotal)}</span>
-                    <span className="nsf-total-amount">{formatBaht(parsedNegotiated)}</span>
-                  </div>
-                  <div className="nsf-discount-label">
-                    <FontAwesomeIcon icon={faTag} style={{ marginRight: '4px' }} />
-                    ส่วนลด {formatBaht(discountAmount)}
-                  </div>
-                </>
-              ) : (
-                <span className="nsf-total-amount">{formatBaht(sellTotal)}</span>
-              )}
-              {formData.calculated_gold_price > 0 && (
-                <div className="nsf-total-breakdown">
-                  ราคาทอง: {formatBaht(formData.calculated_gold_price)}
-                  {formData.labor_fee
-                    ? ` + ค่ากำเหน็จ: ${formatBaht(parseFloat(String(formData.labor_fee).replace(/,/g, '')))}`
-                    : ''}
-                </div>
-              )}
+          {formData.calculated_gold_price > 0 && (
+            <div className="nsf-total-breakdown" style={{ marginTop: '14px' }}>
+              ราคาทอง: {formatBaht(formData.calculated_gold_price)}
+              {formData.labor_fee
+                ? ` + ค่ากำเหน็จ: ${formatBaht(parseFloat(String(formData.labor_fee).replace(/,/g, '')))}`
+                : ''}
             </div>
-          </div>
+          )}
 
-          {/* Negotiation toggle */}
           <div className="nsf-negotiate">
             {negotiationMode === 'off' ? (
               <button
@@ -160,9 +168,7 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
                   inputMode="decimal"
                   placeholder="ราคาที่ตกลงกับลูกค้า..."
                   value={formatNumberInput(negotiatedPrice)}
-                  onChange={e => {
-                    console.log(e.target.value, "test input value")
-                    setNegotiatedPrice(e.target.value)}}
+                  onChange={e => setNegotiatedPrice(e.target.value)}
                   onKeyDown={e => {
                     if (e.key === 'Enter') { e.preventDefault(); handleApplyNegotiated(); setNegotiationMode('confirmed') }
                   }}
@@ -191,7 +197,7 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
                 </button>
               </div>
 
-            ) : /* confirmed */ (
+            ) : (
               <div className="nsf-negotiate-bar nsf-negotiate-bar--confirmed">
                 <div className="nsf-negotiate-info">
                   <div className="nsf-negotiate-check">

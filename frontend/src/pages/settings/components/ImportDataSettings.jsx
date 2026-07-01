@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { ImportFromXlsx, DownloadImportTemplate, ExportToXlsx } from 'wailsjs/go/settings_handler/SettingsHandler';
+import { ImportFromXlsx, DownloadImportTemplate, ExportToXlsx, ClearAllData } from 'wailsjs/go/settings_handler/SettingsHandler';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faDownload, faUpload, faFileArrowDown } from '@fortawesome/free-solid-svg-icons';
+import { faDownload, faUpload, faFileArrowDown, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import SettingBox from './SettingBox';
 
 export default function ImportDataSettings() {
@@ -12,6 +12,10 @@ export default function ImportDataSettings() {
   const [exporting, setExporting] = useState(false);
   const [exportResult, setExportResult] = useState(null);
   const [exportError, setExportError] = useState(null);
+
+  const [clearing, setClearing] = useState(false);
+  const [clearResult, setClearResult] = useState(null);
+  const [clearError, setClearError] = useState(null);
 
   const handleImport = async () => {
     setImporting(true);
@@ -54,6 +58,26 @@ export default function ImportDataSettings() {
       setExportError('ส่งออกไม่สำเร็จ: ' + e);
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleClearData = async () => {
+    setClearing(true);
+    setClearResult(null);
+    setClearError(null);
+    setImportResult(null);
+    setImportError(null);
+    setExportResult(null);
+    setExportError(null);
+    try {
+      const result = await ClearAllData();
+      if (result && !result.cancelled) {
+        setClearResult(result);
+      }
+    } catch (e) {
+      setClearError('ลบข้อมูลไม่สำเร็จ: ' + e);
+    } finally {
+      setClearing(false);
     }
   };
 
@@ -164,6 +188,58 @@ export default function ImportDataSettings() {
             </div>
             <div className="sp-import-count-item">
               <span className="sp-import-count-num">{exportResult.principal_changes_exported}</span>
+              <span className="sp-import-count-label">เปลี่ยนเงินต้น</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Clear Data Danger Zone ── */}
+      <hr className="sp-section-divider" />
+      <div className="sp-section-label">จัดการข้อมูล</div>
+      <div className="sp-clear-data-zone">
+        <div className="sp-clear-data-header">
+          <FontAwesomeIcon icon={faTriangleExclamation} className="sp-clear-data-icon" />
+          <div>
+            <div className="sp-clear-data-title">ลบข้อมูลทั้งหมด</div>
+            <div className="sp-clear-data-desc">
+              ลบข้อมูลลูกค้า รายการจำนำ การชำระดอกเบี้ย และการเปลี่ยนแปลงเงินต้นทั้งหมดออกจากระบบ
+            </div>
+          </div>
+        </div>
+        <button
+          type="button"
+          className="btn sp-clear-data-btn"
+          onClick={handleClearData}
+          disabled={importing || exporting || clearing}
+        >
+          <FontAwesomeIcon icon={faTriangleExclamation} />
+          {clearing ? 'กำลังลบข้อมูล...' : 'ลบข้อมูลทั้งหมด'}
+        </button>
+      </div>
+
+      {clearError && (
+        <div className="alert alert-error" style={{ marginTop: '12px' }}>{clearError}</div>
+      )}
+
+      {clearResult && (
+        <div className="sp-import-result" style={{ marginTop: '12px', borderColor: 'rgba(220, 53, 69, 0.25)' }}>
+          <div className="sp-import-result-title" style={{ color: 'var(--red)' }}>🗑️ ลบข้อมูลสำเร็จ</div>
+          <div className="sp-import-result-counts">
+            <div className="sp-import-count-item">
+              <span className="sp-import-count-num">{clearResult.customers_deleted}</span>
+              <span className="sp-import-count-label">ลูกค้า</span>
+            </div>
+            <div className="sp-import-count-item">
+              <span className="sp-import-count-num">{clearResult.pawn_records_deleted}</span>
+              <span className="sp-import-count-label">ตั๋วจำนำ</span>
+            </div>
+            <div className="sp-import-count-item">
+              <span className="sp-import-count-num">{clearResult.pawn_payments_deleted}</span>
+              <span className="sp-import-count-label">การชำระ</span>
+            </div>
+            <div className="sp-import-count-item">
+              <span className="sp-import-count-num">{clearResult.principal_changes_deleted}</span>
               <span className="sp-import-count-label">เปลี่ยนเงินต้น</span>
             </div>
           </div>

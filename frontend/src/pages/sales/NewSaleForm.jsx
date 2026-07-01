@@ -1,10 +1,13 @@
 import { useState } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faArrowUp, faArrowDown, faTag } from '@fortawesome/free-solid-svg-icons'
 import NewSaleFormSell from './components/newSaleForm/Sell.jsx'
 import NewSaleFormBuy from './components/newSaleForm/Buy.jsx'
 import NewSaleFormDiscount from './components/newSaleForm/Discount.jsx'
 import './NewSaleForm.css'
 
 import { getLocalISOString } from '@/utils/date'
+import { formatBaht } from '@/utils/thai.js'
 
 const today = () => getLocalISOString().slice(0, 10)
 
@@ -12,13 +15,15 @@ const BLANK_SELL = {
   gold_item_id: 0, gold_item_label: '', weight_grams: '', purity: '90',
   price_per_baht: '', labor_fee: '', total_amount: '', calculated_gold_price: 0,
   customer_id: 0, customer_label: '', notes: '', date: today(),
-  discount_amount: 0 // เพิ่มฟิลด์รับค่าส่วนลดจากการต่อรอง
+  discount_amount: 0, // เพิ่มฟิลด์รับค่าส่วนลดจากการต่อรอง
+  stock_quantity: null
 }
 
 const BLANK_BUY = {
   gold_item_id: 0, gold_item_label: '', weight_grams: '', purity: '96.5',
   price_per_baht: '', item_type: '', item_subtype: '', weight_baht: '', total_amount: '',
-  is_inventory: 0, customer_id: 0, customer_label: '', notes: '', date: today()
+  is_inventory: 0, customer_id: 0, customer_label: '', notes: '', date: today(),
+  is_override: false, override_diff: 0
 }
 
 const BLANK_DISCOUNT = {
@@ -28,7 +33,7 @@ const BLANK_DISCOUNT = {
 export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd }) {
   const [tab, setTab] = useState(defaultType || 'sell')
   const [error, setError] = useState(null)
-  
+
   // State กลางสำหรับเก็บข้อมูลฟอร์ม
   const [formData, setFormData] = useState(() => {
     const initialTab = defaultType || 'sell'
@@ -144,18 +149,50 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
     }
   }
 
+  // ─── Pinned footer total ───────────────────────────────────────────
+  const parseNum = (v) => parseFloat(String(v ?? '').replace(/,/g, '')) || 0
+
+  const footerTotal = tab === 'sell'
+    ? Math.max(0, parseNum(formData.total_amount) - parseNum(formData.discount_amount))
+    : tab === 'buy'
+      ? parseNum(formData.total_amount)
+      : parseNum(formData.amount)
+
+  const footerLabel = tab === 'sell' ? 'ยอดขายสุทธิ' : tab === 'buy' ? 'ยอดรับซื้อ' : 'ยอดส่วนลด'
+  const footerColor = tab === 'sell' ? 'var(--green)' : tab === 'buy' ? 'var(--amber)' : 'var(--blue)'
+
+  // Small contextual badge: discount applied (sell) / manual price override (buy)
+  const footerBadge = (() => {
+    if (tab === 'sell') {
+      const d = parseNum(formData.discount_amount)
+      return d > 0 ? `-${formatBaht(d)}` : null
+    }
+    if (tab === 'buy' && formData.is_override) {
+      const diff = parseNum(formData.override_diff)
+      if (diff === 0) return null
+      return `${diff > 0 ? '+' : '-'}${formatBaht(Math.abs(diff))}`
+    }
+    return null
+  })()
+
+  // Out-of-stock notice, now pinned next to the total instead of inline in the form
+  const showStockWarning = tab === 'sell'
+    && formData.gold_item_id > 0
+    && typeof formData.stock_quantity === 'number'
+    && formData.stock_quantity <= 0
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal nsf-modal" onClick={e => e.stopPropagation()}>
         <div className="nsf-tab-header" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
           <button className={`nsf-tab ${tab === 'sell' ? 'nsf-tab-active nsf-tab-sell' : ''}`} onClick={() => handleTabChange('sell')}>
-            <IconUp /> ขายทอง
+            <FontAwesomeIcon icon={faArrowUp} /> ขายทอง
           </button>
           <button className={`nsf-tab ${tab === 'buy' ? 'nsf-tab-active nsf-tab-buy' : ''}`} onClick={() => handleTabChange('buy')}>
-            <IconDown /> รับซื้อทอง
+            <FontAwesomeIcon icon={faArrowDown} /> รับซื้อทอง
           </button>
           <button className={`nsf-tab ${tab === 'discount' ? 'nsf-tab-active nsf-tab-discount' : ''}`} onClick={() => handleTabChange('discount')} style={tab === 'discount' ? { borderBottomColor: 'var(--blue)', color: 'var(--blue)' } : {}}>
-            <IconTagMain /> เพิ่มส่วนลด
+            <FontAwesomeIcon icon={faTag} /> เพิ่มส่วนลด
           </button>
         </div>
 
@@ -168,22 +205,40 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
           {tab === 'discount' && <NewSaleFormDiscount formData={formData} setFormData={setFormData} />}
         </div>
 
-        {/* FOOTER ถูกดึงมาไว้ตรงนี้ที่เดียว */}
+        {/* ─── Pinned footer: final price + actions, always visible ───── */}
         <div className="modal-footer">
-          <button className="btn btn-ghost" onClick={onClose}>ยกเลิก</button>
-          <button 
-            className="btn btn-primary" 
-            onClick={handleAddToCart} 
-            style={tab === 'buy' ? { background: 'var(--amber)', color: '#fff', border: 'none' } : tab === 'discount' ? { background: 'var(--blue)', color: '#fff', border: 'none' } : tab === 'sell' ? { background: 'var(--green)', color: '#fff', border: 'none' } : {}}
-          >
-            {tab === 'buy' ? 'เพิ่มรายการรับซื้อ' : tab === 'discount' ? 'เพิ่มส่วนลดลงตะกร้า' : 'เพิ่มรายการขาย'}
-          </button>
+          <div className="nsf-footer-summary">
+            <div className="nsf-footer-summary-row">
+              <span className="nsf-footer-total-label">{footerLabel}</span>
+              {footerBadge && (
+                <span className={`nsf-footer-badge-plain nsf-footer-badge-plain--${tab}`}>
+                  {tab === 'sell' ? 'ส่วนลด ' : 'ปรับราคา '}{footerBadge}
+                </span>
+              )}
+            </div>
+            <div className="nsf-footer-summary-row">
+              <span className="nsf-footer-total-amount" style={{ color: footerColor }}>
+                {formatBaht(footerTotal)}
+              </span>
+            </div>
+            {showStockWarning && (
+              <div className="nsf-footer-stock-badge">
+                คำเตือน: สต็อกคงเหลือ {formData.stock_quantity} ชิ้น — ตรวจสอบก่อนขาย
+              </div>
+            )}
+          </div>
+          <div className="nsf-footer-actions">
+            <button className="btn btn-ghost" onClick={onClose}>ยกเลิก</button>
+            <button
+              className="btn btn-primary"
+              onClick={handleAddToCart}
+              style={tab === 'buy' ? { background: 'var(--amber)', color: '#fff', border: 'none' } : tab === 'discount' ? { background: 'var(--blue)', color: '#fff', border: 'none' } : tab === 'sell' ? { background: 'var(--green)', color: '#fff', border: 'none' } : {}}
+            >
+              {tab === 'buy' ? 'เพิ่มรายการรับซื้อ' : tab === 'discount' ? 'เพิ่มส่วนลดลงตะกร้า' : 'เพิ่มรายการขาย'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
   )
 }
-
-function IconUp() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" /></svg> }
-function IconDown() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><polyline points="19 12 12 19 5 12" /></svg> }
-function IconTagMain() { return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg> }

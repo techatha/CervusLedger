@@ -415,3 +415,89 @@
   font-size: 12px;
   line-height: 1.5;
 }
+
+/* ─── Section divider inside setting box ────────────── */
+.sp-section-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 20px 0 0 0;
+}
+
+.sp-section-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 14px 0 4px 0;
+  letter-spacing: 0.02em;
+}
+
+/* ─── Clear Data Danger Zone ────────────────────────── */
+.sp-clear-data-zone {
+  margin-top: 8px;
+  padding: 16px;
+  border: 1px dashed rgba(220, 53, 69, 0.35);
+  border-radius: var(--radius-sm);
+  background: rgba(220, 53, 69, 0.04);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.sp-clear-data-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  flex: 1;
+  min-width: 200px;
+}
+
+.sp-clear-data-icon {
+  font-size: 18px;
+  color: var(--red);
+  margin-top: 2px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.sp-clear-data-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--red);
+  margin-bottom: 2px;
+}
+
+.sp-clear-data-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.sp-clear-data-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+  color: var(--red);
+  border: 1px solid rgba(220, 53, 69, 0.4);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sp-clear-data-btn:hover:not(:disabled) {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+}
+
+.sp-clear-data-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

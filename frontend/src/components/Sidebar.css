@@ -135,7 +135,14 @@
   color: var(--text-disabled);
 }
 
-.sidebar-reader-status {
+.sidebar-status-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sidebar-reader-status,
+.sidebar-displayer-status {
   display: flex;
   align-items: center;
   gap: 7px;
@@ -143,7 +150,8 @@
   font-size: 13px;
 }
 
-.sidebar-reader-status .status-icon {
+.sidebar-reader-status .status-icon,
+.sidebar-displayer-status .status-icon {
   opacity: 0.6;
 }
 

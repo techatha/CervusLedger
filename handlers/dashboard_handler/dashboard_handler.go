@@ -100,7 +100,7 @@ func (h *DashboardHandler) GetDashboardStats() (models.DashboardStats, error) {
 		  AND date(date) >= ? AND date(date) <= ?
 	`, monthStart, monthEnd).Scan(&s.MonthInterestCollected)
 
-	// ── Recent 5 active pawns ───────────────────────────────────────
+	// ── Recent active pawns added today ─────────────────────────────
 	rows, err = db.DB.Query(`
 		SELECT
 			pr.id, pr.ticket_number, pr.customer_id,
@@ -116,9 +116,9 @@ func (h *DashboardHandler) GetDashboardStats() (models.DashboardStats, error) {
 			pr.status, pr.ticket_status, pr.created_at
 		FROM pawn_records pr
 		LEFT JOIN customers c ON c.id = pr.customer_id
-		WHERE pr.status = 'active'
-		ORDER BY pr.id DESC LIMIT 5
-	`)
+		WHERE pr.status = 'active' AND DATE(pr.created_at) = ?
+		ORDER BY pr.id DESC
+	`, today)
 	if err == nil {
 		defer rows.Close()
 		for rows.Next() {

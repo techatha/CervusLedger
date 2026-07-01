@@ -32,10 +32,14 @@ const (
 // thaiToCE converts a Thai Buddhist Era date string to CE.
 // Input: "2568-01-15" → Output: "2025-01-15"
 func thaiToCE(thaiDate string) string {
+	thaiDate = strings.TrimSpace(thaiDate)
 	if thaiDate == "" {
 		return ""
 	}
-	parts := strings.Split(strings.TrimSpace(thaiDate), "-")
+	if idx := strings.IndexAny(thaiDate, "T "); idx != -1 {
+		thaiDate = thaiDate[:idx]
+	}
+	parts := strings.Split(thaiDate, "-")
 	if len(parts) != 3 {
 		return thaiDate
 	}
@@ -520,17 +524,14 @@ type ExportResult struct {
 // ceToThai converts a CE date string to Thai Buddhist Era.
 // Input: "2025-01-15" → Output: "2568-01-15"
 func ceToThai(ceDate string) string {
+	ceDate = strings.TrimSpace(ceDate)
 	if ceDate == "" {
 		return ""
 	}
-	parts := strings.Split(strings.TrimSpace(ceDate), "-")
-	if len(parts) != 3 {
-		// Try splitting by space in case of datetime
-		subParts := strings.Split(strings.TrimSpace(ceDate), " ")
-		if len(subParts) > 0 {
-			parts = strings.Split(subParts[0], "-")
-		}
+	if idx := strings.IndexAny(ceDate, "T "); idx != -1 {
+		ceDate = ceDate[:idx]
 	}
+	parts := strings.Split(ceDate, "-")
 	if len(parts) != 3 {
 		return ceDate
 	}

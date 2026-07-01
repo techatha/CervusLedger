@@ -1,7 +1,4 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTag } from '@fortawesome/free-solid-svg-icons'
 import { formatNumberInput, formatCurrency } from '@/utils/number.js'
-import { formatBaht } from '@/utils/thai.js'
 
 const DISCOUNT_PRESETS = [
   'ส่วนลดพิเศษ',
@@ -14,13 +11,9 @@ const DISCOUNT_PRESETS = [
 export default function NewSaleFormDiscount({ formData, setFormData }) {
   const setDiscountField = (k, v) => setFormData(p => ({ ...p, [k]: v }))
 
-  const amount = parseFloat(String(formData.amount).replace(/,/g, '') || 0)
-
   return (
     <>
       <div className="section-divider">รายละเอียดส่วนลด</div>
-
-      {/* ─── Title + presets ─────────────────────────────────────── */}
 
       <div className="form-group">
         <label className="form-label form-label-required">หัวข้อส่วนลด / การปรับลดราคา</label>
@@ -45,7 +38,6 @@ export default function NewSaleFormDiscount({ formData, setFormData }) {
         />
       </div>
 
-      {/* ─── Amount + Date ───────────────────────────────────────── */}
       <div className="form-row" style={{ marginTop: '4px' }}>
         <div className="form-group">
           <label className="form-label form-label-required">จำนวนเงินส่วนลด (บาท)</label>
@@ -61,18 +53,6 @@ export default function NewSaleFormDiscount({ formData, setFormData }) {
         </div>
       </div>
 
-      {/* ─── Amount preview ──────────────────────────────────────── */}
-      {amount > 0 && (
-        <div className="nsf-total nsf-total-sell" style={{ marginBottom: '4px' }}>
-          <span className="nsf-total-label nsf-total-label--icon">
-            <FontAwesomeIcon icon={faTag} />
-            ยอดส่วนลด
-          </span>
-          <span className="nsf-total-amount">{formatBaht(amount)}</span>
-        </div>
-      )}
-
-      {/* ─── Notes ──────────────────────────────────────────────── */}
       <div className="form-group" style={{ marginTop: '4px' }}>
         <label className="form-label">รายละเอียดเพิ่มเติม / หมายเหตุ</label>
         <textarea

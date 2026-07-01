@@ -645,6 +645,26 @@ export namespace models {
 
 export namespace settings_handler {
 	
+	export class ClearDataResult {
+	    customers_deleted: number;
+	    pawn_records_deleted: number;
+	    pawn_payments_deleted: number;
+	    principal_changes_deleted: number;
+	    cancelled: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new ClearDataResult(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.customers_deleted = source["customers_deleted"];
+	        this.pawn_records_deleted = source["pawn_records_deleted"];
+	        this.pawn_payments_deleted = source["pawn_payments_deleted"];
+	        this.principal_changes_deleted = source["principal_changes_deleted"];
+	        this.cancelled = source["cancelled"];
+	    }
+	}
 	export class ExportResult {
 	    customers_exported: number;
 	    pawn_records_exported: number;

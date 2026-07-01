@@ -304,7 +304,7 @@ export default function Dashboard() {
             {/* Recent activity */}
             <div className="card db-activity">
               <div className="card-header">
-                <span className="card-title">รายการล่าสุด</span>
+                <span className="card-title">รายการ ซื้อ-ขาย ล่าสุด</span>
                 <button className="btn btn-ghost btn-xs" onClick={() => navigate('/income')}>ดูทั้งหมด</button>
               </div>
               {(!stats.recent_activity || stats.recent_activity.length === 0) ? (
@@ -334,12 +334,12 @@ export default function Dashboard() {
         {/* ── ROW 4: Recent Active Pawns table ── */}
         <div className="card">
           <div className="card-header">
-            <span className="card-title">จำนำล่าสุด (Active)</span>
+            <span className="card-title">การจำนำวันนี้</span>
             <button className="btn btn-ghost btn-xs" onClick={() => navigate('/pawns')}>ดูทั้งหมด</button>
           </div>
           {(!stats.recent_pawns || stats.recent_pawns.length === 0) ? (
             <div className="empty-state" style={{ padding: '24px 0' }}>
-              <div className="empty-state-text">ไม่มีรายการจำนำที่ยังอยู่</div>
+              <div className="empty-state-text">ไม่มีรายการจำนำวันนี้</div>
             </div>
           ) : (
             <div className="table-wrap">

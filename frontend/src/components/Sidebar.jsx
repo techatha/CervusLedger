@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { GetAllSettings } from 'wailsjs/go/settings_handler/SettingsHandler'
+import { GetWiFiDisplayerIP, TestWiFiDisplayerConnection } from 'wailsjs/go/displayer_handler/DisplayerHandler'
 import './Sidebar.css'
 import { SMARTCARD_EVENTS } from '@/utils/smartcard'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -15,6 +16,7 @@ import {
   faClipboardList,
   faHandHoldingDollar,
   faHardDrive,
+  faDisplay,
 } from '@fortawesome/free-solid-svg-icons'
 
 const NAV = [
@@ -56,6 +58,7 @@ const NAV = [
 export default function Sidebar({ cartItems }) {
   const [shopName, setShopName] = useState('ห้างทองแต้ยืนยง')
   const [readerConnected, setReaderConnected] = useState(false)
+  const [displayerConnected, setDisplayerConnected] = useState(false)
 
   useEffect(() => {
     GetAllSettings()
@@ -73,6 +76,37 @@ export default function Sidebar({ cartItems }) {
     }
     window.addEventListener(SMARTCARD_EVENTS.READER_STATUS, handleStatus)
     return () => window.removeEventListener(SMARTCARD_EVENTS.READER_STATUS, handleStatus)
+  }, [])
+
+  useEffect(() => {
+    const checkDisplayerStatus = async () => {
+      try {
+        const ip = await GetWiFiDisplayerIP()
+        if (ip) {
+          const ok = await TestWiFiDisplayerConnection(ip)
+          setDisplayerConnected(ok)
+        } else {
+          setDisplayerConnected(false)
+        }
+      } catch (e) {
+        setDisplayerConnected(false)
+      }
+    }
+
+    checkDisplayerStatus()
+    const interval = setInterval(checkDisplayerStatus, 15000)
+
+    const handleConnect = () => setDisplayerConnected(true)
+    const handleDisconnect = () => setDisplayerConnected(false)
+
+    window.addEventListener('esp32:connected', handleConnect)
+    window.addEventListener('esp32:disconnected', handleDisconnect)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('esp32:connected', handleConnect)
+      window.removeEventListener('esp32:disconnected', handleDisconnect)
+    }
   }, [])
 
   return (
@@ -114,13 +148,22 @@ export default function Sidebar({ cartItems }) {
 
       {/* Footer */}
       <div className="sidebar-footer">
-        <div className="sidebar-version">v1.0.1</div>
-        <div
-          className="sidebar-reader-status"
-          title={readerConnected ? "เครื่องอ่านบัตร: เชื่อมต่ออยู่" : "เครื่องอ่านบัตร: ไม่พบอุปกรณ์"}
-        >
-          <FontAwesomeIcon icon={faHardDrive} className="status-icon" />
-          <span className={`status-dot ${readerConnected ? 'connected' : 'disconnected'}`} />
+        <div className="sidebar-version">v1.0.2</div>
+        <div className="sidebar-status-container">
+          <div
+            className="sidebar-reader-status"
+            title={readerConnected ? "เครื่องอ่านบัตร: เชื่อมต่ออยู่" : "เครื่องอ่านบัตร: ไม่พบอุปกรณ์"}
+          >
+            <FontAwesomeIcon icon={faHardDrive} className="status-icon" />
+            <span className={`status-dot ${readerConnected ? 'connected' : 'disconnected'}`} />
+          </div>
+          <div
+            className="sidebar-displayer-status"
+            title={displayerConnected ? "หน้าจอ QR Code: เชื่อมต่ออยู่" : "หน้าจอ QR Code: ไม่พบอุปกรณ์"}
+          >
+            <FontAwesomeIcon icon={faDisplay} className="status-icon" />
+            <span className={`status-dot ${displayerConnected ? 'connected' : 'disconnected'}`} />
+          </div>
         </div>
       </div>
     </aside>

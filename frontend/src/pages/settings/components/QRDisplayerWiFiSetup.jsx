@@ -108,11 +108,19 @@ export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }
     (async () => {
       let ip = null;
       try { ip = await GetWiFiDisplayerIP(); if (ip) setSavedIP(ip); } catch (_) { }
-      if (!ip) { setDeviceStatus('unknown'); return; }
+      if (!ip) {
+        setDeviceStatus('unknown');
+        window.dispatchEvent(new CustomEvent('esp32:disconnected'));
+        return;
+      }
       try {
         const ok = await TestWiFiDisplayerConnection(ip);
         setDeviceStatus(ok ? 'online' : 'offline');
-      } catch (_) { setDeviceStatus('offline'); }
+        window.dispatchEvent(new CustomEvent(ok ? 'esp32:connected' : 'esp32:disconnected'));
+      } catch (_) {
+        setDeviceStatus('offline');
+        window.dispatchEvent(new CustomEvent('esp32:disconnected'));
+      }
     })();
   }, []);
 
@@ -168,10 +176,21 @@ export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }
   }, []);
 
   const handleRetest = useCallback(async () => {
-    if (!savedIP) { setDeviceStatus('unknown'); return; }
+    if (!savedIP) {
+      setDeviceStatus('unknown');
+      window.dispatchEvent(new CustomEvent('esp32:disconnected'));
+      return;
+    }
     setDeviceStatus('probing');
-    try { setDeviceStatus(await TestWiFiDisplayerConnection(savedIP) ? 'online' : 'offline'); }
-    catch (_) { setDeviceStatus('offline'); }
+    try {
+      const ok = await TestWiFiDisplayerConnection(savedIP);
+      setDeviceStatus(ok ? 'online' : 'offline');
+      window.dispatchEvent(new CustomEvent(ok ? 'esp32:connected' : 'esp32:disconnected'));
+    }
+    catch (_) {
+      setDeviceStatus('offline');
+      window.dispatchEvent(new CustomEvent('esp32:disconnected'));
+    }
   }, [savedIP]);
 
   /* PromptPay save — called by SettingBox's own Save button */
@@ -204,7 +223,12 @@ export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }
       if (shopName) { try { await SetShopName(shopName); } catch (_) { } }
       await syncDevice();
       setWifiSuccess(true); setDeviceStatus('online'); portLatched.current = false;
-    } catch (err) { setWifiError(err.message || String(err)); setDeviceStatus('offline'); }
+      window.dispatchEvent(new CustomEvent('esp32:connected'));
+    } catch (err) {
+      setWifiError(err.message || String(err));
+      setDeviceStatus('offline');
+      window.dispatchEvent(new CustomEvent('esp32:disconnected'));
+    }
     finally { setWifiBusy(false); }
   }, [ssid, password, shopName]);
 

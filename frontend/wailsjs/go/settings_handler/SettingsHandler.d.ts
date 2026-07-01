@@ -3,6 +3,8 @@
 import {settings_handler} from '../models';
 import {context} from '../models';
 
+export function ClearAllData():Promise<settings_handler.ClearDataResult>;
+
 export function DownloadImportTemplate():Promise<void>;
 
 export function ExportToXlsx():Promise<settings_handler.ExportResult>;
