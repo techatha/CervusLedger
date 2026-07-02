@@ -4,6 +4,8 @@ import {
   UpdateGoldItem,
   GetGoldMainTypes,
 } from 'wailsjs/go/gold_item_handler/GoldItemHandler'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCheck } from '@fortawesome/free-solid-svg-icons'
 import './GoldStockForm.css'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -27,6 +29,8 @@ const BLANK = {
   subtype: '',
   purity: '96.5',
   weight_grams: '',
+  no_purity: false,
+  no_weight: false,
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -54,6 +58,8 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
         subtype: item.subtype || '',
         purity: item.purity || '96.5',
         weight_grams: item.weight_grams ? String(item.weight_grams) : '',
+        no_purity: !!item.no_purity,
+        no_weight: !!item.no_weight,
       })
       // If the saved purity isn't in the presets, open custom mode
       const isCustomPurity = !PURITY_PRESETS.some(p => p.value === (item.purity || '96.5'))
@@ -104,11 +110,28 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
   }
 
   // ── Validate & save ───────────────────────────────────────────────────────
+  const handleNoPurityToggle = (checked) => {
+    if (checked) {
+      setForm(p => ({ ...p, no_purity: true, purity: '' }))
+    } else {
+      setForm(p => ({ ...p, no_purity: false, purity: '96.5' }))
+      setPurityMode('preset')
+    }
+  }
+
+  const handleNoWeightToggle = (checked) => {
+    if (checked) {
+      setForm(p => ({ ...p, no_weight: true, weight_grams: '' }))
+    } else {
+      setForm(p => ({ ...p, no_weight: false }))
+    }
+  }
+
   const validate = () => {
     if (!form.type.trim()) return 'กรุณาเลือกหรือกรอกประเภท'
     if (!form.subtype.trim()) return 'กรุณาเลือกหรือกรอกรุ่น / น้ำหนัก'
-    if (!form.purity) return 'กรุณาระบุความบริสุทธิ์'
-    if (!form.weight_grams) return 'กรุณากรอกน้ำหนัก (กรัม)'
+    if (!form.no_purity && !form.purity) return 'กรุณาระบุความบริสุทธิ์'
+    if (!form.no_weight && !form.weight_grams) return 'กรุณากรอกน้ำหนัก (กรัม)'
     return null
   }
 
@@ -122,8 +145,10 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
         id: isEdit ? item.id : 0,
         type: form.type,
         subtype: form.subtype,
-        purity: form.purity,
-        weight_grams: parseFloat(form.weight_grams) || 0,
+        purity: form.no_purity ? '' : form.purity,
+        weight_grams: form.no_weight ? 0 : (parseFloat(form.weight_grams) || 0),
+        no_purity: form.no_purity ? 1 : 0,
+        no_weight: form.no_weight ? 1 : 0,
       }
       if (isEdit) {
         await UpdateGoldItem(payload)
@@ -235,54 +260,114 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
             <span className="gsf-hint">เลือกจากรายการด้านบน หรือพิมพ์ขนาดที่ต้องการ</span>
           </div>
 
+          {/* ── Additional Config Section ────────────────────────── */}
+          <div className="gsf-config-box">
+            <div className="gsf-config-title">ตั้งค่าการระบุข้อมูล</div>
+            <div className="gsf-config-row">
+              <label className={`gsf-config-item ${form.no_purity ? 'gsf-config-item--active' : ''}`}>
+                <span className="gsf-toggle-indicator">
+                  <input
+                    type="checkbox"
+                    checked={form.no_purity}
+                    onChange={e => handleNoPurityToggle(e.target.checked)}
+                    className="gsf-toggle-input"
+                  />
+                  <span className="gsf-toggle-box">
+                    <FontAwesomeIcon icon={faCheck} />
+                  </span>
+                </span>
+                <span className={`gsf-no-pw-title ${form.no_purity ? 'gsf-no-pw-title--active' : ''}`}>
+                  ไม่ระบุความบริสุทธิ์
+                </span>
+              </label>
+
+              <label className={`gsf-config-item ${form.no_weight ? 'gsf-config-item--active' : ''}`}>
+                <span className="gsf-toggle-indicator">
+                  <input
+                    type="checkbox"
+                    checked={form.no_weight}
+                    onChange={e => handleNoWeightToggle(e.target.checked)}
+                    className="gsf-toggle-input"
+                  />
+                  <span className="gsf-toggle-box">
+                    <FontAwesomeIcon icon={faCheck} />
+                  </span>
+                </span>
+                <span className={`gsf-no-pw-title ${form.no_weight ? 'gsf-no-pw-title--active' : ''}`}>
+                  ไม่มีน้ำหนักที่แน่นอน
+                </span>
+              </label>
+            </div>
+          </div>
+
           {/* ── Purity + Weight ───────────────────────────────────── */}
           <div className="form-row form-row-2">
 
             {/* Purity */}
             <div className="form-group">
-              <label className="form-label form-label-required">ความบริสุทธิ์</label>
+              <div className="gsf-field-header">
+                <label className="form-label form-label-required">ความบริสุทธิ์</label>
+                <span className="badge badge-red" style={{ visibility: form.no_purity ? 'visible' : 'hidden' }}>
+                  ไม่ระบุ
+                </span>
+              </div>
 
-              <select
-                className="input"
-                value={purityMode === 'custom' ? '__custom' : form.purity}
-                onChange={handlePuritySelect}
-              >
-                <option value="">— เลือก —</option>
-                {PURITY_PRESETS.map(p => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
-                ))}
-                <option value="__custom">กรอกเอง...</option>
-              </select>
+              {form.no_purity ? (
+                <div className="gsf-unspecified-field">ไม่ระบุความบริสุทธิ์</div>
+              ) : (
+                <>
+                  <select
+                    className="input"
+                    value={purityMode === 'custom' ? '__custom' : form.purity}
+                    onChange={handlePuritySelect}
+                  >
+                    <option value="">— เลือก —</option>
+                    {PURITY_PRESETS.map(p => (
+                      <option key={p.value} value={p.value}>{p.label}</option>
+                    ))}
+                    <option value="__custom">กรอกเอง...</option>
+                  </select>
 
-              {/* Custom purity input — revealed when user picks "กรอกเอง" */}
-              {purityMode === 'custom' && (
-                <input
-                  className="input"
-                  type="number"
-                  min="0"
-                  max="100"
-                  step="0.1"
-                  placeholder="เช่น 80.5"
-                  value={form.purity}
-                  onChange={e => set('purity', e.target.value)}
-                  autoFocus
-                  style={{ marginTop: 6 }}
-                />
+                  {purityMode === 'custom' && (
+                    <input
+                      className="input"
+                      type="number"
+                      min="0"
+                      max="100"
+                      step="0.1"
+                      placeholder="เช่น 80.5"
+                      value={form.purity}
+                      onChange={e => set('purity', e.target.value)}
+                      autoFocus
+                      style={{ marginTop: 6 }}
+                    />
+                  )}
+                </>
               )}
             </div>
 
             {/* Weight */}
             <div className="form-group">
-              <label className="form-label form-label-required">น้ำหนัก (กรัม)</label>
-              <input
-                className="input"
-                type="number"
-                min="0"
-                step="0.0001"
-                placeholder="0.0000"
-                value={form.weight_grams}
-                onChange={e => set('weight_grams', e.target.value)}
-              />
+              <div className="gsf-field-header">
+                <label className="form-label form-label-required">น้ำหนัก (กรัม)</label>
+                <span className="badge badge-red" style={{ visibility: form.no_weight ? 'visible' : 'hidden' }}>
+                  ไม่ระบุ
+                </span>
+              </div>
+
+              {form.no_weight ? (
+                <div className="gsf-unspecified-field">ไม่มีน้ำหนักที่แน่นอน</div>
+              ) : (
+                <input
+                  className="input"
+                  type="number"
+                  min="0"
+                  step="0.0001"
+                  placeholder="0.0000"
+                  value={form.weight_grams}
+                  onChange={e => set('weight_grams', e.target.value)}
+                />
+              )}
             </div>
 
           </div>

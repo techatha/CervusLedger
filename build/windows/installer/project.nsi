@@ -95,6 +95,21 @@ Section
     !insertmacro wails.associateCustomProtocols
 
     !insertmacro wails.writeUninstaller
+
+    # Self-delete installer after it closes
+    SetOutPath $TEMP
+    StrCpy $0 "$TEMP\cleanup_installer.bat"
+    FileOpen $1 $0 w
+    FileWrite $1 '@echo off$\r$\n'
+    FileWrite $1 ':loop$\r$\n'
+    FileWrite $1 'del /f /q "$EXEPATH" > nul 2>&1$\r$\n'
+    FileWrite $1 'if exist "$EXEPATH" ($\r$\n'
+    FileWrite $1 '    timeout /t 1 /nobreak > nul$\r$\n'
+    FileWrite $1 '    goto loop$\r$\n'
+    FileWrite $1 ')$\r$\n'
+    FileWrite $1 'del /f /q "%~f0"$\r$\n'
+    FileClose $1
+    Exec '"$SYSDIR\cmd.exe" /c start "" /min "$0"'
 SectionEnd
 
 Section "uninstall"

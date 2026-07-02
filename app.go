@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	_ "embed"
 )
 
 // App struct
@@ -24,4 +26,20 @@ func (a *App) startup(ctx context.Context) {
 // Greet returns a greeting for the given name
 func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, It's show time!", name)
+}
+
+//go:embed wails.json
+var wailsJSON []byte
+
+// GetVersion returns the product version from wails.json
+func (a *App) GetVersion() string {
+	var config struct {
+		Info struct {
+			ProductVersion string `json:"productVersion"`
+		} `json:"info"`
+	}
+	if err := json.Unmarshal(wailsJSON, &config); err != nil {
+		return "unknown"
+	}
+	return config.Info.ProductVersion
 }

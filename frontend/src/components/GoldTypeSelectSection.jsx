@@ -36,10 +36,12 @@ export default function GoldTypeSelectSection({
         gold_item_id: item.id,
         gold_item_label: `${item.type} ${item.subtype}`,
         weight_grams: item.weight_grams ? String(item.weight_grams) : '',
-        purity: item.purity ? String(item.purity) : '90'
+        purity: item.no_purity ? '' : (item.purity ? String(item.purity) : '96.5'),
+        no_purity: item.no_purity || 0,
+        no_weight: item.no_weight || 0
       })
     } else {
-      onChange({ gold_item_id: 0, gold_item_label: '', weight_grams: '', purity: '0' })
+      onChange({ gold_item_id: 0, gold_item_label: '', weight_grams: '', purity: '0', no_purity: 0, no_weight: 0 })
     }
   }
 

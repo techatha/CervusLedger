@@ -92,6 +92,43 @@ func createTables() {
 		}
 	}
 
+	// Migrate gold_stock: add no_purity and no_weight columns
+	var hasNoPurity, hasNoWeight bool
+	rows, err = DB.Query("PRAGMA table_info(gold_stock)")
+	if err == nil {
+		for rows.Next() {
+			var cid int
+			var name, ctype string
+			var notnull, pk int
+			var dfltVal interface{}
+			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dfltVal, &pk); err == nil {
+				switch name {
+				case "no_purity":
+					hasNoPurity = true
+				case "no_weight":
+					hasNoWeight = true
+				}
+			}
+		}
+		rows.Close()
+	}
+	if !hasNoPurity {
+		_, err = DB.Exec("ALTER TABLE gold_stock ADD COLUMN no_purity INTEGER NOT NULL DEFAULT 0")
+		if err != nil {
+			log.Println("Warning: Failed to add no_purity column:", err)
+		} else {
+			log.Println("Added no_purity column to gold_stock")
+		}
+	}
+	if !hasNoWeight {
+		_, err = DB.Exec("ALTER TABLE gold_stock ADD COLUMN no_weight INTEGER NOT NULL DEFAULT 0")
+		if err != nil {
+			log.Println("Warning: Failed to add no_weight column:", err)
+		} else {
+			log.Println("Added no_weight column to gold_stock")
+		}
+	}
+
 	// Ensure tables exist
 	queries := []string{
 

@@ -110,16 +110,29 @@ export default function PawnDetail({ cartItems, setCartItems }) {
       reloadAll()
     } catch (e) { setError(String(e)) }
   }
-  const handlePayPendingInterest = (selectedIndexes) => {
-    const itemsToAdd = selectedIndexes.map(idx => {
-      const m = pendingMonths[idx]
-      return {
-        type: 'pawn_interest',
-        label: `ชำระดอกเบี้ยตั๋ว #${formatTicket(pawn.ticket_number)}`,
-        weight_baht: 0,
-        price_per_baht: 0,
-        total_amount: pawn.interest_amount,
+  const formatMonthRange = (items) => {
+    if (items.length > 2) {
+      const first = items[0]
+      const last = items[items.length - 1]
+      return `${thaiMonthShort(first.month)} ${first.year + 543} ถึง ${thaiMonthShort(last.month)} ${last.year + 543}`
+    }
+    return items.map(m => `${thaiMonthShort(m.month)} ${m.year + 543}`).join(', ')
+  }
 
+  const handlePayPendingInterest = (selectedIndexes) => {
+    if (selectedIndexes.length === 0) return
+    const itemsToProcess = selectedIndexes.map(idx => pendingMonths[idx])
+    const totalAmount = pawn.interest_amount * itemsToProcess.length
+    const monthLabels = formatMonthRange(itemsToProcess)
+    
+    const combinedItem = {
+      type: 'pawn_interest',
+      label: `ชำระดอกเบี้ยจำนำ`,
+      weight_baht: 0,
+      price_per_baht: 0,
+      total_amount: totalAmount,
+      
+      payments: itemsToProcess.map(m => ({
         pawn_record_id: pawn.id,
         month: m.month,
         year: m.year,
@@ -128,22 +141,28 @@ export default function PawnDetail({ cartItems, setCartItems }) {
         interest_amount: pawn.interest_amount,
         customer_name: pawn.customer_name_display || pawn.customer_name || '',
         ticket_number: pawn.ticket_number
-      }
-    })
+      })),
+      
+      notes: `ตั๋ว #${formatTicket(pawn.ticket_number)} (${pawn.customer_name_display || pawn.customer_name}) - งวด ${monthLabels}`
+    }
 
-    navigate('/sales', { state: { addItems: itemsToAdd } })
+    navigate('/sales', { state: { addItems: [combinedItem] } })
   }
 
   const handleAddToCartPendingInterest = (selectedIndexes) => {
-    const itemsToAdd = selectedIndexes.map(idx => {
-      const m = pendingMonths[idx]
-      return {
-        type: 'pawn_interest',
-        label: `ชำระดอกเบี้ยตั๋ว #${formatTicket(pawn.ticket_number)}`,
-        weight_baht: 0,
-        price_per_baht: 0,
-        total_amount: pawn.interest_amount,
-
+    if (selectedIndexes.length === 0) return
+    const itemsToProcess = selectedIndexes.map(idx => pendingMonths[idx])
+    const totalAmount = pawn.interest_amount * itemsToProcess.length
+    const monthLabels = formatMonthRange(itemsToProcess)
+    
+    const combinedItem = {
+      type: 'pawn_interest',
+      label: `ชำระดอกเบี้ยจำนำ`,
+      weight_baht: 0,
+      price_per_baht: 0,
+      total_amount: totalAmount,
+      
+      payments: itemsToProcess.map(m => ({
         pawn_record_id: pawn.id,
         month: m.month,
         year: m.year,
@@ -152,11 +171,13 @@ export default function PawnDetail({ cartItems, setCartItems }) {
         interest_amount: pawn.interest_amount,
         customer_name: pawn.customer_name_display || pawn.customer_name || '',
         ticket_number: pawn.ticket_number
-      }
-    })
+      })),
+      
+      notes: `ตั๋ว #${formatTicket(pawn.ticket_number)} (${pawn.customer_name_display || pawn.customer_name}) - งวด ${monthLabels}`
+    }
 
-    setCartItems(prev => [...prev, ...itemsToAdd])
-    alert(`เพิ่มดอกเบี้ยค้างชำระ ${itemsToAdd.length} งวดลงในตะกร้าแล้ว`)
+    setCartItems(prev => [...prev, combinedItem])
+    alert(`เพิ่มดอกเบี้ยค้างชำระ ${itemsToProcess.length} งวดลงในตะกร้าแล้ว (รวมเป็น 1 รายการ)`)
   }
 
   if (loading) return <div className="page-view"><div className="empty-state"><div className="empty-state-text">กำลังโหลด...</div></div></div>
@@ -287,6 +308,7 @@ export default function PawnDetail({ cartItems, setCartItems }) {
         modal === 'payment' && (
           <RecordPaymentModal
             pawn={pawn}
+            payments={payments}
             customerName={pawn.customer_name_display || ''}
             onSaved={() => { setModal(null); load(); reloadAll() }}
             onClose={() => setModal(null)}

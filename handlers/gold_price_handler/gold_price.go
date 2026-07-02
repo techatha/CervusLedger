@@ -118,15 +118,15 @@ func (h *GoldPriceHandler) GetTodayPrice() (models.GoldPrice, error) {
 	}
 
 	// 2. Cache miss -> Primary Strategy: Scraper
-	barBuy, barSell, omBuy, omSell, updateTime, err := h.scrapeGoldTradersWebsite()
+	barBuy, barSell, omBuy, omSell, date, updateTime, err := h.scrapeGoldTradersWebsite()
 	if err != nil {
 		// Scraper Failed? -> Secondary Strategy: Fetch from the JSON API
-		barBuy, barSell, omBuy, omSell, updateTime, err = h.fetchPricesFromAPI()
+		barBuy, barSell, omBuy, omSell, date, updateTime, err = h.fetchPricesFromAPI()
 	}
 
 	// 3. If either API or Scraper succeeded, write back to local cache
 	if err == nil && barBuy > 0 && barSell > 0 {
-		return h.savePriceIfNewer(today, updateTime, barBuy, barSell, omBuy, omSell)
+		return h.savePriceIfNewer(date, updateTime, barBuy, barSell, omBuy, omSell)
 	}
 
 	// 4. TOTAL FAILSAFE: Internet completely down? Fetch the last known historical price
@@ -157,25 +157,22 @@ func (h *GoldPriceHandler) GetTodayPrice() (models.GoldPrice, error) {
 
 // ForceScrapePrice triggers an immediate scrape of the website and returns it
 func (h *GoldPriceHandler) ForceScrapePrice() (models.GoldPrice, error) {
-	today := time.Now().Format("2006-01-02")
-	barBuy, barSell, omBuy, omSell, updateTime, err := h.scrapeGoldTradersWebsite()
+	barBuy, barSell, omBuy, omSell, date, updateTime, err := h.scrapeGoldTradersWebsite()
 	if err != nil {
 		return models.GoldPrice{}, fmt.Errorf("force scrape failed: %w", err)
 	}
-	return h.savePriceIfNewer(today, updateTime, barBuy, barSell, omBuy, omSell)
+	return h.savePriceIfNewer(date, updateTime, barBuy, barSell, omBuy, omSell)
 }
 
 // fetchAndSaveLatest reaches out to the API (or scraper) and saves to the DB unconditionally if newer.
 func (h *GoldPriceHandler) fetchAndSaveLatest() {
-	today := time.Now().Format("2006-01-02")
-
-	barBuy, barSell, omBuy, omSell, updateTime, err := h.scrapeGoldTradersWebsite()
+	barBuy, barSell, omBuy, omSell, date, updateTime, err := h.scrapeGoldTradersWebsite()
 	if err != nil {
-		barBuy, barSell, omBuy, omSell, updateTime, err = h.fetchPricesFromAPI()
+		barBuy, barSell, omBuy, omSell, date, updateTime, err = h.fetchPricesFromAPI()
 	}
 
 	if err == nil && barBuy > 0 && barSell > 0 {
-		_, _ = h.savePriceIfNewer(today, updateTime, barBuy, barSell, omBuy, omSell)
+		_, _ = h.savePriceIfNewer(date, updateTime, barBuy, barSell, omBuy, omSell)
 	}
 }
 

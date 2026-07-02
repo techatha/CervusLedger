@@ -33,13 +33,24 @@ export default function CustomerList() {
   const [error, setError] = useState(null)
   const [modal, setModal] = useState(null)      // null | 'new' | id
   const [confirmDelete, setConfirmDelete] = useState(null)      // customer obj
+  const [deleteSuccess, setDeleteSuccess] = useState(null)      // deleted customer name
 
   const load = useCallback(async (q = '') => {
     setLoading(true)
     setError(null)
     try {
       const data = await GetCustomers(q)
-      setCustomers(data || [])
+      const sorted = (data || []).sort((a, b) => {
+        const nameA = (a.firstname || '').trim()
+        const nameB = (b.firstname || '').trim()
+        const cmp = nameA.localeCompare(nameB, 'th')
+        if (cmp !== 0) return cmp
+        
+        const lastA = (a.lastname || '').trim()
+        const lastB = (b.lastname || '').trim()
+        return lastA.localeCompare(lastB, 'th')
+      })
+      setCustomers(sorted)
     } catch (e) {
       setError('โหลดข้อมูลลูกค้าไม่สำเร็จ: ' + e)
     } finally {
@@ -61,9 +72,12 @@ export default function CustomerList() {
 
   const handleDelete = async () => {
     if (!confirmDelete) return
+    const deletedName = fullName(confirmDelete)
     try {
       await DeleteCustomer(confirmDelete.id)
       setConfirmDelete(null)
+      setDeleteSuccess(deletedName)
+      setTimeout(() => setDeleteSuccess(null), 3000)
       load(search)
     } catch (e) {
       alert('ลบไม่สำเร็จ: ' + e)
@@ -104,6 +118,12 @@ export default function CustomerList() {
           <button className="btn btn-ghost btn-sm" onClick={() => setSearch('')}>ล้าง</button>
         )}
       </div>
+
+      {deleteSuccess && (
+        <div className="alert alert-success" style={{ marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+          ✅ ลบลูกค้า <strong>{deleteSuccess}</strong> สำเร็จ
+        </div>
+      )}
 
       {error && <div className="alert alert-error">{error}</div>}
 

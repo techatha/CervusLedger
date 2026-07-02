@@ -59,6 +59,16 @@
 }
 
 /* ─── Table Cell Styles ──────────────────────────────────── */
+.gl-type-section .table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.gl-type-section .table th,
+.gl-type-section .table td {
+  vertical-align: middle;
+}
+
 .gl-subtype {
   font-weight: 500;
 }
@@ -71,7 +81,6 @@
 }
 
 .gl-amount {
-  text-align: left;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
@@ -106,12 +115,13 @@ tr:hover .gl-row-actions {
 /* ─── History Mini Chips ──────────────────────────────────── */
 .gl-history-chips {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   flex-wrap: nowrap;
   overflow-x: auto;
   scrollbar-width: none;
+  -ms-overflow-style: none; /* Hide scrollbar for IE/Edge */
   align-items: center;
-  height: 48px;
+  height: 32px;
 }
 
 .gl-history-chips::-webkit-scrollbar {
@@ -123,26 +133,26 @@ tr:hover .gl-row-actions {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  padding: 6px 10px;
-  min-width: 72px;
+  border-radius: 4px;
+  padding: 2px 8px;
+  min-width: 60px;
   border: 1px solid transparent;
   font-variant-numeric: tabular-nums;
   cursor: default;
 }
 
 .gl-history-chip-date {
-  font-size: 10.5px;
+  font-size: 9px;
   color: var(--text-muted);
   white-space: nowrap;
-  line-height: 1.2;
-  margin-bottom: 3px;
+  line-height: 1.1;
+  margin-bottom: 1px;
 }
 
 .gl-history-chip-val {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.1;
 }
 
 .gl-history-chip-up {
@@ -167,4 +177,18 @@ tr:hover .gl-row-actions {
   font-size: 12px;
   color: var(--text-disabled);
   font-style: italic;
+}
+
+/* ─── No Purity/Weight Badge ─────────────────────────────── */
+.gl-no-pw-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--red, #D45C5C);
+  background: var(--red-bg, rgba(212, 92, 92, 0.1));
+  border: 1px solid rgba(212, 92, 92, 0.25);
+  white-space: nowrap;
 }

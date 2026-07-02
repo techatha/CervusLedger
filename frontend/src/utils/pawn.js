@@ -9,23 +9,13 @@
  * @param {Array}  [payments] - Array of payment objects (each with `month` 1-12 and `year` in CE)
  * @returns {Array<{month: number, year: number}>} Pending months (month 1-12, year CE)
  */
-export function getPendingMonths(pawn, payments = []) {
-  if (!pawn || pawn.status !== 'active' || !pawn.pawned_date) return []
-
-  // 1. Get today's date and strip time to exactly 00:00:00
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-
+export function getLatestPaidMonth(pawn, payments = []) {
+  if (!pawn || !pawn.pawned_date) return null
+  
   const pawnDate = new Date(pawn.pawned_date)
-  pawnDate.setHours(0, 0, 0, 0)
-  const dueDay = pawnDate.getDate()
-
-  // Default to the pawn date if no payments exist
   let latestMonth = pawnDate.getMonth()       // 0-indexed (0-11)
   let latestYear  = pawnDate.getFullYear()    // CE year
 
-  // 2. Determine the latest paid month/year
-  //    Priority: full payments array > pawn.last_paid_month/year > pawn date
   if (payments && payments.length > 0) {
     const sorted = [...payments].sort((a, b) => {
       if (b.year !== a.year) return b.year - a.year
@@ -37,6 +27,26 @@ export function getPendingMonths(pawn, payments = []) {
     latestMonth = pawn.last_paid_month - 1  // Convert 1-12 to 0-11
     latestYear  = pawn.last_paid_year
   }
+
+  return { month: latestMonth, year: latestYear }
+}
+
+export function getPendingMonths(pawn, payments = []) {
+  if (!pawn || pawn.status !== 'active' || !pawn.pawned_date) return []
+
+  // 1. Get today's date and strip time to exactly 00:00:00
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+
+  const pawnDate = new Date(pawn.pawned_date)
+  pawnDate.setHours(0, 0, 0, 0)
+  const dueDay = pawnDate.getDate()
+
+  const latest = getLatestPaidMonth(pawn, payments)
+  if (!latest) return []
+  
+  let latestMonth = latest.month
+  let latestYear = latest.year
 
   const pending = []
 

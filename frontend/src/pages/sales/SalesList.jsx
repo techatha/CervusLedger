@@ -5,7 +5,7 @@ import NewSaleForm from './NewSaleForm'
 import './SalesList.css'
 import GoldPriceDashboard from '@/components/GoldPriceDashboard'
 import { CreateSale, GetSetting } from 'wailsjs/go/sale_handler/SaleHandler.js'
-import { RecordPayment } from 'wailsjs/go/pawn_handler/PawnHandler.js'
+import { RecordPayment, AddPrincipalChange } from 'wailsjs/go/pawn_handler/PawnHandler.js'
 import { SendQRToDisplay, SendSuccessToDisplay, SendFailToDisplay } from 'wailsjs/go/displayer_handler/DisplayerHandler.js'
 import PromptPayQR from './components/saleList/PromptPayQR'
 import SalesCart from './components/saleList/SalesCart'
@@ -110,12 +110,12 @@ export default function SalesList({ cartItems, setCartItems }) {
       for (const item of cartItems) {
         const currentItem = { ...item } // Clone state
 
-        // 1. ถ้ารายการเป็น "รายรับ" (ขายทอง หรือ รับดอกเบี้ย) ให้ Push ลง Stack
-        if (currentItem.type === 'sell' || currentItem.type === 'pawn_interest') {
+        // 1. ถ้ารายการเป็น "รายรับ" (ขายทอง หรือ รับดอกเบี้ย หรือ ลดต้นจำนำ) ให้ Push ลง Stack
+        if (currentItem.type === 'sell' || currentItem.type === 'pawn_interest' || (currentItem.type === 'pawn_principal_change' && currentItem.change_type === 'reduction')) {
           revenueStack.push(currentItem)
         }
-        // 2. ถ้ารายการเป็น "รับซื้อ (Buy)" มันคือรายจ่าย ให้ข้าม Stack และบันทึกตรงๆ
-        else if (currentItem.type === 'buy') {
+        // 2. ถ้ารายการเป็น "รับซื้อ (Buy)" หรือ "เพิ่มต้นจำนำ" มันคือรายจ่าย ให้ข้าม Stack และบันทึกตรงๆ
+        else if (currentItem.type === 'buy' || (currentItem.type === 'pawn_principal_change' && currentItem.change_type === 'increase')) {
           mergedCart.push(currentItem)
         }
         // 3. ถ้ารายการเป็น "ส่วนลด (Discount)"
@@ -130,6 +130,7 @@ export default function SalesList({ cartItems, setCartItems }) {
             if (topItem.total_amount >= remainingDiscount) {
               // ยอดรายรับ มากกว่า/เท่ากับ ส่วนลด -> หักแล้วดันกลับเข้า Stack
               topItem.total_amount -= remainingDiscount
+
               topItem.notes = topItem.notes
                 ? `${topItem.notes} | หัก(${discountRefText}: ${remainingDiscount}บ.)`
                 : `หัก(${discountRefText}: ${remainingDiscount}บ.)`
@@ -170,16 +171,30 @@ export default function SalesList({ cartItems, setCartItems }) {
       // ── SAVE TO BACKEND ──
       for (const item of mergedCart) {
         if (item.type === 'pawn_interest') {
-          await RecordPayment({
-            pawn_record_id: item.pawn_record_id,
-            month: item.month,
-            year: item.year,
-            paid_date: item.paid_date,
-            notes: item.notes,
-            interest_amount: item.interest_amount,
-            customer_name: item.customer_name,
-            ticket_number: item.ticket_number,
-          })
+          const paymentsToProcess = item.payments || [item]
+          let remainingTotal = item.total_amount
+
+          for (const p of paymentsToProcess) {
+            const alloc = Math.min(p.interest_amount, remainingTotal)
+            
+            await RecordPayment({
+              pawn_record_id: p.pawn_record_id,
+              month: p.month,
+              year: p.year,
+              paid_date: p.paid_date,
+              notes: p.notes,
+              interest_amount: alloc,
+              customer_name: p.customer_name,
+              ticket_number: p.ticket_number,
+            })
+            
+            remainingTotal -= alloc
+            if (remainingTotal < 0) remainingTotal = 0
+          }
+        } else if (item.type === 'pawn_principal_change') {
+          const { label, total_amount, price_per_baht, weight_baht, type, original_notes, cart_notes, ...cleanInput } = item
+          cleanInput.notes = original_notes || ''
+          await AddPrincipalChange(cleanInput)
         } else {
           // ถอด label ออกก่อนส่งให้ Backend
           const { label, ...cleanInput } = item
@@ -210,9 +225,9 @@ export default function SalesList({ cartItems, setCartItems }) {
 
   // Example modification inside the main transaction table calculator
   const mainTotalAmount = cartItems.reduce((acc, item) => {
-    if (item.type === 'sell' || item.type === 'pawn_interest') {
+    if (item.type === 'sell' || item.type === 'pawn_interest' || (item.type === 'pawn_principal_change' && item.change_type === 'reduction')) {
       return acc + item.total_amount;
-    } else if (item.type === 'buy' || item.type === 'discount') {
+    } else if (item.type === 'buy' || item.type === 'discount' || (item.type === 'pawn_principal_change' && item.change_type === 'increase')) {
       return acc - item.total_amount; // Subtracts buybacks and active discounts from total customer payment due
     }
     return acc;

@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { GetAllSettings } from 'wailsjs/go/settings_handler/SettingsHandler'
 import { GetWiFiDisplayerIP, TestWiFiDisplayerConnection } from 'wailsjs/go/displayer_handler/DisplayerHandler'
+import { GetVersion } from 'wailsjs/go/main/App'
 import './Sidebar.css'
 import { SMARTCARD_EVENTS } from '@/utils/smartcard'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -56,9 +57,10 @@ const NAV = [
 ]
 
 export default function Sidebar({ cartItems }) {
-  const [shopName, setShopName] = useState('ห้างทองแต้ยืนยง')
+  const [shopName, setShopName] = useState('ร้านทอง')
   const [readerConnected, setReaderConnected] = useState(false)
   const [displayerConnected, setDisplayerConnected] = useState(false)
+  const [version, setVersion] = useState('')
 
   useEffect(() => {
     GetAllSettings()
@@ -68,6 +70,10 @@ export default function Sidebar({ cartItems }) {
         }
       })
       .catch(e => console.error('Failed to load shop name in sidebar:', e))
+
+    GetVersion()
+      .then(v => setVersion(v))
+      .catch(e => console.error('Failed to load version:', e))
   }, [])
 
   useEffect(() => {
@@ -148,7 +154,7 @@ export default function Sidebar({ cartItems }) {
 
       {/* Footer */}
       <div className="sidebar-footer">
-        <div className="sidebar-version">v1.0.2</div>
+        <div className="sidebar-version">{version ? `v${version}` : ''}</div>
         <div className="sidebar-status-container">
           <div
             className="sidebar-reader-status"

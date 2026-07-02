@@ -31,7 +31,7 @@ func (h *SettingsHandler) ClearAllData() (*ClearDataResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("dialog error: %w", err)
 	}
-	if result != "ลบทั้งหมด" && result != "Yes" {
+	if result != "ลบทั้งหมด" && result != "Yes" && result != "Ok" && result != "OK" {
 		return &ClearDataResult{Cancelled: true}, nil
 	}
 

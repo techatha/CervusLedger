@@ -5,6 +5,7 @@ import NewSaleFormBuy from '../sales/components/newSaleForm/Buy.jsx'
 import '../sales/NewSaleForm.css'
 
 import { getLocalISOString } from '@/utils/date'
+import { formatBaht } from '@/utils/thai.js'
 
 const today = () => getLocalISOString().slice(0, 10)
 
@@ -42,7 +43,7 @@ export default function NewPurchaseModal({ onClose }) {
   }, [])
 
   const handleSubmit = (e) => {
-    e.preventDefault()
+    if (e && e.preventDefault) e.preventDefault()
     setError(null)
 
     if (!formData.customer_id) return setError('กรุณาเลือกลูกค้าสำหรับการรับซื้อทอง')
@@ -72,6 +73,20 @@ export default function NewPurchaseModal({ onClose }) {
     navigate('/sales', { state: { addItems: [itemToAdd] } })
   }
 
+  const parseNum = (v) => parseFloat(String(v ?? '').replace(/,/g, '')) || 0
+  const footerTotal = parseNum(formData.total_amount)
+  const footerLabel = 'ยอดรับซื้อ'
+  const footerColor = 'var(--amber)'
+
+  const footerBadge = (() => {
+    if (formData.is_override) {
+      const diff = parseNum(formData.override_diff)
+      if (diff === 0) return null
+      return `${diff > 0 ? '+' : '-'}${formatBaht(Math.abs(diff))}`
+    }
+    return null
+  })()
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal nsf-modal" onClick={e => e.stopPropagation()}>
@@ -96,18 +111,35 @@ export default function NewPurchaseModal({ onClose }) {
           )}
         </div>
         <div className="modal-footer">
-          <button type="button" className="btn btn-ghost" onClick={onClose}>
-            ยกเลิก
-          </button>
-          <button
-            type="button"
-            className="btn btn-primary"
-            onClick={handleSubmit}
-            style={{ background: 'var(--amber)', color: '#fff', border: 'none' }}
-            disabled={!todayPrice}
-          >
-            ใส่ตะกร้าและไปหน้ารายการขาย
-          </button>
+          <div className="nsf-footer-summary">
+            <div className="nsf-footer-summary-row">
+              <span className="nsf-footer-total-label">{footerLabel}</span>
+              {footerBadge && (
+                <span className="nsf-footer-badge-plain nsf-footer-badge-plain--buy">
+                  ปรับราคา {footerBadge}
+                </span>
+              )}
+            </div>
+            <div className="nsf-footer-summary-row">
+              <span className="nsf-footer-total-amount" style={{ color: footerColor }}>
+                {formatBaht(footerTotal)}
+              </span>
+            </div>
+          </div>
+          <div className="nsf-footer-actions">
+            <button type="button" className="btn btn-ghost" onClick={onClose}>
+              ยกเลิก
+            </button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={handleSubmit}
+              style={{ background: 'var(--amber)', color: '#fff', border: 'none' }}
+              disabled={!todayPrice}
+            >
+              ใส่ตะกร้าและไปหน้ารายการขาย
+            </button>
+          </div>
         </div>
       </div>
     </div>

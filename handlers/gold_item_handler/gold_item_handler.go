@@ -26,7 +26,7 @@ func (h *GoldItemHandler) Startup(ctx context.Context) {
 
 func (h *GoldItemHandler) ListGoldItems(status string) ([]models.GoldItem, error) {
 	query := `
-		SELECT id, type, subtype, purity, weight_grams, created_at
+		SELECT id, type, subtype, purity, weight_grams, no_purity, no_weight, created_at
 		FROM gold_stock
 		ORDER BY type ASC, subtype ASC
 	`
@@ -40,7 +40,7 @@ func (h *GoldItemHandler) ListGoldItems(status string) ([]models.GoldItem, error
 	for rows.Next() {
 		var g models.GoldItem
 		if err := rows.Scan(
-			&g.ID, &g.Type, &g.Subtype, &g.Purity, &g.WeightGrams, &g.CreatedAt,
+			&g.ID, &g.Type, &g.Subtype, &g.Purity, &g.WeightGrams, &g.NoPurity, &g.NoWeight, &g.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan gold stock: %w", err)
 		}
@@ -52,10 +52,10 @@ func (h *GoldItemHandler) ListGoldItems(status string) ([]models.GoldItem, error
 func (h *GoldItemHandler) GetGoldItem(id int) (models.GoldItem, error) {
 	var g models.GoldItem
 	err := db.DB.QueryRow(`
-		SELECT id, type, subtype, purity, weight_grams, created_at
+		SELECT id, type, subtype, purity, weight_grams, no_purity, no_weight, created_at
 		FROM gold_stock WHERE id = ?
 	`, id).Scan(
-		&g.ID, &g.Type, &g.Subtype, &g.Purity, &g.WeightGrams, &g.CreatedAt,
+		&g.ID, &g.Type, &g.Subtype, &g.Purity, &g.WeightGrams, &g.NoPurity, &g.NoWeight, &g.CreatedAt,
 	)
 	if err != nil {
 		return g, fmt.Errorf("get gold stock %d: %w", id, err)
@@ -65,9 +65,9 @@ func (h *GoldItemHandler) GetGoldItem(id int) (models.GoldItem, error) {
 
 func (h *GoldItemHandler) CreateGoldItem(input models.GoldItemInput) (models.GoldItem, error) {
 	res, err := db.DB.Exec(`
-		INSERT INTO gold_stock (type, subtype, purity, weight_grams)
-		VALUES (?, ?, ?, ?)
-	`, input.Type, input.Subtype, input.Purity, input.WeightGrams)
+		INSERT INTO gold_stock (type, subtype, purity, weight_grams, no_purity, no_weight)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, input.Type, input.Subtype, input.Purity, input.WeightGrams, input.NoPurity, input.NoWeight)
 	if err != nil {
 		return models.GoldItem{}, fmt.Errorf("create gold stock: %w", err)
 	}
@@ -78,9 +78,9 @@ func (h *GoldItemHandler) CreateGoldItem(input models.GoldItemInput) (models.Gol
 func (h *GoldItemHandler) UpdateGoldItem(input models.GoldItemInput) error {
 	_, err := db.DB.Exec(`
 		UPDATE gold_stock
-		SET type = ?, subtype = ?, purity = ?, weight_grams = ?
+		SET type = ?, subtype = ?, purity = ?, weight_grams = ?, no_purity = ?, no_weight = ?
 		WHERE id = ?
-	`, input.Type, input.Subtype, input.Purity, input.WeightGrams, input.ID)
+	`, input.Type, input.Subtype, input.Purity, input.WeightGrams, input.NoPurity, input.NoWeight, input.ID)
 	return err
 }
 

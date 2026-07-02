@@ -3,8 +3,10 @@ import { ImportFromXlsx, DownloadImportTemplate, ExportToXlsx, ClearAllData } fr
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload, faUpload, faFileArrowDown, faTriangleExclamation } from '@fortawesome/free-solid-svg-icons';
 import SettingBox from './SettingBox';
+import { usePawnCache } from '@/context/PawnCacheContext';
 
 export default function ImportDataSettings() {
+  const { reloadAll } = usePawnCache();
   const [importing, setImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
   const [importError, setImportError] = useState(null);
@@ -27,6 +29,7 @@ export default function ImportDataSettings() {
       const result = await ImportFromXlsx();
       if (result && !result.cancelled) {
         setImportResult(result);
+        reloadAll();
       }
     } catch (e) {
       setImportError('นำเข้าไม่สำเร็จ: ' + e);
@@ -73,6 +76,7 @@ export default function ImportDataSettings() {
       const result = await ClearAllData();
       if (result && !result.cancelled) {
         setClearResult(result);
+        reloadAll();
       }
     } catch (e) {
       setClearError('ลบข้อมูลไม่สำเร็จ: ' + e);

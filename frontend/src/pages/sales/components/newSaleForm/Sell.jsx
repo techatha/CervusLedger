@@ -139,6 +139,11 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
           {formData.calculated_gold_price > 0 && (
             <div className="nsf-total-breakdown" style={{ marginTop: '14px' }}>
               ราคาทอง: {formatBaht(formData.calculated_gold_price)}
+              {formData.weight_grams && formData.purity && (
+                <span style={{ marginLeft: '6px', opacity: 0.8 }}>
+                  ({formatNumberInput(formData.price_per_baht)} × {formData.purity}% × {formData.weight_grams} ก.)
+                </span>
+              )}
               {formData.labor_fee
                 ? ` + ค่ากำเหน็จ: ${formatBaht(parseFloat(String(formData.labor_fee).replace(/,/g, '')))}`
                 : ''}

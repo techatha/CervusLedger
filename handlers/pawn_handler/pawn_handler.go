@@ -409,6 +409,35 @@ func (h *PawnHandler) AddPrincipalChange(input models.PrincipalChangeInput) erro
 		return fmt.Errorf("update pawn interest: %w", err)
 	}
 
+	// 3. Auto-log as income/expense
+	var ticketNumber int
+	var customerName string
+	err = tx.QueryRow(`
+		SELECT pr.ticket_number, COALESCE(c.prefix || ' ' || c.firstname || ' ' || c.lastname, 'ไม่พบข้อมูลลูกค้า')
+		FROM pawn_records pr
+		LEFT JOIN customers c ON c.id = pr.customer_id
+		WHERE pr.id = ?
+	`, input.PawnRecordID).Scan(&ticketNumber, &customerName)
+	if err == nil {
+		ieType := "income"
+		category := "ลดต้นจำนำ"
+		desc := fmt.Sprintf("ลดต้นจำนำ ตั๋ว %04d (%s)", ticketNumber, customerName)
+		
+		if input.ChangeType == "increase" {
+			ieType = "expense"
+			category = "เพิ่มต้นจำนำ"
+			desc = fmt.Sprintf("เพิ่มต้นจำนำ ตั๋ว %04d (%s)", ticketNumber, customerName)
+		}
+		
+		_, err = tx.Exec(`
+			INSERT INTO income_expenses (type, category, amount, notes, source, date)
+			VALUES (?, ?, ?, ?, 'auto', ?)
+		`, ieType, category, input.Amount, desc, dateVal)
+		if err != nil {
+			return fmt.Errorf("auto income/expense: %w", err)
+		}
+	}
+
 	return tx.Commit()
 }
 

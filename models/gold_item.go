@@ -6,6 +6,8 @@ type GoldItem struct {
 	Subtype     string  `json:"subtype"` // e.g. 1 บาท, 2 บาท, 1 กรัม, ครึ่งสลึง
 	Purity      string  `json:"purity"`
 	WeightGrams float64 `json:"weight_grams"`
+	NoPurity    int     `json:"no_purity"`
+	NoWeight    int     `json:"no_weight"`
 	CreatedAt   string  `json:"created_at"`
 }
 
@@ -15,6 +17,8 @@ type GoldItemInput struct {
 	Subtype     string  `json:"subtype"`
 	Purity      string  `json:"purity"`
 	WeightGrams float64 `json:"weight_grams"`
+	NoPurity    int     `json:"no_purity"`
+	NoWeight    int     `json:"no_weight"`
 }
 
 type GoldStockLog struct {

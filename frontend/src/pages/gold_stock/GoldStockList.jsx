@@ -131,6 +131,8 @@ export default function GoldStockList() {
         subtype: item.subtype,
         weight: item.weight_grams || 0,
         purity: item.purity || '—',
+        no_purity: item.no_purity || 0,
+        no_weight: item.no_weight || 0,
         amtStr,
         history,
         catalogItem: item,
@@ -217,15 +219,15 @@ export default function GoldStockList() {
 
             <div className="card">
               <div className="table-wrap">
-                <table className="table" style={{ tableLayout: 'fixed', width: '100%' }}>
+                <table className="table">
                   <thead>
                     <tr>
-                      <th style={{ width: 220 }}>รายการ</th>
-                      <th style={{ width: 110 }}>น้ำหนัก (กรัม)</th>
-                      <th style={{ width: 110 }}>ความบริสุทธิ์</th>
-                      <th style={{ width: 360 }}>บันทึกล่าสุด</th>
-                      <th style={{ width: 80 }}>คงเหลือ</th>
-                      <th></th>
+                      <th className="col-200">รายการ</th>
+                      <th className="col-120">น้ำหนัก (กรัม)</th>
+                      <th className="col-120">ความบริสุทธิ์</th>
+                      <th className="col-300">บันทึกล่าสุด</th>
+                      <th className="col-100" style={{ textAlign: 'right' }}>คงเหลือ</th>
+                      <th className="col-120"></th>
                     </tr>
                   </thead>
                   <tbody>
@@ -233,18 +235,26 @@ export default function GoldStockList() {
                       <tr key={row.gold_item_id}>
                         <td className="gl-subtype">{group.mainType} {row.subtype}</td>
                         <td className="gl-unit-weight">
-                          {row.weight > 0 ? row.weight.toFixed(2) : '—'}
+                          {row.no_weight ? (
+                            <span className="gl-no-pw-badge">ไม่มีนำหนักที่แน่นอน</span>
+                          ) : (
+                            row.weight > 0 ? row.weight.toFixed(2) : '—'
+                          )}
                         </td>
                         <td className="gl-purity">
-                          {row.purity !== '—' ? row.purity + '%' : '—'}
+                          {row.no_purity ? (
+                            <span className="gl-no-pw-badge">ไม่ระบุความบริสุธท์</span>
+                          ) : (
+                            row.purity !== '—' ? row.purity + '%' : '—'
+                          )}
                         </td>
                         <td className="gl-history">
                           <HistoryMiniChart history={row.history} />
                         </td>
-                        <td className="gl-amount">
+                        <td className="gl-amount" style={{ textAlign: 'right' }}>
                           {row.amtStr || '0'}
                         </td>
-                        <td className="gl-row-actions" onClick={e => e.stopPropagation()}>
+                        <td className="gl-row-actions col-120" onClick={e => e.stopPropagation()}>
                           {row.catalogItem && (
                             <>
                               <button

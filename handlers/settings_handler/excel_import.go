@@ -87,7 +87,7 @@ func (h *SettingsHandler) ImportFromXlsx() (*ImportResult, error) {
 	if err != nil {
 		return nil, fmt.Errorf("dialog error: %w", err)
 	}
-	if result != "นำเข้า" && result != "Yes" {
+	if result != "นำเข้า" && result != "Yes" && result != "Ok" && result != "OK" {
 		return &ImportResult{Cancelled: true}, nil
 	}
 

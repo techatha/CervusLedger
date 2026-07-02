@@ -8,12 +8,12 @@
   "frontend:dev:serverUrl": "auto",
   "author": {
     "name": "Techatham Panthumsinchai",
-    "email": "techatham_p@cmu.ac.th"
+    "email": "bay.techatham.p@gmail.com"
   },
   "info": {
     "companyName": "Techatham Panthumsinchai",
     "productName": "Cervus Ledger",
-    "productVersion": "1.0.0",
+    "productVersion": "1.0.3",
     "copyright": "Copyright © 2026 Techatham Panthumsinchai. All rights reserved.",
     "comments": "CervusLedger gold pawn shop management ledger"
   }

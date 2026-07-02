@@ -28,7 +28,7 @@ export default function PawnList() {
 
   const [status, setStatus] = useState('active')
   const [search, setSearch] = useState('')
-  const [sortOrder, setSortOrder] = useState('desc')
+  const [sortOrder, setSortOrder] = useState('asc')
   const [showNew, setShowNew] = useState(false)
 
   // In-memory filter helper
@@ -201,6 +201,27 @@ export default function PawnList() {
 
       {/* Toolbar */}
       <div className="pl-toolbar">
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 1, maxWidth: 380 }}>
+          <div className="search-wrap">
+            <span className="search-icon">
+              <FontAwesomeIcon icon={faMagnifyingGlass} />
+            </span>
+            <input
+              className="input search-input"
+              placeholder="ตั๋ว, ชื่อ, รายการ..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          <button
+            className="pl-sort-btn"
+            onClick={() => setSortOrder(p => p === 'asc' ? 'desc' : 'asc')}
+            title="เรียงลำดับเลขตั๋ว"
+          >
+            <FontAwesomeIcon icon={sortOrder === 'asc' ? faArrowDownShortWide : faArrowDownWideShort} />
+          </button>
+        </div>
+
         {search ? (
           <div style={{ fontWeight: 500, color: 'var(--text-secondary)', fontSize: 14 }}>
             กำลังค้นหาคำว่า "{search}"...
@@ -227,27 +248,6 @@ export default function PawnList() {
             })}
           </div>
         )}
-
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <div className="search-wrap" style={{ maxWidth: 280 }}>
-            <span className="search-icon">
-              <FontAwesomeIcon icon={faMagnifyingGlass} />
-            </span>
-            <input
-              className="input search-input"
-              placeholder="ตั๋ว, ชื่อ, รายการ..."
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-            />
-          </div>
-          <button
-            className="pl-sort-btn"
-            onClick={() => setSortOrder(p => p === 'asc' ? 'desc' : 'asc')}
-            title="เรียงลำดับเลขตั๋ว"
-          >
-            <FontAwesomeIcon icon={sortOrder === 'asc' ? faArrowDownShortWide : faArrowDownWideShort} />
-          </button>
-        </div>
       </div>
 
       {error && <div className="alert alert-error">{error}</div>}
