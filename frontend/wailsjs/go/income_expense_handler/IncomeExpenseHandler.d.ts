@@ -24,3 +24,5 @@ export function ListIncomeExpense(arg1:models.IncomeExpenseFilter):Promise<Array
 export function SaveDailyCash(arg1:models.DailyCashInput):Promise<models.DailyCash>;
 
 export function Startup(arg1:context.Context):Promise<void>;
+
+export function UpdateIncomeExpense(arg1:number,arg2:models.IncomeExpenseUpdateInput):Promise<void>;

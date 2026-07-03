@@ -25,7 +25,8 @@ import './Dashboard.css'
 
 // ─── Date helpers ─────────────────────────────────────────────────────
 function today() {
-  return new Date().toISOString().slice(0, 10)
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 function monthStart() {
   const d = new Date()
@@ -56,8 +57,11 @@ function buildDaysSkeleton(daysBack = 30) {
   for (let i = daysBack - 1; i >= 0; i--) {
     const d = new Date()
     d.setDate(d.getDate() - i)
+    const y = d.getFullYear()
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const r = String(d.getDate()).padStart(2, '0')
     result.push({
-      date: d.toISOString().slice(0, 10),
+      date: `${y}-${m}-${r}`,
       label: `${d.getDate()} ${THAI_MONTHS_SHORT[d.getMonth()]}`,
       income: 0,
       expense: 0,
@@ -100,7 +104,14 @@ export default function Dashboard() {
   const [monthlyData,  setMonthlyData]  = useState([])
   const [unpaidPawns,  setUnpaidPawns]  = useState([])
   const [goldHistory,  setGoldHistory]  = useState([])
-  const [todaySummary, setTodaySummary] = useState({ income: 0, expense: 0 })
+  const [todaySummary, setTodaySummary] = useState({
+    income: 0,
+    expense: 0,
+    incomeCash: 0,
+    incomeBank: 0,
+    expenseCash: 0,
+    expenseBank: 0
+  })
 
   const priceDashboardRef = useRef()
 
@@ -132,14 +143,26 @@ export default function Dashboard() {
 
       // Today doughnut
       const td = today()
-      let inc = 0, exp = 0
+      let incCash = 0, incBank = 0, expCash = 0, expBank = 0
       monthlyRaw?.forEach(tx => {
         if (tx.date?.slice(0, 10) === td) {
-          if (tx.type === 'income')  inc += tx.amount
-          if (tx.type === 'expense') exp += tx.amount
+          if (tx.type === 'income') {
+            if (tx.is_bank_transfer) incBank += tx.amount
+            else incCash += tx.amount
+          } else {
+            if (tx.is_bank_transfer) expBank += tx.amount
+            else expCash += tx.amount
+          }
         }
       })
-      setTodaySummary({ income: inc, expense: exp })
+      setTodaySummary({
+        income: incCash + incBank,
+        expense: expCash + expBank,
+        incomeCash: incCash,
+        incomeBank: incBank,
+        expenseCash: expCash,
+        expenseBank: expBank
+      })
 
       // Unpaid pawns — sort by overdue/unpaid months ascending
       const unpaid = (pawnsRaw || [])
@@ -160,6 +183,8 @@ export default function Dashboard() {
       // Gold history: newest-first from API → reverse to oldest-first for chart
       setGoldHistory((goldRaw || []).slice().reverse())
 
+      // Refresh today's gold price dashboard values
+      priceDashboardRef.current?.refresh()
     } catch (e) {
       setError('โหลดข้อมูลไม่สำเร็จ: ' + e)
     } finally {
@@ -642,7 +667,7 @@ function MonthlyChart({ data }) {
 function TodayDoughnut({ summary }) {
   const chartRef      = useRef(null)
   const chartInstance = useRef(null)
-  const { income, expense } = summary
+  const { income, expense, incomeCash, incomeBank, expenseCash, expenseBank } = summary
   const net     = income - expense
   const hasData = income > 0 || expense > 0
 
@@ -651,15 +676,30 @@ function TodayDoughnut({ summary }) {
     chartInstance.current = null
     if (!chartRef.current) return
 
+    const labels = hasData
+      ? ['รายรับ (เงินสด)', 'รายรับ (โอน)', 'รายจ่าย (โอน)', 'รายจ่าย (เงินสด)']
+      : ['ไม่มีรายการ', '']
+
+    const total = income + expense
+    const visualData = hasData
+      ? [incomeCash, incomeBank, expenseBank, expenseCash].map(val => {
+          if (val === 0) return 0
+          const minVal = total * 0.03
+          return val < minVal ? minVal : val
+        })
+      : [1, 0]
+
+    const backgroundColor = hasData
+      ? ['#5baf82', '#8ee0b0', '#f59898', '#d45c5c'] // Consistent with SummaryPanel
+      : ['#EDE6D8', '#EDE6D8']
+
     chartInstance.current = new Chart(chartRef.current, {
       type: 'doughnut',
       data: {
-        labels: ['รายรับ', 'รายจ่าย'],
+        labels,
         datasets: [{
-          data: hasData ? [income, expense] : [1, 0],
-          backgroundColor: hasData
-            ? ['rgba(91,175,130,0.85)', 'rgba(212,92,92,0.75)']
-            : ['#EDE6D8', '#EDE6D8'],
+          data: visualData,
+          backgroundColor,
           borderWidth: 0,
           hoverOffset: hasData ? 6 : 0,
         }],
@@ -668,11 +708,21 @@ function TodayDoughnut({ summary }) {
         responsive: true,
         maintainAspectRatio: false,
         cutout: '70%',
+        layout: {
+          padding: 10
+        },
         plugins: {
           legend: { display: false },
           tooltip: {
             enabled: hasData,
-            callbacks: { label: ctx => ` ${ctx.label}: ฿${ctx.parsed.toLocaleString('th-TH')}` },
+            callbacks: {
+              label: (context) => {
+                const idx = context.dataIndex
+                const realValues = [incomeCash, incomeBank, expenseBank, expenseCash]
+                const realVal = realValues[idx] ?? 0
+                return ` ${context.label}: ${formatBaht(realVal)}`
+              }
+            },
             bodyFont: { family: "'Sarabun', sans-serif" },
           },
         },
@@ -680,7 +730,7 @@ function TodayDoughnut({ summary }) {
     })
 
     return () => { chartInstance.current?.destroy(); chartInstance.current = null }
-  }, [income, expense, hasData])
+  }, [incomeCash, incomeBank, expenseCash, expenseBank, hasData, income, expense])
 
   return (
     <div className="card db-chart-card db-donut-card">
@@ -703,11 +753,25 @@ function TodayDoughnut({ summary }) {
             <span className="db-donut-legend-label">รายรับ</span>
             <span className="db-donut-legend-val db-income">{formatBaht(income)}</span>
           </div>
+          {incomeBank > 0 && (
+            <div className="db-donut-legend-row" style={{ paddingLeft: 12, fontSize: '11.5px', opacity: 0.85 }}>
+              <span className="db-donut-dot" style={{ background: '#8ee0b0', width: 6, height: 6 }} />
+              <span className="db-donut-legend-label">โอนผ่านธนาคาร</span>
+              <span className="db-donut-legend-val db-income">{formatBaht(incomeBank)}</span>
+            </div>
+          )}
           <div className="db-donut-legend-row">
             <span className="db-donut-dot" style={{ background: 'var(--red)' }} />
             <span className="db-donut-legend-label">รายจ่าย</span>
             <span className="db-donut-legend-val db-expense">{formatBaht(expense)}</span>
           </div>
+          {expenseBank > 0 && (
+            <div className="db-donut-legend-row" style={{ paddingLeft: 12, fontSize: '11.5px', opacity: 0.85 }}>
+              <span className="db-donut-dot" style={{ background: '#f59898', width: 6, height: 6 }} />
+              <span className="db-donut-legend-label">โอนผ่านธนาคาร</span>
+              <span className="db-donut-legend-val db-expense">{formatBaht(expenseBank)}</span>
+            </div>
+          )}
         </div>
       </div>
     </div>

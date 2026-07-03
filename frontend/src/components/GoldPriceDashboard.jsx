@@ -13,6 +13,7 @@ const GoldPriceDashboard = forwardRef(({ onPriceLoaded }, ref) => {
   const [priceLoading, setPriceLoading] = useState(false)
   const [date, setDate] = useState('')
   const [lastUpdated, setLastUpdated] = useState('')
+  const [fetchedAt, setFetchedAt] = useState('')
 
   const loadPrice = useCallback(async () => {
     setPriceLoading(true)
@@ -27,10 +28,12 @@ const GoldPriceDashboard = forwardRef(({ onPriceLoaded }, ref) => {
         if (p.update_time) {
           setDate(formatDate(p.date))
           setLastUpdated(p.update_time)
+          setFetchedAt(p.fetched_at || '')
         } else {
           const d = new Date()
           setDate(`${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`)
           setLastUpdated(`${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`)
+          setFetchedAt('')
         }
       } else {
         const p = await GetTodayPrice()
@@ -40,10 +43,12 @@ const GoldPriceDashboard = forwardRef(({ onPriceLoaded }, ref) => {
         if (p && p.update_time) {
           setDate(formatDate(p.date))
           setLastUpdated(p.update_time)
+          setFetchedAt(p.fetched_at || '')
         } else {
           const d = new Date()
           setDate(`${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`)
           setLastUpdated(`${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`)
+          setFetchedAt('')
         }
       }
     } catch (e) {
@@ -148,7 +153,13 @@ const GoldPriceDashboard = forwardRef(({ onPriceLoaded }, ref) => {
           onClick={handleForceRefresh}
           disabled={priceLoading}
         >
-          <IconSync /> อัปเดทล่าสุด {date || '—'} {lastUpdated || '—'}
+          <IconSync />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', lineHeight: 1.3 }}>
+            <div>ประกาศ: {date || '—'} {lastUpdated || '—'}</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-disabled)' }}>
+              ดึงข้อมูลล่าสุด: {fetchedAt || '—'}
+            </div>
+          </div>
         </button>
       </div>
 

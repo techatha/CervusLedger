@@ -9,6 +9,7 @@ type GoldPrice struct {
 	SellPricePerBaht float64 `json:"sell_price_per_baht"`
 	OmBuyPrice       float64 `json:"om_buy_price"`
 	OmSellPrice      float64 `json:"om_sell_price"`
+	FetchedAt        string  `json:"fetched_at"`
 }
 
 // Sale is a single buy or sell transaction.

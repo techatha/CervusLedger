@@ -60,6 +60,16 @@
   padding: 16px;
 }
 
+/* ─── Payment History Delete Button ──────────────────────────────── */
+.payment-history-row .payment-actions-cell {
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.payment-history-row:hover .payment-actions-cell {
+  opacity: 1;
+}
+
 .pd-payment-chip {
   background: var(--green-bg);
   border: 1px solid rgba(61, 154, 104, 0.25);

@@ -31,6 +31,16 @@ export default function SalesList({ cartItems, setCartItems }) {
   const priceDashboardRef = useRef()
   const processedStateRef = useRef(null)
 
+  // Example modification inside the main transaction table calculator
+  const mainTotalAmount = cartItems.reduce((acc, item) => {
+    if (item.type === 'sell' || item.type === 'pawn_interest' || (item.type === 'pawn_principal_change' && item.change_type === 'reduction')) {
+      return acc + item.total_amount;
+    } else if (item.type === 'buy' || item.type === 'discount' || (item.type === 'pawn_principal_change' && item.change_type === 'increase')) {
+      return acc - item.total_amount; // Subtracts buybacks and active discounts from total customer payment due
+    }
+    return acc;
+  }, 0);
+
   useEffect(() => {
     GetSetting('promptpay_number')
       .then(val => {
@@ -62,6 +72,33 @@ export default function SalesList({ cartItems, setCartItems }) {
       })
   }, [])
 
+  const handleSendQR = () => {
+    if (promptpayNumber && mainTotalAmount > 0) {
+      setDisplayStatus('sending')
+      setDisplayError(null)
+      SendQRToDisplay(promptpayNumber, Number(mainTotalAmount))
+        .then(() => setDisplayStatus('done'))
+        .catch(err => {
+          console.error('Failed to send QR to display:', err)
+          setDisplayStatus('error')
+          setDisplayError(err.message || String(err))
+        })
+    }
+  }
+
+  // Auto-generate QR code when cart items or total amount changes
+  useEffect(() => {
+    if (cartItems.length > 0 && mainTotalAmount > 0) {
+      setQrAmount(mainTotalAmount)
+      setShowQr(true)
+      handleSendQR()
+    } else {
+      setShowQr(false)
+      setQrAmount(0)
+    }
+    // We intentionally don't want to re-run on every state change unless cart or total or promptpay changes
+  }, [cartItems, mainTotalAmount, promptpayNumber])
+
 
   useEffect(() => {
     if (location.state?.addItems && location.state !== processedStateRef.current) {
@@ -81,21 +118,16 @@ export default function SalesList({ cartItems, setCartItems }) {
     setCartItems(prev => prev.filter((_, i) => i !== idx))
   }
 
-  const handleGenerateQR = async () => {
-    setQrAmount(mainTotalAmount)
-    setShowQr(true)
-
-    if (promptpayNumber && mainTotalAmount > 0) {
-      setDisplayStatus('sending')
-      setDisplayError(null)
-      try {
-        await SendQRToDisplay(promptpayNumber, Number(mainTotalAmount))
-        setDisplayStatus('done')
-      } catch (err) {
-        console.error('Failed to send QR to display:', err)
-        setDisplayStatus('error')
-        setDisplayError(err.message || String(err))
-      }
+  const handleClearCart = async () => {
+    setCartItems([])
+    setQrAmount(0)
+    setShowQr(false)
+    setDisplayStatus('idle')
+    setDisplayError(null)
+    try {
+      await SendFailToDisplay()
+    } catch (err) {
+      console.error('Failed to send fail to display:', err)
     }
   }
 
@@ -223,16 +255,6 @@ export default function SalesList({ cartItems, setCartItems }) {
     }
   }
 
-  // Example modification inside the main transaction table calculator
-  const mainTotalAmount = cartItems.reduce((acc, item) => {
-    if (item.type === 'sell' || item.type === 'pawn_interest' || (item.type === 'pawn_principal_change' && item.change_type === 'reduction')) {
-      return acc + item.total_amount;
-    } else if (item.type === 'buy' || item.type === 'discount' || (item.type === 'pawn_principal_change' && item.change_type === 'increase')) {
-      return acc - item.total_amount; // Subtracts buybacks and active discounts from total customer payment due
-    }
-    return acc;
-  }, 0);
-
   return (
     <div className="page-view">
       {/* Header */}
@@ -257,8 +279,7 @@ export default function SalesList({ cartItems, setCartItems }) {
             onDeleteItem={handleDeleteCartItem}
             onShowForm={setShowForm}
             mainTotalAmount={mainTotalAmount}
-            onClearCart={() => { setCartItems([]); setQrAmount(0); setShowQr(false); }}
-            onGenerateQR={handleGenerateQR}
+            onClearCart={handleClearCart}
             onSaveAllSales={handleSaveAllSales}
             savingCart={savingCart}
           />
@@ -275,20 +296,9 @@ export default function SalesList({ cartItems, setCartItems }) {
           bankName={bankName}
           bankAccount={bankAccount}
           savingCart={savingCart}
-          onCloseQr={async () => {
-            setQrAmount(0);
-            setShowQr(false);
-            setDisplayStatus('idle');
-            setDisplayError(null);
-            try {
-              await SendFailToDisplay();
-            } catch (err) {
-              console.error('Failed to send fail to display:', err);
-            }
-          }}
-          onSaveAllSales={handleSaveAllSales}
           displayStatus={displayStatus}
           displayError={displayError}
+          onRetryQR={handleSendQR}
         />
       </div>
 

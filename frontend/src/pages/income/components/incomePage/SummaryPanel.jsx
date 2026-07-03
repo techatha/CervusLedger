@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Chart from 'chart.js/auto'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faChartPie } from '@fortawesome/free-solid-svg-icons'
@@ -14,7 +14,6 @@ const THAI_MONTHS = [
  * SummaryPanel — right sidebar with summary cards and charts.
  */
 export default function SummaryPanel({ entries = [], selectedDate, year, month }) {
-  // Logs arrays to cache calculations for Month view and Daily view
   const monthLogs = useRef([])
   const dailyLogs = useRef([])
 
@@ -23,15 +22,17 @@ export default function SummaryPanel({ entries = [], selectedDate, year, month }
   const incomeChartInstance = useRef(null)
   const expenseChartInstance = useRef(null)
 
-  // Compute unique hash based on item IDs, amounts, categories, types, and colors to trigger cache invalidation on edits
+  const [hoveredSegment, setHoveredSegment] = useState(null)
+
   const getEntriesHash = (items) => {
-    return items.map(e => `${e.id}_${e.amount}_${e.category || ''}_${e.color || ''}_${e.type || ''}`).join('|')
+    return items.map(e => `${e.id}_${e.amount}_${e.category || ''}_${e.color || ''}_${e.type || ''}_${e.is_bank_transfer || false}`).join('|')
   }
 
-  // Calculate categories details
   const computeStats = (items) => {
     let totalIncome = 0
     let totalExpense = 0
+    let totalIncomeBank = 0
+    let totalExpenseBank = 0
     const incomeCats = {}
     const expenseCats = {}
 
@@ -42,12 +43,14 @@ export default function SummaryPanel({ entries = [], selectedDate, year, month }
 
       if (e.type === 'income') {
         totalIncome += amt
+        if (e.is_bank_transfer) totalIncomeBank += amt
         if (!incomeCats[cat]) {
           incomeCats[cat] = { name: cat, amount: 0, color: col }
         }
         incomeCats[cat].amount += amt
       } else {
         totalExpense += amt
+        if (e.is_bank_transfer) totalExpenseBank += amt
         if (!expenseCats[cat]) {
           expenseCats[cat] = { name: cat, amount: 0, color: col }
         }
@@ -58,28 +61,26 @@ export default function SummaryPanel({ entries = [], selectedDate, year, month }
     return {
       totalIncome,
       totalExpense,
+      totalIncomeBank,
+      totalExpenseBank,
+      totalIncomeCash: totalIncome - totalIncomeBank,
+      totalExpenseCash: totalExpense - totalExpenseBank,
       net: totalIncome - totalExpense,
       incomeCategories: Object.values(incomeCats).sort((a, b) => b.amount - a.amount),
       expenseCategories: Object.values(expenseCats).sort((a, b) => b.amount - a.amount),
     }
   }
 
-  // Get stats from array logs (cache) or calculate and push to logs
   const getViewData = () => {
     if (selectedDate) {
       const dayEntries = entries.filter(e => e.date?.slice(0, 10) === selectedDate)
       const hash = getEntriesHash(dayEntries)
 
-      // Search logs array
       const existing = dailyLogs.current.find(
         log => log.dateKey === selectedDate && log.entriesHash === hash
       )
-      if (existing) {
-        console.log(`[SummaryPanel Cache Hit] Daily stats for ${selectedDate}`)
-        return existing.result
-      }
+      if (existing) return existing.result
 
-      console.log(`[SummaryPanel Cache Miss] Computing daily stats for ${selectedDate}`)
       const result = computeStats(dayEntries)
       dailyLogs.current.push({ dateKey: selectedDate, entriesHash: hash, result })
       return result
@@ -87,16 +88,11 @@ export default function SummaryPanel({ entries = [], selectedDate, year, month }
       const monthKey = `${year}-${month}`
       const hash = getEntriesHash(entries)
 
-      // Search logs array
       const existing = monthLogs.current.find(
         log => log.monthKey === monthKey && log.entriesHash === hash
       )
-      if (existing) {
-        console.log(`[SummaryPanel Cache Hit] Monthly stats for ${monthKey}`)
-        return existing.result
-      }
+      if (existing) return existing.result
 
-      console.log(`[SummaryPanel Cache Miss] Computing monthly stats for ${monthKey}`)
       const result = computeStats(entries)
       monthLogs.current.push({ monthKey, entriesHash: hash, result })
       return result
@@ -105,7 +101,6 @@ export default function SummaryPanel({ entries = [], selectedDate, year, month }
 
   const stats = getViewData()
 
-  // Format header title dynamically
   const getFormattedTitle = () => {
     if (selectedDate) {
       const d = new Date(selectedDate + 'T00:00:00')
@@ -115,10 +110,49 @@ export default function SummaryPanel({ entries = [], selectedDate, year, month }
     }
   }
 
-  // Calculate ratio bar values
   const totalFlow = stats.totalIncome + stats.totalExpense
   const incomePercent = totalFlow > 0 ? (stats.totalIncome / totalFlow) * 100 : 50
   const expensePercent = totalFlow > 0 ? (stats.totalExpense / totalFlow) * 100 : 50
+
+  // Build segment list (in visual order) with percent-of-bar widths, then
+  // stamp each with its cumulative left offset so the tooltip can center itself.
+  const rawSegments = [
+    {
+      key: 'income-cash',
+      amount: stats.totalIncomeCash,
+      percent: incomePercent * (stats.totalIncome > 0 ? stats.totalIncomeCash / stats.totalIncome : 0),
+      color: 'var(--green)',
+      label: 'รายรับ · เงินสด',
+    },
+    {
+      key: 'income-bank',
+      amount: stats.totalIncomeBank,
+      percent: incomePercent * (stats.totalIncome > 0 ? stats.totalIncomeBank / stats.totalIncome : 0),
+      color: '#8ee0b0',
+      label: 'รายรับ · โอนธนาคาร',
+    },
+    {
+      key: 'expense-bank',
+      amount: stats.totalExpenseBank,
+      percent: expensePercent * (stats.totalExpense > 0 ? stats.totalExpenseBank / stats.totalExpense : 0),
+      color: '#f59898',
+      label: 'รายจ่าย · โอนธนาคาร',
+    },
+    {
+      key: 'expense-cash',
+      amount: stats.totalExpenseCash,
+      percent: expensePercent * (stats.totalExpense > 0 ? stats.totalExpenseCash / stats.totalExpense : 0),
+      color: 'var(--red)',
+      label: 'รายจ่าย · เงินสด',
+    },
+  ]
+
+  let cumulative = 0
+  const barSegments = rawSegments.map(seg => {
+    const left = cumulative
+    cumulative += seg.percent
+    return { ...seg, left }
+  })
 
   // Render / update charts on stats change
   useEffect(() => {
@@ -153,19 +187,11 @@ export default function SummaryPanel({ entries = [], selectedDate, year, month }
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          layout: {
-            padding: 8
-          },
+          layout: { padding: 8 },
           plugins: {
             legend: {
               position: 'bottom',
-              labels: {
-                boxWidth: 8,
-                font: {
-                  family: 'Sarabun',
-                  size: 10
-                }
-              }
+              labels: { boxWidth: 8, font: { family: 'Sarabun', size: 10 } }
             },
             tooltip: {
               callbacks: {
@@ -203,19 +229,11 @@ export default function SummaryPanel({ entries = [], selectedDate, year, month }
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          layout: {
-            padding: 8
-          },
+          layout: { padding: 8 },
           plugins: {
             legend: {
               position: 'bottom',
-              labels: {
-                boxWidth: 8,
-                font: {
-                  family: 'Sarabun',
-                  size: 10
-                }
-              }
+              labels: { boxWidth: 8, font: { family: 'Sarabun', size: 10 } }
             },
             tooltip: {
               callbacks: {
@@ -240,7 +258,6 @@ export default function SummaryPanel({ entries = [], selectedDate, year, month }
   return (
     <div className="sp-panel">
       <div className="sp-panel-card">
-        {/* Title */}
         <h3 className="sp-title">{getFormattedTitle()}</h3>
 
         {/* Ratio bar (Income vs Expense Ratio) */}
@@ -251,10 +268,31 @@ export default function SummaryPanel({ entries = [], selectedDate, year, month }
                 <span className="sp-bar-label income">รายรับ {incomePercent.toFixed(0)}%</span>
                 <span className="sp-bar-label expense">รายจ่าย {expensePercent.toFixed(0)}%</span>
               </div>
-              <div className="sp-oblong-bar">
-                <div className="sp-oblong-fill income" style={{ width: `${incomePercent}%` }} />
-                <div className="sp-oblong-fill expense" style={{ width: `${expensePercent}%` }} />
+
+              <div className="sp-bar-wrap">
+                <div className="sp-oblong-bar">
+                  {barSegments.map(seg => seg.amount > 0 && (
+                    <div
+                      key={seg.key}
+                      className="sp-oblong-fill"
+                      style={{ width: `${seg.percent}%`, background: seg.color }}
+                      onMouseEnter={() => setHoveredSegment(seg)}
+                      onMouseLeave={() => setHoveredSegment(null)}
+                    />
+                  ))}
+                </div>
+
+                {hoveredSegment && (
+                  <div
+                    className="sp-segment-tooltip"
+                    style={{ left: `${Math.min(94, Math.max(6, hoveredSegment.left + hoveredSegment.percent / 2))}%` }}
+                  >
+                    <span className="sp-segment-tooltip-label">{hoveredSegment.label}</span>
+                    <span className="sp-segment-tooltip-val">{formatBaht(hoveredSegment.amount)}</span>
+                  </div>
+                )}
               </div>
+
               <div className="sp-bar-labels">
                 <span className="sp-bar-label income">{formatBaht(stats.totalIncome)}</span>
                 <span className="sp-bar-label expense">{formatBaht(stats.totalExpense)}</span>
@@ -298,7 +336,7 @@ export default function SummaryPanel({ entries = [], selectedDate, year, month }
                 <canvas ref={expenseChartRef} />
               </div>
             ) : (
-              <div className="sp-chart-empty">
+              <div className="sp-chart-empty"> 
                 <FontAwesomeIcon icon={faChartPie} className="sp-chart-empty-icon" />
                 <span>ไม่มีรายการรายจ่าย</span>
               </div>

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, Fragment } from 'react'
 import { toBE, formatBaht } from '@/utils/thai'
 import { GetDailyCash, SaveDailyCash } from 'wailsjs/go/income_expense_handler/IncomeExpenseHandler.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faAngleLeft, faAngleRight, faPenToSquare, faCircleCheck, faCircleXmark, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faAngleLeft, faAngleRight, faPenToSquare, faCircleCheck, faCircleXmark, faPlus, faBuildingColumns, faRobot, faFilePen } from '@fortawesome/free-solid-svg-icons'
 import { faCalendarDays, faClipboard, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import './DailyView.css'
 
@@ -35,6 +35,7 @@ const DAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังค�
  * @param {Function} onDateChange    - Callback(newDateStr) to navigate to another day
  * @param {Function} onBack          - Callback to return to calendar/month view
  * @param {Function} onAddEntry      - Callback when user clicks 'เพิ่มรายการ'
+ * @param {Function} onEdit          - Callback when user clicks 'แก้ไข' (receives entry)
  */
 export default function DailyView({
   allEntries,
@@ -48,6 +49,7 @@ export default function DailyView({
   onDateChange,
   onBack,
   onAddEntry,
+  onEdit,
 }) {
   const [dailyCash, setDailyCash] = useState(null)
   const [actualVal, setActualVal] = useState('')
@@ -101,7 +103,7 @@ export default function DailyView({
 
   const todayNet = useMemo(() => {
     if (!date) return 0
-    return (allEntries || []).filter(e => e.date?.slice(0, 10) === date)
+    return (allEntries || []).filter(e => e.date?.slice(0, 10) === date && !e.is_bank_transfer)
       .reduce((sum, e) => sum + (e.type === 'income' ? (e.amount || 0) : -(e.amount || 0)), 0)
   }, [allEntries, date])
 
@@ -230,7 +232,7 @@ export default function DailyView({
               <th>หมวดหมู่</th>
               <th style={{ textAlign: 'right' }}>จำนวนเงิน</th>
               <th>แหล่งที่มา</th>
-              <th style={{ width: 60 }}></th>
+              <th style={{ width: 140 }}></th>
             </tr>
           </thead>
           <tbody>
@@ -248,6 +250,13 @@ export default function DailyView({
                   <span className={`badge ${e.type === 'income' ? 'badge-green' : 'badge-red'}`}>
                     {e.type === 'income' ? 'รายรับ' : 'รายจ่าย'}
                   </span>
+                  {e.is_bank_transfer && (
+                    <FontAwesomeIcon
+                      icon={faBuildingColumns}
+                      className="dv-bank-icon"
+                      title="โอนผ่านธนาคาร"
+                    />
+                  )}
                 </td>
                 <td className="ip-category">
                   <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -274,19 +283,21 @@ export default function DailyView({
                 <td className={`ip-amount ${e.type === 'income' ? 'ip-income' : 'ip-expense'}`}>
                   {e.type === 'income' ? '+' : '−'}{formatBaht(e.amount)}
                 </td>
-                 <td>
+                <td>
                   <span className={`badge ${e.source === 'auto' ? 'badge-blue' : 'badge-amber'}`}>
+                    <FontAwesomeIcon icon={e.source === 'auto' ? faRobot : faFilePen} style={{ marginRight: 4, fontSize: 10 }} />
                     {e.source === 'auto' ? 'อัตโนมัติ' : 'บันทึกเอง'}
                   </span>
                 </td>
-                <td className="ip-del">
-                  <button
-                    className="btn btn-danger-ghost btn-xs"
-                    onClick={() => onDelete(e)}
-                    title="ลบ"
-                  >
-                    <FontAwesomeIcon icon={faTrashCan} />
-                  </button>
+                <td className="ip-del dv-actions-cell">
+                  <div className="dv-actions-wrap">
+                    <button className="btn btn-ghost btn-xs" onClick={() => onEdit && onEdit(e)} title="แก้ไข">
+                      <FontAwesomeIcon icon={faPenToSquare} />
+                    </button>
+                    <button className="btn btn-danger-ghost btn-xs dv-delete-btn" onClick={() => onDelete(e)} title="ลบ">
+                      <FontAwesomeIcon icon={faTrashCan} />
+                    </button>
+                  </div>
                 </td>
               </tr>
               {e.notes && (
@@ -331,8 +342,8 @@ export default function DailyView({
           <div className="dv-cash-summary-row">
             <div className="dv-cash-metric">
               <div className="dv-cash-label">
-                {dailyCash.last_record_date 
-                  ? `ยอดยกมา (จากวันที่ ${toBE(dailyCash.last_record_date)})` 
+                {dailyCash.last_record_date
+                  ? `ยอดยกมา (จากวันที่ ${toBE(dailyCash.last_record_date)})`
                   : 'ยอดยกมา (ไม่มีบันทึกก่อนหน้า)'}
               </div>
               <div className="dv-cash-val">{formatBaht(dailyCash.amount_last_record)}</div>
@@ -345,7 +356,7 @@ export default function DailyView({
               </div>
             </div>
             <div className="dv-cash-sep" />
-             <div className="dv-cash-metric">
+            <div className="dv-cash-metric">
               <div className="dv-cash-label">ยอดที่ควรมีในร้าน</div>
               <div className="dv-cash-val dv-cash-expected">{formatBaht(expectedAmount)}</div>
             </div>
@@ -373,29 +384,29 @@ export default function DailyView({
                   </button>
                 </div>
 
-                  <div className="dv-cash-result-row">
-                    <div className="dv-cash-result-metric">
-                      <span className="dv-cash-result-label">ยอดนับจริง</span>
-                      <span className="dv-cash-result-val">
-                        {formatBaht(parseFloat(actualVal) || 0)}
-                      </span>
-                    </div>
-                    <div className="dv-cash-result-sep" />
-                    <div className="dv-cash-result-metric">
-                      <span className="dv-cash-result-label">ผลต่าง</span>
-                      {discrepancy === 0 ? (
-                        <span className="dv-cash-result-val is-zero">ตรงตามยอดที่คาดไว้</span>
-                      ) : (
-                        <span className={`dv-cash-result-val ${discrepancy > 0 ? 'ip-income' : 'ip-expense'}`}>
-                          {discrepancy > 0 ? '+' : ''}{formatBaht(discrepancy)}
-                          <span className={`discrepancy-tag-lg ${discrepancy > 0 ? 'tag-green' : 'tag-red'}`}>
-                            {discrepancy > 0 ? 'เกิน' : 'ขาด'}
-                          </span>
-            
-                        </span>
-                      )}
-                    </div>
+                <div className="dv-cash-result-row">
+                  <div className="dv-cash-result-metric">
+                    <span className="dv-cash-result-label">ยอดนับจริง</span>
+                    <span className="dv-cash-result-val">
+                      {formatBaht(parseFloat(actualVal) || 0)}
+                    </span>
                   </div>
+                  <div className="dv-cash-result-sep" />
+                  <div className="dv-cash-result-metric">
+                    <span className="dv-cash-result-label">ผลต่าง</span>
+                    {discrepancy === 0 ? (
+                      <span className="dv-cash-result-val is-zero">ตรงตามยอดที่คาดไว้</span>
+                    ) : (
+                      <span className={`dv-cash-result-val ${discrepancy > 0 ? 'ip-income' : 'ip-expense'}`}>
+                        {discrepancy > 0 ? '+' : ''}{formatBaht(discrepancy)}
+                        <span className={`discrepancy-tag-lg ${discrepancy > 0 ? 'tag-green' : 'tag-red'}`}>
+                          {discrepancy > 0 ? 'เกิน' : 'ขาด'}
+                        </span>
+
+                      </span>
+                    )}
+                  </div>
+                </div>
 
                 {dailyCash.notes && (
                   <p className="dv-cash-notes-display">หมายเหตุ: {dailyCash.notes}</p>

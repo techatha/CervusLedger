@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react'
 import { CreateIncomeExpense } from 'wailsjs/go/income_expense_handler/IncomeExpenseHandler'
 import { GetAllSettings } from 'wailsjs/go/settings_handler/SettingsHandler'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faArrowTrendUp,faArrowTrendDown, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faArrowTrendUp, faArrowTrendDown, faPlus, faBuildingColumns } from '@fortawesome/free-solid-svg-icons'
+import './EditIncomeExpenseModal.css'
 
 import { getLocalISOString } from '@/utils/date'
 
@@ -13,9 +14,9 @@ export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
     type: 'income',
     category: '',
     amount: '',
-    notes: '',
     date: defaultDate || today(),
     color: '',
+    isBankTransfer: false,
   })
   const [presets, setPresets] = useState([])
   const [selectedIdx, setSelectedIdx] = useState(null)
@@ -106,6 +107,7 @@ export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
         category: form.category,
         amount: parseFloat(form.amount),
         notes: form.notes,
+        is_bank_transfer: form.isBankTransfer,
         date: form.date,
       })
       onSaved()
@@ -248,6 +250,23 @@ export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
               />
               <span className="mem-amount-suffix">฿</span>
             </div>
+            <label className={`eiem-bank-toggle ${form.isBankTransfer ? 'eiem-bank-toggle-active' : ''}`} style={{ marginTop: 12 }}>
+              <input
+                type="checkbox"
+                checked={form.isBankTransfer}
+                onChange={e => set('isBankTransfer', e.target.checked)}
+                className="eiem-bank-checkbox"
+              />
+              <span className="eiem-bank-icon-wrap">
+                <FontAwesomeIcon icon={faBuildingColumns} />
+              </span>
+              <span className="eiem-bank-text">
+                <span className="eiem-bank-title">รับ/จ่ายผ่านช่องทางธนาคาร (โอน)</span>
+                <span className="eiem-bank-sub">
+                  เมื่อเลือก รายการนี้จะแสดงไอคอน <FontAwesomeIcon icon={faBuildingColumns} className="eiem-bank-sub-icon" /> ในหน้ารายการ
+                </span>
+              </span>
+            </label>
           </div>
 
           {/* ── Date & Notes ── */}

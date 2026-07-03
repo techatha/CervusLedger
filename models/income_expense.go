@@ -1,22 +1,29 @@
 package models
 
 type IncomeExpense struct {
-	ID        int     `json:"id"`
-	Type      string  `json:"type"`     // income / expense
-	Category  string  `json:"category"`
-	Amount    float64 `json:"amount"`
-	Notes     string  `json:"notes"`
-	Source    string  `json:"source"` // manual / auto
-	Date      string  `json:"date"`
-	CreatedAt string  `json:"created_at"`
+	ID             int     `json:"id"`
+	Type           string  `json:"type"`     // income / expense
+	Category       string  `json:"category"`
+	Amount         float64 `json:"amount"`
+	Notes          string  `json:"notes"`
+	Source         string  `json:"source"` // manual / auto
+	IsBankTransfer bool    `json:"is_bank_transfer"`
+	Date           string  `json:"date"`
+	CreatedAt      string  `json:"created_at"`
 }
 
 type IncomeExpenseInput struct {
-	Type     string  `json:"type"`
-	Category string  `json:"category"`
-	Amount   float64 `json:"amount"`
-	Notes    string  `json:"notes"`
-	Date     string  `json:"date"`
+	Type           string  `json:"type"`
+	Category       string  `json:"category"`
+	Amount         float64 `json:"amount"`
+	Notes          string  `json:"notes"`
+	IsBankTransfer bool    `json:"is_bank_transfer"`
+	Date           string  `json:"date"`
+}
+
+type IncomeExpenseUpdateInput struct {
+	Notes          string `json:"notes"`
+	IsBankTransfer bool   `json:"is_bank_transfer"`
 }
 
 type IncomeExpenseFilter struct {

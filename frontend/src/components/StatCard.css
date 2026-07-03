@@ -3,6 +3,10 @@
   border-radius: var(--radius-lg);
   padding: 18px 20px;
   transition: box-shadow var(--transition), transform var(--transition);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
 }
 .db-stat-card:hover {
   box-shadow: var(--shadow);

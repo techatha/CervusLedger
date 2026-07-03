@@ -60,9 +60,15 @@ func parseBEDateToCEDate(input string) string {
 
 // fetchPricesFromAPI pulls from the clean api.chnwt.dev wrapper
 func (h *GoldPriceHandler) fetchPricesFromAPI() (barBuy, barSell, omBuy, omSell float64, date, updateTime string, err error) {
-	client := &http.Client{Timeout: 4 * time.Second}
+	client := &http.Client{Timeout: 8 * time.Second}
 
-	resp, err := client.Get("https://api.chnwt.dev/thai-gold-api/latest")
+	req, err := http.NewRequest("GET", "https://api.chnwt.dev/thai-gold-api/latest", nil)
+	if err != nil {
+		return 0, 0, 0, 0, "", "", err
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return 0, 0, 0, 0, "", "", err
 	}
@@ -117,9 +123,15 @@ func (h *GoldPriceHandler) scrapeGoldTradersWebsite() (barBuy, barSell, omBuy, o
 }
 
 func (h *GoldPriceHandler) scrapeURL(targetURL string) (barBuy, barSell, omBuy, omSell float64, date, updateTime string, err error) {
-	client := &http.Client{Timeout: 5 * time.Second}
+	client := &http.Client{Timeout: 10 * time.Second}
 
-	resp, err := client.Get(targetURL)
+	req, err := http.NewRequest("GET", targetURL, nil)
+	if err != nil {
+		return 0, 0, 0, 0, "", "", fmt.Errorf("scraper request creation failure: %w", err)
+	}
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36")
+
+	resp, err := client.Do(req)
 	if err != nil {
 		return 0, 0, 0, 0, "", "", fmt.Errorf("scraper connection failure on %s: %w", targetURL, err)
 	}
@@ -153,14 +165,20 @@ func (h *GoldPriceHandler) scrapeURL(targetURL string) (barBuy, barSell, omBuy, 
 
 	rawTime := doc.Find("#DetailPlace_uc_goldprices1_lblAsTime").Text()
 	rawTime = strings.TrimSpace(rawTime)
-	parts := strings.Fields(rawTime)
-	if len(parts) > 1 {
-		updateTime = strings.Join(parts[1:], " ")
+
+	idx := strings.Index(rawTime, "เวลา")
+	if idx != -1 {
+		updateTime = strings.TrimSpace(rawTime[idx:])
 	} else {
-		updateTime = rawTime
+		parts := strings.Fields(rawTime)
+		if len(parts) > 1 {
+			updateTime = strings.Join(parts[1:], " ")
+		} else {
+			updateTime = rawTime
+		}
 	}
 
-	parsedDate := parseBEDateToCEDate(updateTime)
+	parsedDate := parseBEDateToCEDate(rawTime)
 
 	if barBuy == 0 || barSell == 0 || omBuy == 0 || omSell == 0 {
 		return 0, 0, 0, 0, "", "", fmt.Errorf("scraper extracted unexpected empty text fields from %s", targetURL)

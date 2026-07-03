@@ -8,6 +8,7 @@ import {
   RedeemPawn,
   ForfeitPawn,
   UpdateTicketStatus,
+  DeletePayment,
 } from 'wailsjs/go/pawn_handler/PawnHandler'
 import { GetCustomer } from 'wailsjs/go/customer_handler/CustomerHandler'
 import { GetAllSettings } from 'wailsjs/go/settings_handler/SettingsHandler'
@@ -110,6 +111,16 @@ export default function PawnDetail({ cartItems, setCartItems }) {
       reloadAll()
     } catch (e) { setError(String(e)) }
   }
+
+  const handleDeletePayment = async (paymentId) => {
+    if (!window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลการจ่ายดอกเบี้ยงวดล่าสุด?\n(ระบบจะลบข้อมูลรายรับที่บันทึกอัตโนมัติออกด้วย)")) return;
+    try {
+      await DeletePayment(paymentId)
+      load()
+      reloadAll()
+    } catch (e) { setError(String(e)) }
+  }
+
   const formatMonthRange = (items) => {
     if (items.length > 2) {
       const first = items[0]
@@ -288,7 +299,7 @@ export default function PawnDetail({ cartItems, setCartItems }) {
               </div>
             </div>
           )}
-          <PawnPaymentHistoryCard payments={payments} />
+          <PawnPaymentHistoryCard payments={payments} onDeletePayment={handleDeletePayment} />
 
           <PawnPendingInterestCard
             pendingMonths={pendingMonths}

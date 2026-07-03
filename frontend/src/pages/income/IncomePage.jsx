@@ -9,17 +9,18 @@ import {
 import { GetAllSettings } from 'wailsjs/go/settings_handler/SettingsHandler'
 import { formatBaht } from '@/utils/thai'
 import ManualEntryModal from './ManualEntryModal'
+import EditIncomeExpenseModal from './EditIncomeExpenseModal'
 import CalendarGrid from './components/incomePage/CalendarGrid'
 import DailyView from './components/incomePage/DailyView'
 import SummaryPanel from './components/incomePage/SummaryPanel'
 import './IncomePage.css'
 import './ManualEntryModal.css'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPlus, faArrowUpFromBracket } from '@fortawesome/free-solid-svg-icons'
+import { faPlus, faArrowUpFromBracket, faCircleInfo } from '@fortawesome/free-solid-svg-icons'
 
 const THAI_MONTHS = [
-  'มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
-  'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม',
+  'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
 ]
 
 // Generate year range for dropdown (±5 years from current)
@@ -36,26 +37,27 @@ const formatDateStr = (d) => {
 
 export default function IncomePage() {
   const now = new Date()
-  const [year,  setYear]  = useState(now.getFullYear())
+  const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth()) // 0-indexed
 
-  const [entries,  setEntries]  = useState([])
-  const [summary,  setSummary]  = useState(null)
-  const [loading,  setLoading]  = useState(true)
-  const [error,    setError]    = useState(null)
+  const [entries, setEntries] = useState([])
+  const [summary, setSummary] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [showForm, setShowForm] = useState(false)
-  const [exporting,setExporting]= useState(false)
+  const [editEntry, setEditEntry] = useState(null)
+  const [exporting, setExporting] = useState(false)
   const [confirmDel, setConfirmDel] = useState(null)
   const [dailyCashList, setDailyCashList] = useState([])
 
   const [selectedDate, setSelectedDate] = useState(formatDateStr(now))
-  const [typeFilter,   setTypeFilter]   = useState('')
+  const [typeFilter, setTypeFilter] = useState('')
   const [sourceFilter, setSourceFilter] = useState('')
-  const [presets,      setPresets]      = useState([])
+  const [presets, setPresets] = useState([])
 
   // Build date range for API from year/month
   const getDateRange = useCallback((y, m) => {
-    const mm   = String(m + 1).padStart(2, '0')
+    const mm = String(m + 1).padStart(2, '0')
     const last = new Date(y, m + 1, 0).getDate()
     return { start: `${y}-${mm}-01`, end: `${y}-${mm}-${last}` }
   }, [])
@@ -83,7 +85,7 @@ export default function IncomePage() {
     }
   }, [getDateRange])
 
-  useEffect(() => { 
+  useEffect(() => {
     load(year, month)
     GetAllSettings()
       .then(data => {
@@ -185,17 +187,17 @@ export default function IncomePage() {
             {!loading && `${entries.length} รายการ — ${THAI_MONTHS[month]} ${year + 543}`}
           </div>
         </div>
-        <div style={{ display:'flex', gap:8 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
           <button
             className="btn btn-ghost"
             onClick={handleExport}
             disabled={exporting}
           >
-           <FontAwesomeIcon icon={faArrowUpFromBracket} />
+            <FontAwesomeIcon icon={faArrowUpFromBracket} />
             {exporting ? 'กำลังส่งออก...' : 'ส่งออก Excel'}
           </button>
           <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-          <FontAwesomeIcon icon={faPlus} />เพิ่มรายการ
+            <FontAwesomeIcon icon={faPlus} />เพิ่มรายการ
           </button>
         </div>
       </div>
@@ -234,6 +236,7 @@ export default function IncomePage() {
               onDateChange={handleDateChange}
               onBack={() => setSelectedDate(null)}
               onAddEntry={() => setShowForm(true)}
+              onEdit={setEditEntry}
             />
           )}
         </div>
@@ -259,25 +262,48 @@ export default function IncomePage() {
         />
       )}
 
+      {/* Edit entry modal */}
+      {editEntry && (
+        <EditIncomeExpenseModal
+          entry={editEntry}
+          onSaved={() => { setEditEntry(null); reload() }}
+          onClose={() => setEditEntry(null)}
+        />
+      )}
+
       {/* Confirm delete */}
       {confirmDel && (
         <div className="modal-backdrop" onClick={() => setConfirmDel(null)}>
-          <div className="modal" style={{ width:400 }} onClick={e => e.stopPropagation()}>
+          <div className="modal" style={{ width: 400 }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title">ยืนยันการลบ</div>
               <button className="modal-close" onClick={() => setConfirmDel(null)}>×</button>
             </div>
             <div className="modal-body">
-              <p style={{ color:'var(--text-secondary)', lineHeight:1.7 }}>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
                 ต้องการลบรายการ{' '}
-                <strong style={{ color:'var(--text-primary)' }}>{confirmDel.category}</strong>
+                <strong style={{ color: 'var(--text-primary)' }}>{confirmDel.category}</strong>
                 {' '}จำนวน{' '}
                 <strong>{formatBaht(confirmDel.amount)}</strong> ?
+              </p>
+              <p style={{
+                marginTop: 10,
+                padding: '8px 12px',
+                background: 'var(--bg-hover)',
+                borderRadius: 'var(--radius-sm)',
+                fontSize: 12.5,
+                color: 'var(--text-muted)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}>
+                <FontAwesomeIcon icon={faCircleInfo} />
+                ลบรายการนี้จะไม่ส่งผลกับประวัติจำนำหรือสต็อก
               </p>
             </div>
             <div className="modal-footer">
               <button className="btn btn-ghost" onClick={() => setConfirmDel(null)}>ยกเลิก</button>
-              <button className="btn" style={{ background:'var(--red)', color:'#fff', border:'none' }} onClick={handleDelete}>ลบ</button>
+              <button className="btn" style={{ background: 'var(--red)', color: '#fff', border: 'none' }} onClick={handleDelete}>ลบ</button>
             </div>
           </div>
         </div>

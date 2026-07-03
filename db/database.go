@@ -22,111 +22,21 @@ func Init(dbPath string) {
 	}
 
 	createTables()
+	runMigrations()
 	log.Println("Database initialized successfully")
 }
 
 
 
 func createTables() {
-	// Drop old income_expense table if it exists (one-time truncation/rename)
-	var oldTableExists bool
-	err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM sqlite_master WHERE type='table' AND name='income_expense')").Scan(&oldTableExists)
-	if err == nil && oldTableExists {
-		_, err = DB.Exec("DROP TABLE income_expense")
-		if err != nil {
-			log.Println("Warning: Failed to drop old income_expense table:", err)
-		} else {
-			log.Println("Dropped old income_expense table successfully")
-		}
-	}
-
-	// Drop old daily_cash table if it has amount_yesterday
-	var hasAmountYesterday bool
-	rows, err := DB.Query("PRAGMA table_info(daily_cash)")
-	if err == nil {
-		for rows.Next() {
-			var cid int
-			var name, ctype string
-			var notnull, pk int
-			var dfltVal interface{}
-			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dfltVal, &pk); err == nil {
-				if name == "amount_yesterday" {
-					hasAmountYesterday = true
-				}
-			}
-		}
-		rows.Close()
-	}
-	if hasAmountYesterday {
-		_, err = DB.Exec("DROP TABLE daily_cash")
-		if err != nil {
-			log.Println("Warning: Failed to drop old daily_cash table:", err)
-		} else {
-			log.Println("Dropped old daily_cash table successfully")
-		}
-	}
-
-	// Drop old purchased_gold table if it has weight_baht
-	var hasWeightBaht bool
-	rows, err = DB.Query("PRAGMA table_info(purchased_gold)")
-	if err == nil {
-		for rows.Next() {
-			var cid int
-			var name, ctype string
-			var notnull, pk int
-			var dfltVal interface{}
-			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dfltVal, &pk); err == nil {
-				if name == "weight_baht" {
-					hasWeightBaht = true
-				}
-			}
-		}
-		rows.Close()
-	}
-	if hasWeightBaht {
-		_, err = DB.Exec("DROP TABLE purchased_gold")
-		if err != nil {
-			log.Println("Warning: Failed to drop old purchased_gold table:", err)
-		} else {
-			log.Println("Dropped old purchased_gold table successfully")
-		}
-	}
-
-	// Migrate gold_stock: add no_purity and no_weight columns
-	var hasNoPurity, hasNoWeight bool
-	rows, err = DB.Query("PRAGMA table_info(gold_stock)")
-	if err == nil {
-		for rows.Next() {
-			var cid int
-			var name, ctype string
-			var notnull, pk int
-			var dfltVal interface{}
-			if err := rows.Scan(&cid, &name, &ctype, &notnull, &dfltVal, &pk); err == nil {
-				switch name {
-				case "no_purity":
-					hasNoPurity = true
-				case "no_weight":
-					hasNoWeight = true
-				}
-			}
-		}
-		rows.Close()
-	}
-	if !hasNoPurity {
-		_, err = DB.Exec("ALTER TABLE gold_stock ADD COLUMN no_purity INTEGER NOT NULL DEFAULT 0")
-		if err != nil {
-			log.Println("Warning: Failed to add no_purity column:", err)
-		} else {
-			log.Println("Added no_purity column to gold_stock")
-		}
-	}
-	if !hasNoWeight {
-		_, err = DB.Exec("ALTER TABLE gold_stock ADD COLUMN no_weight INTEGER NOT NULL DEFAULT 0")
-		if err != nil {
-			log.Println("Warning: Failed to add no_weight column:", err)
-		} else {
-			log.Println("Added no_weight column to gold_stock")
-		}
+	// Create schema_migrations table if not exists
+	_, err := DB.Exec(`
+		CREATE TABLE IF NOT EXISTS schema_migrations (
+			version INTEGER PRIMARY KEY
+		)
+	`)
+	if err != nil {
+		log.Fatal("Failed to create schema_migrations table:", err)
 	}
 
 	// Ensure tables exist
@@ -195,7 +105,8 @@ func createTables() {
 			buy_price_per_baht  REAL DEFAULT 0,
 			sell_price_per_baht REAL DEFAULT 0,
 			om_buy_price        REAL DEFAULT 0,
-			om_sell_price       REAL DEFAULT 0
+			om_sell_price       REAL DEFAULT 0,
+			fetched_at          DATETIME
 		)`,
 
 
@@ -243,14 +154,15 @@ func createTables() {
 
 		// Income and expenses
 		`CREATE TABLE IF NOT EXISTS income_expenses (
-			id         INTEGER PRIMARY KEY AUTOINCREMENT,
-			type       TEXT NOT NULL,
-			category   TEXT,
-			amount     REAL NOT NULL,
-			notes      TEXT,
-			source     TEXT DEFAULT 'manual',
-			date       DATE NOT NULL,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			id               INTEGER PRIMARY KEY AUTOINCREMENT,
+			type             TEXT NOT NULL,
+			category         TEXT,
+			amount           REAL NOT NULL,
+			notes            TEXT,
+			source           TEXT DEFAULT 'manual',
+			is_bank_transfer INTEGER DEFAULT 0,
+			date             DATE NOT NULL,
+			created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
 
 		// Daily in-store money balance logs
@@ -310,6 +222,48 @@ func createTables() {
 		_, err := DB.Exec(query)
 		if err != nil {
 			log.Fatal("Failed to create table:", err)
+		}
+	}
+}
+
+func runMigrations() {
+	migrations := []struct {
+		Version int
+		Query   string
+		Desc    string
+	}{
+		{1, "ALTER TABLE gold_stock ADD COLUMN no_purity INTEGER NOT NULL DEFAULT 0", "Add no_purity to gold_stock"},
+		{2, "ALTER TABLE gold_stock ADD COLUMN no_weight INTEGER NOT NULL DEFAULT 0", "Add no_weight to gold_stock"},
+		{3, "ALTER TABLE income_expenses ADD COLUMN is_bank_transfer INTEGER DEFAULT 0", "Add is_bank_transfer to income_expenses"},
+		{4, "ALTER TABLE gold_prices ADD COLUMN fetched_at DATETIME", "Add fetched_at to gold_prices"},
+		{5, "ALTER TABLE gold_prices ADD COLUMN fetched_at DATETIME", "Retry adding fetched_at to gold_prices (fix for v4)"},
+		{6, "UPDATE gold_prices SET fetched_at = date || ' 00:00:00' WHERE fetched_at IS NULL", "Backfill fetched_at with date"},
+	}
+
+	for _, m := range migrations {
+		var exists bool
+		err := DB.QueryRow("SELECT EXISTS(SELECT 1 FROM schema_migrations WHERE version=?)", m.Version).Scan(&exists)
+		if err != nil {
+			log.Fatal("Failed to check migration version:", err)
+		}
+		if !exists {
+			_, err := DB.Exec(m.Query)
+			if err != nil {
+				// If the column already exists, treat it as successful
+				if err.Error() == "duplicate column name: no_purity" ||
+					err.Error() == "duplicate column name: no_weight" ||
+					err.Error() == "duplicate column name: is_bank_transfer" ||
+					err.Error() == "duplicate column name: fetched_at" {
+					DB.Exec("INSERT INTO schema_migrations (version) VALUES (?)", m.Version)
+					log.Printf("Applied migration %d: %s (column already existed)", m.Version, m.Desc)
+				} else {
+					log.Printf("ERROR: Failed to run migration %d (%s): %v", m.Version, m.Desc, err)
+					// Note: we do NOT insert into schema_migrations, so it will retry next time.
+				}
+			} else {
+				DB.Exec("INSERT INTO schema_migrations (version) VALUES (?)", m.Version)
+				log.Printf("Applied migration %d: %s", m.Version, m.Desc)
+			}
 		}
 	}
 }

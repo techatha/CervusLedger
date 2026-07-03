@@ -1,7 +1,7 @@
 import generatePayload from 'promptpay-qr'
 import { QRCodeCanvas } from 'qrcode.react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faQrcode } from '@fortawesome/free-solid-svg-icons'
+import { faQrcode, faMobileButton, faCircleXmark, faCircleCheck, faArrowsRotate } from '@fortawesome/free-solid-svg-icons'
 
 export default function PromptPayQR({
   showQr,
@@ -10,11 +10,9 @@ export default function PromptPayQR({
   promptpayName,
   bankName,
   bankAccount,
-  savingCart,
-  onCloseQr,
-  onSaveAllSales,
   displayStatus,
   displayError,
+  onRetryQR,
 }) {
   return (
     <div className="qr-payment-container">
@@ -58,21 +56,48 @@ export default function PromptPayQR({
                       {bankName && `ธนาคาร: ${bankName}`} {bankAccount && `(เลขบัญชี: ${bankAccount})`}
                     </span>
                   )}
-                  {displayStatus === 'sending' && (
-                    <div className="alert alert-warning" style={{ fontSize: '11px', padding: '8px', margin: '8px auto 0 auto', width: '90%', textAlign: 'center' }}>
-                      กำลังส่ง QR ไปที่หน้าจอ...
-                    </div>
-                  )}
-                  {displayStatus === 'done' && (
-                    <div className="alert alert-success" style={{ fontSize: '11px', padding: '8px', margin: '8px auto 0 auto', width: '90%', textAlign: 'center', color: '#155724', backgroundColor: '#d4edda', borderColor: '#c3e6cb' }}>
-                      ส่ง QR ไปที่หน้าจอสำเร็จ
-                    </div>
-                  )}
-                  {displayStatus === 'error' && (
-                    <div className="alert alert-error" style={{ fontSize: '11px', padding: '8px', margin: '8px auto 0 auto', width: '90%', textAlign: 'center' }}>
-                      หน้าจอ: {displayError}
-                    </div>
-                  )}
+                  <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    {displayStatus === 'sending' && (
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '6px',
+                        background: '#f1f5f9', color: '#64748b',
+                        padding: '6px 16px', borderRadius: '99px', fontSize: '12px', fontWeight: '500'
+                      }}>
+                        <FontAwesomeIcon icon={faArrowsRotate} spin /> กำลังส่ง QR ไปที่หน้าจอ...
+                      </div>
+                    )}
+                    {displayStatus === 'done' && (
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center', gap: '6px',
+                        background: 'var(--green-bg)', color: 'var(--green)',
+                        padding: '6px 16px', borderRadius: '99px', fontSize: '12px', fontWeight: '500'
+                      }}>
+                        <FontAwesomeIcon icon={faMobileButton} />
+                        <FontAwesomeIcon icon={faCircleCheck} />
+                        ส่ง QR ไปที่หน้าจอสำเร็จ
+                      </div>
+                    )}
+                    {displayStatus === 'error' && (
+                      <>
+                        <div style={{
+                          display: 'inline-flex', alignItems: 'center', gap: '6px',
+                          background: 'var(--red-bg)', color: 'var(--red)',
+                          padding: '6px 16px', borderRadius: '99px', fontSize: '12px', fontWeight: '500'
+                        }}>
+                          <FontAwesomeIcon icon={faMobileButton} />
+                          <FontAwesomeIcon icon={faCircleXmark} />
+                          เชื่อมต่อหน้าจอไม่ได้
+                        </div>
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          onClick={onRetryQR}
+                          style={{ fontSize: '11px', padding: '4px 10px' }}
+                        >
+                          <FontAwesomeIcon icon={faArrowsRotate} /> ลองเชื่อมต่ออีกครั้ง
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </>
             ) : (
@@ -80,17 +105,11 @@ export default function PromptPayQR({
                 ไม่พบข้อมูลหมายเลขพร้อมเพย์ในระบบ กรุณาตรวจสอบการตั้งค่า
               </div>
             )}
-            <button className="btn btn-ghost btn-sm" onClick={onCloseQr} style={{ fontSize: '11px', padding: '4px 10px', marginTop: '4px' }}>
-              ปิด QR Code
-            </button>
-            <button className="btn btn-primary" onClick={onSaveAllSales} disabled={savingCart}>
-              {savingCart ? 'กำลังบันทึกรายการ...' : 'ยืนยันจ่ายเงินสำเร็จ'}
-            </button>
           </div>
         ) : (
           <div className="qr-placeholder-box">
             <FontAwesomeIcon icon={faQrcode} size="3x" />
-            <span className="qr-hint">คิวอาร์โค้ดจะแสดงขึ้นเมื่อกดปุ่ม สร้าง QR Code</span>
+            <span className="qr-hint">เพิ่มรายการเพื่อสร้าง QR Code อัตโนมัติ</span>
           </div>
         )}
       </div>

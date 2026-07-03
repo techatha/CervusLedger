@@ -45,3 +45,7 @@ export function SaveDailyCash(arg1) {
 export function Startup(arg1) {
   return window['go']['income_expense_handler']['IncomeExpenseHandler']['Startup'](arg1);
 }
+
+export function UpdateIncomeExpense(arg1, arg2) {
+  return window['go']['income_expense_handler']['IncomeExpenseHandler']['UpdateIncomeExpense'](arg1, arg2);
+}

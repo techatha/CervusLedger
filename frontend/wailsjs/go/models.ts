@@ -108,6 +108,7 @@ export namespace models {
 	    amount: number;
 	    notes: string;
 	    source: string;
+	    is_bank_transfer: boolean;
 	    date: string;
 	    created_at: string;
 	
@@ -123,6 +124,7 @@ export namespace models {
 	        this.amount = source["amount"];
 	        this.notes = source["notes"];
 	        this.source = source["source"];
+	        this.is_bank_transfer = source["is_bank_transfer"];
 	        this.date = source["date"];
 	        this.created_at = source["created_at"];
 	    }
@@ -179,6 +181,7 @@ export namespace models {
 	    sell_price_per_baht: number;
 	    om_buy_price: number;
 	    om_sell_price: number;
+	    fetched_at: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new GoldPrice(source);
@@ -193,6 +196,7 @@ export namespace models {
 	        this.sell_price_per_baht = source["sell_price_per_baht"];
 	        this.om_buy_price = source["om_buy_price"];
 	        this.om_sell_price = source["om_sell_price"];
+	        this.fetched_at = source["fetched_at"];
 	    }
 	}
 	export class DashboardStats {
@@ -360,6 +364,7 @@ export namespace models {
 	    category: string;
 	    amount: number;
 	    notes: string;
+	    is_bank_transfer: boolean;
 	    date: string;
 	
 	    static createFrom(source: any = {}) {
@@ -372,6 +377,7 @@ export namespace models {
 	        this.category = source["category"];
 	        this.amount = source["amount"];
 	        this.notes = source["notes"];
+	        this.is_bank_transfer = source["is_bank_transfer"];
 	        this.date = source["date"];
 	    }
 	}
@@ -393,6 +399,20 @@ export namespace models {
 	        this.net = source["net"];
 	        this.start_date = source["start_date"];
 	        this.end_date = source["end_date"];
+	    }
+	}
+	export class IncomeExpenseUpdateInput {
+	    notes: string;
+	    is_bank_transfer: boolean;
+	
+	    static createFrom(source: any = {}) {
+	        return new IncomeExpenseUpdateInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.notes = source["notes"];
+	        this.is_bank_transfer = source["is_bank_transfer"];
 	    }
 	}
 	export class PawnInput {

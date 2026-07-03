@@ -34,6 +34,7 @@
 .db-stats-window {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
   gap: 12px;
 }
 
@@ -49,7 +50,7 @@
 .db-chart-card {
   display: flex;
   flex-direction: column;
-  height: 280px; /* Changed from min-height to strict height */
+  height: 310px; /* Increased to fit bank transfer labels */
 }
 
 .db-chart-body {
@@ -67,9 +68,8 @@
   width: 100%;
 }
 
-/* ─── Doughnut Card ───────────────────────────────────────── */
 .db-donut-card {
-  height: 280px; /* Match the row height */
+  height: 310px; /* Match the row height */
 }
 
 .db-gold-footer {
@@ -91,8 +91,8 @@
 
 .db-donut-wrap {
   position: relative;
-  width: 120px;
-  height: 120px;
+  width: 100%;
+  height: 140px;
   flex-shrink: 0;
 }
 
@@ -104,6 +104,12 @@
   align-items: center;
   justify-content: center;
   pointer-events: none;
+  z-index: 1;
+}
+
+.db-donut-wrap canvas {
+  position: relative !important;
+  z-index: 2;
 }
 
 .db-donut-net {

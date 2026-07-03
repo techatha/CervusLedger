@@ -28,7 +28,7 @@ func (h *IncomeExpenseHandler) Startup(ctx context.Context) {
 
 func (h *IncomeExpenseHandler) ListIncomeExpense(f models.IncomeExpenseFilter) ([]models.IncomeExpense, error) {
 	query := `
-		SELECT id, type, category, amount, notes, source, date, created_at
+		SELECT id, type, category, amount, notes, source, is_bank_transfer, date, created_at
 		FROM income_expenses
 		WHERE 1=1
 	`
@@ -63,7 +63,7 @@ func (h *IncomeExpenseHandler) ListIncomeExpense(f models.IncomeExpenseFilter) (
 		var e models.IncomeExpense
 		if err := rows.Scan(
 			&e.ID, &e.Type, &e.Category, &e.Amount,
-			&e.Notes, &e.Source, &e.Date, &e.CreatedAt,
+			&e.Notes, &e.Source, &e.IsBankTransfer, &e.Date, &e.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan income_expenses: %w", err)
 		}
@@ -79,10 +79,14 @@ func (h *IncomeExpenseHandler) CreateIncomeExpense(input models.IncomeExpenseInp
 	if len(dateVal) == 10 {
 		dateVal = dateVal + " " + time.Now().Format("15:04:05")
 	}
+	isBankInt := 0
+	if input.IsBankTransfer {
+		isBankInt = 1
+	}
 	res, err := db.DB.Exec(`
-		INSERT INTO income_expenses (type, category, amount, notes, source, date)
-		VALUES (?, ?, ?, ?, 'manual', ?)
-	`, input.Type, input.Category, input.Amount, input.Notes, dateVal)
+		INSERT INTO income_expenses (type, category, amount, notes, source, is_bank_transfer, date)
+		VALUES (?, ?, ?, ?, 'manual', ?, ?)
+	`, input.Type, input.Category, input.Amount, input.Notes, isBankInt, dateVal)
 	if err != nil {
 		return models.IncomeExpense{}, fmt.Errorf("create income_expenses: %w", err)
 	}
@@ -90,13 +94,28 @@ func (h *IncomeExpenseHandler) CreateIncomeExpense(input models.IncomeExpenseInp
 
 	var e models.IncomeExpense
 	db.DB.QueryRow(`
-		SELECT id, type, category, amount, notes, source, date, created_at
+		SELECT id, type, category, amount, notes, source, is_bank_transfer, date, created_at
 		FROM income_expenses WHERE id = ?
 	`, id).Scan(
 		&e.ID, &e.Type, &e.Category, &e.Amount,
-		&e.Notes, &e.Source, &e.Date, &e.CreatedAt,
+		&e.Notes, &e.Source, &e.IsBankTransfer, &e.Date, &e.CreatedAt,
 	)
 	return e, nil
+}
+
+// ─── Update ────────────────────────────────────────────────────────────────
+
+func (h *IncomeExpenseHandler) UpdateIncomeExpense(id int, input models.IncomeExpenseUpdateInput) error {
+	isBankInt := 0
+	if input.IsBankTransfer {
+		isBankInt = 1
+	}
+	_, err := db.DB.Exec(`
+		UPDATE income_expenses
+		SET notes = ?, is_bank_transfer = ?
+		WHERE id = ?
+	`, input.Notes, isBankInt, id)
+	return err
 }
 
 // ─── Delete ────────────────────────────────────────────────────────────────
@@ -207,7 +226,7 @@ func (h *IncomeExpenseHandler) GetDailyCash(date string) (models.DailyCash, erro
 		SELECT
 			COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0)
-		FROM income_expenses WHERE date(date) = ?
+		FROM income_expenses WHERE date(date) = ? AND (is_bank_transfer = 0 OR is_bank_transfer IS NULL)
 	`, date).Scan(&totalIncome, &totalExpense)
 	if err != nil {
 		totalIncome, totalExpense = 0.0, 0.0
@@ -246,7 +265,7 @@ func (h *IncomeExpenseHandler) SaveDailyCash(input models.DailyCashInput) (model
 		SELECT
 			COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0)
-		FROM income_expenses WHERE date(date) = ?
+		FROM income_expenses WHERE date(date) = ? AND (is_bank_transfer = 0 OR is_bank_transfer IS NULL)
 	`, input.Date).Scan(&totalIncome, &totalExpense)
 	if err != nil {
 		totalIncome, totalExpense = 0.0, 0.0
@@ -291,7 +310,7 @@ func (h *IncomeExpenseHandler) SaveDailyCash(input models.DailyCashInput) (model
 			SELECT
 				COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END), 0),
 				COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0)
-			FROM income_expenses WHERE date(date) = ?
+			FROM income_expenses WHERE date(date) = ? AND (is_bank_transfer = 0 OR is_bank_transfer IS NULL)
 		`, successorDate).Scan(&inc, &exp)
 		if err != nil {
 			inc, exp = 0.0, 0.0
@@ -336,7 +355,7 @@ func (h *IncomeExpenseHandler) SaveDailyCash(input models.DailyCashInput) (model
 				SELECT
 					COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END), 0),
 					COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0)
-				FROM income_expenses WHERE date(date) = ?
+				FROM income_expenses WHERE date(date) = ? AND (is_bank_transfer = 0 OR is_bank_transfer IS NULL)
 			`, nextDate).Scan(&nInc, &nExp)
 			if err != nil {
 				nInc, nExp = 0.0, 0.0

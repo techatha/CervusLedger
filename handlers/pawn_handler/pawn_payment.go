@@ -82,11 +82,43 @@ func (h *PawnHandler) GetPawnPayments(pawnRecordID int) ([]models.PawnPayment, e
 	return list, nil
 }
 
-// DeletePayment removes a payment (and its auto-income entry by matching notes).
-// Only for corrections — use with care.
 func (h *PawnHandler) DeletePayment(paymentID int) error {
-	_, err := db.DB.Exec(`DELETE FROM pawn_payments WHERE id = ?`, paymentID)
-	return err
+	tx, err := db.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// 1. Fetch payment info
+	var pawnRecordID int
+	var paidDate string
+	err = tx.QueryRow(`SELECT pawn_record_id, paid_date FROM pawn_payments WHERE id = ?`, paymentID).Scan(&pawnRecordID, &paidDate)
+	if err != nil {
+		return fmt.Errorf("payment not found: %w", err)
+	}
+
+	// 2. Fetch interest amount
+	var amount float64
+	err = tx.QueryRow(`SELECT interest_amount FROM pawn_records WHERE id = ?`, pawnRecordID).Scan(&amount)
+	if err == nil {
+		// Delete one matching auto-income entry
+		tx.Exec(`
+			DELETE FROM income_expenses 
+			WHERE id = (
+				SELECT id FROM income_expenses 
+				WHERE source = 'auto' AND category = 'ดอกเบี้ยจำนำ' AND amount = ? AND date = ? 
+				LIMIT 1
+			)
+		`, amount, paidDate)
+	}
+
+	// 3. Delete payment
+	_, err = tx.Exec(`DELETE FROM pawn_payments WHERE id = ?`, paymentID)
+	if err != nil {
+		return err
+	}
+
+	return tx.Commit()
 }
 
 // RedeemPawn transitions pawn status to redeemed ('ถอน').

@@ -14,7 +14,7 @@ import (
 func (h *IncomeExpenseHandler) ExportToXlsx(startDate, endDate, filePath string) error {
 	// ── Fetch income/expense entries ──
 	rows, err := db.DB.Query(`
-		SELECT id, type, category, amount, notes, source, date
+		SELECT id, type, category, amount, notes, source, is_bank_transfer, date
 		FROM income_expenses
 		WHERE date(date) >= ? AND date(date) <= ?
 		ORDER BY date ASC, id ASC
@@ -27,7 +27,7 @@ func (h *IncomeExpenseHandler) ExportToXlsx(startDate, endDate, filePath string)
 	var entries []models.IncomeExpense
 	for rows.Next() {
 		var e models.IncomeExpense
-		rows.Scan(&e.ID, &e.Type, &e.Category, &e.Amount, &e.Notes, &e.Source, &e.Date)
+		rows.Scan(&e.ID, &e.Type, &e.Category, &e.Amount, &e.Notes, &e.Source, &e.IsBankTransfer, &e.Date)
 		entries = append(entries, e)
 	}
 
@@ -100,6 +100,19 @@ func (h *IncomeExpenseHandler) ExportToXlsx(startDate, endDate, filePath string)
 		Font: &excelize.Font{Bold: true, Size: 11, Color: "3A3020"},
 		Fill: excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{"F5F0E8"}},
 	})
+	bankTransferStyle, _ := f.NewStyle(&excelize.Style{
+		Fill: excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{"E0E0E0"}},
+	})
+	incomeBankStyle, _ := f.NewStyle(&excelize.Style{
+		Font:   &excelize.Font{Color: "3D9A68"},
+		NumFmt: 4, // #,##0.00
+		Fill:   excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{"E0E0E0"}},
+	})
+	expenseBankStyle, _ := f.NewStyle(&excelize.Style{
+		Font:   &excelize.Font{Color: "C04848"},
+		NumFmt: 4,
+		Fill:   excelize.Fill{Type: "pattern", Pattern: 1, Color: []string{"E0E0E0"}},
+	})
 
 	// ════════════════════════════════════════════════════════════════════════
 	// Sheet 1: รายรับ-รายจ่าย
@@ -159,19 +172,39 @@ func (h *IncomeExpenseHandler) ExportToXlsx(startDate, endDate, filePath string)
 			if e.Source == "auto" {
 				sourceLabel = "อัตโนมัติ"
 			}
+			noteStr := e.Notes
+			if e.IsBankTransfer {
+				if noteStr != "" {
+					noteStr += " "
+				}
+				noteStr += "(โอนผ่านธนาคาร)"
+			}
+
 			f.SetCellValue(sheet1, fmt.Sprintf("A%d", row), i+1)
 			f.SetCellValue(sheet1, fmt.Sprintf("B%d", row), h.CeDateToBE(e.Date))
 			f.SetCellValue(sheet1, fmt.Sprintf("C%d", row), typeLabel)
 			f.SetCellValue(sheet1, fmt.Sprintf("D%d", row), e.Category)
 			f.SetCellValue(sheet1, fmt.Sprintf("E%d", row), e.Amount)
 			f.SetCellValue(sheet1, fmt.Sprintf("F%d", row), sourceLabel)
-			f.SetCellValue(sheet1, fmt.Sprintf("G%d", row), e.Notes)
+			f.SetCellValue(sheet1, fmt.Sprintf("G%d", row), noteStr)
+
+			if e.IsBankTransfer {
+				f.SetCellStyle(sheet1, fmt.Sprintf("A%d", row), fmt.Sprintf("G%d", row), bankTransferStyle)
+			}
 
 			if e.Type == "income" {
-				f.SetCellStyle(sheet1, fmt.Sprintf("E%d", row), fmt.Sprintf("E%d", row), incomeStyle)
+				if e.IsBankTransfer {
+					f.SetCellStyle(sheet1, fmt.Sprintf("E%d", row), fmt.Sprintf("E%d", row), incomeBankStyle)
+				} else {
+					f.SetCellStyle(sheet1, fmt.Sprintf("E%d", row), fmt.Sprintf("E%d", row), incomeStyle)
+				}
 				dayIncome += e.Amount
 			} else {
-				f.SetCellStyle(sheet1, fmt.Sprintf("E%d", row), fmt.Sprintf("E%d", row), expenseStyle)
+				if e.IsBankTransfer {
+					f.SetCellStyle(sheet1, fmt.Sprintf("E%d", row), fmt.Sprintf("E%d", row), expenseBankStyle)
+				} else {
+					f.SetCellStyle(sheet1, fmt.Sprintf("E%d", row), fmt.Sprintf("E%d", row), expenseStyle)
+				}
 				dayExpense += e.Amount
 			}
 			row++
