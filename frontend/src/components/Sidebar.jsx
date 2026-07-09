@@ -35,17 +35,17 @@ const NAV = [
     ],
   },
   {
-    group: 'การเงิน',
-    items: [
-      { to: '/sales', icon: <FontAwesomeIcon icon={faSackDollar} />, label: 'ทำรายการ ซื้อ-ขาย' },
-      { to: '/income', icon: <FontAwesomeIcon icon={faPiggyBank} />, label: 'บันทึก รายรับ-รายจ่าย' },
-    ],
-  },
-  {
     group: 'สต็อกทอง',
     items: [
       { to: '/gold', icon: <FontAwesomeIcon icon={faBoxesStacked} />, label: 'สต็อกทองในร้าน' },
       { to: '/buy', icon: <FontAwesomeIcon icon={faHandHoldingDollar} />, label: 'สต็อกของเก่า' },
+    ],
+  },
+    {
+    group: 'การเงิน',
+    items: [
+      { to: '/sales', icon: <FontAwesomeIcon icon={faSackDollar} />, label: 'ทำรายการ ซื้อ-ขาย' },
+      { to: '/income', icon: <FontAwesomeIcon icon={faPiggyBank} />, label: 'บันทึก รายรับ-รายจ่าย' },
     ],
   },
   {

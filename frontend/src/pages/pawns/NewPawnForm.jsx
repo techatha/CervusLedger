@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import {
   GetPawnSettings,
   CreatePawn,
+  CheckTicketNumberExists,
 } from 'wailsjs/go/pawn_handler/PawnHandler'
 import { SetLastTicketNumber } from 'wailsjs/go/settings_handler/SettingsHandler'
 import { GetCustomers } from 'wailsjs/go/customer_handler/CustomerHandler'
@@ -137,6 +138,14 @@ export default function NewPawnForm({ onSaved, onClose }) {
     setError(null)
     try {
       const ticketNum = parseInt(form.ticket_number, 10)
+
+      const isTaken = await CheckTicketNumberExists(ticketNum)
+      if (isTaken) {
+        setError(`ไม่สามารถใช้เลขตั๋ว ${ticketNum} ได้เนื่องจากมีรายการที่ยังไม่ไถ่ถอนใช้เลขนี้อยู่`)
+        setSaving(false)
+        return
+      }
+
       await SetLastTicketNumber(ticketNum - 1)
 
       await CreatePawn({

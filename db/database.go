@@ -125,6 +125,8 @@ func createTables() {
 			interest_amount       REAL NOT NULL,
 			ticket_status         TEXT DEFAULT 'active',
 			status                TEXT DEFAULT 'active',
+			redeemed_at           DATETIME,
+			forfeited_at          DATETIME,
 			created_at            DATETIME DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (customer_id) REFERENCES customers(id)
 		)`,
@@ -137,6 +139,16 @@ func createTables() {
 			year           INTEGER NOT NULL,
 			paid_date      DATE NOT NULL,
 			notes          TEXT,
+			FOREIGN KEY (pawn_record_id) REFERENCES pawn_records(id)
+		)`,
+
+		// Ticket number changes logs
+		`CREATE TABLE IF NOT EXISTS ticket_number_logs (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			pawn_record_id INTEGER NOT NULL,
+			old_ticket_number INTEGER NOT NULL,
+			new_ticket_number INTEGER NOT NULL,
+			changed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (pawn_record_id) REFERENCES pawn_records(id)
 		)`,
 
@@ -238,6 +250,16 @@ func runMigrations() {
 		{4, "ALTER TABLE gold_prices ADD COLUMN fetched_at DATETIME", "Add fetched_at to gold_prices"},
 		{5, "ALTER TABLE gold_prices ADD COLUMN fetched_at DATETIME", "Retry adding fetched_at to gold_prices (fix for v4)"},
 		{6, "UPDATE gold_prices SET fetched_at = date || ' 00:00:00' WHERE fetched_at IS NULL", "Backfill fetched_at with date"},
+		{7, `CREATE TABLE IF NOT EXISTS ticket_number_logs (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			pawn_record_id INTEGER NOT NULL,
+			old_ticket_number INTEGER NOT NULL,
+			new_ticket_number INTEGER NOT NULL,
+			changed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (pawn_record_id) REFERENCES pawn_records(id)
+		)`, "Add ticket_number_logs table"},
+		{8, "ALTER TABLE pawn_records ADD COLUMN redeemed_at DATETIME", "Add redeemed_at to pawn_records"},
+		{9, "ALTER TABLE pawn_records ADD COLUMN forfeited_at DATETIME", "Add forfeited_at to pawn_records"},
 	}
 
 	for _, m := range migrations {

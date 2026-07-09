@@ -28,6 +28,8 @@ type PawnRecord struct {
 	InterestAmount      float64 `json:"interest_amount"`
 	Status              string  `json:"status"`
 	TicketStatus        string  `json:"ticket_status"`
+	RedeemedAt          *string `json:"redeemed_at,omitempty"`
+	ForfeitedAt         *string `json:"forfeited_at,omitempty"`
 	CreatedAt           string  `json:"created_at"`
 	LastPaidMonth       *int    `json:"last_paid_month,omitempty"` // Latest payment month (1-12), nil if none
 	LastPaidYear        *int    `json:"last_paid_year,omitempty"`  // Latest payment year (CE), nil if none
@@ -86,4 +88,13 @@ type PawnSettings struct {
 	Threshold    float64 // e.g. 10000
 	MinInterest  float64 // e.g. 20
 	LastTicket   int
+}
+
+// TicketNumberLog maps to ticket_number_logs table.
+type TicketNumberLog struct {
+	ID              int    `json:"id"`
+	PawnRecordID    int    `json:"pawn_record_id"`
+	OldTicketNumber int    `json:"old_ticket_number"`
+	NewTicketNumber int    `json:"new_ticket_number"`
+	ChangedAt       string `json:"changed_at"`
 }

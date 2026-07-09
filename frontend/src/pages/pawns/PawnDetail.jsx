@@ -9,6 +9,7 @@ import {
   ForfeitPawn,
   UpdateTicketStatus,
   DeletePayment,
+  GetTicketNumberLogs,
 } from 'wailsjs/go/pawn_handler/PawnHandler'
 import { GetCustomer } from 'wailsjs/go/customer_handler/CustomerHandler'
 import { GetAllSettings } from 'wailsjs/go/settings_handler/SettingsHandler'
@@ -19,8 +20,9 @@ import PawnStatusCard from './components/pawnDetail/PawnStatusCard'
 import PawnPaymentHistoryCard from './components/pawnDetail/PawnPaymentHistoryCard'
 import PawnPendingInterestCard from './components/pawnDetail/PawnPendingInterestCard'
 import PawnPrincipalChangesCard from './components/pawnDetail/PawnPrincipalChangesCard'
+import PawnTicketLogsCard from './components/pawnDetail/PawnTicketLogsCard'
 import { formatTicket, pawnStatusBadge } from '@/utils/thai'
-import { getPendingMonths, thaiMonthShort } from '@/utils/pawn'
+import { getPendingMonths, getLatestPaidMonth, thaiMonthShort } from '@/utils/pawn'
 import { getLocalISOString } from '@/utils/date'
 import { RecordPaymentModal, PrincipalChangeForm } from './PrincipalChangeForm'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -36,6 +38,7 @@ export default function PawnDetail({ cartItems, setCartItems }) {
   const [pawn, setPawn] = useState(null)
   const [payments, setPayments] = useState([])
   const [changes, setChanges] = useState([])
+  const [ticketLogs, setTicketLogs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -51,14 +54,16 @@ export default function PawnDetail({ cartItems, setCartItems }) {
     setLoading(true)
     setError(null)
     try {
-      const [p, pays, chgs] = await Promise.all([
+      const [p, pays, chgs, logs] = await Promise.all([
         GetPawn(pawnId),
         GetPawnPayments(pawnId),
         GetPrincipalChanges(pawnId),
+        GetTicketNumberLogs(pawnId),
       ])
       setPawn(p)
       setPayments(pays || [])
       setChanges(chgs || [])
+      setTicketLogs(logs || [])
     } catch (e) {
       setError('โหลดข้อมูลไม่สำเร็จ: ' + e)
     } finally {
@@ -86,13 +91,100 @@ export default function PawnDetail({ cartItems, setCartItems }) {
     }
   }
 
-  const handleRedeem = async () => {
-    try {
-      await RedeemPawn(pawnId)
-      setModal(null)
-      load()
-      reloadAll()
-    } catch (e) { setError(String(e)) }
+  const handleRedeem = () => {
+    // We add pending interest (if any)
+    const itemsToProcess = [...pendingMonths]
+    
+    // Check next due date:
+    const today = new Date()
+    today.setHours(0,0,0,0)
+
+    const pawnDate = new Date(pawn.pawned_date)
+    pawnDate.setHours(0,0,0,0)
+    const dueDay = pawnDate.getDate()
+
+    const latest = getLatestPaidMonth(pawn, payments)
+    if (!latest) return
+    
+    let checkMonth = latest.month + 1
+    let checkYear = latest.year
+
+    // Fast forward checkMonth/Year past pending months
+    for (let i = 0; i < itemsToProcess.length; i++) {
+        if (checkMonth > 11) {
+            checkMonth = 0;
+            checkYear++
+        }
+        checkMonth++
+    }
+    
+    if (checkMonth > 11) {
+        checkMonth = 0;
+        checkYear++
+    }
+
+    const maxDaysInCheckMonth = new Date(checkYear, checkMonth + 1, 0).getDate()
+    const actualDueDay = Math.min(dueDay, maxDaysInCheckMonth)
+    const nextDueDate = new Date(checkYear, checkMonth, actualDueDay)
+    nextDueDate.setHours(0, 0, 0, 0)
+    
+    const diffTime = nextDueDate - today
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    
+    const addedExtraMonth = (diffDays < 15 && diffDays >= 0);
+    if (addedExtraMonth) {
+        itemsToProcess.push({
+            month: checkMonth + 1,
+            year: checkYear
+        })
+    }
+    
+    const cartAdds = []
+    
+    const extraText = addedExtraMonth ? ' (รวมดอกเบี้ยเดือนถัดไป)' : '';
+    
+    // Add principal reduction
+    cartAdds.push({
+        type: 'pawn_principal_change',
+        change_type: 'reduction',
+        label: 'ไถ่ถอน',
+        pawn_record_id: pawn.id,
+        amount: current,
+        new_principal: 0,
+        new_interest_rate: pawn.monthly_interest_rate,
+        new_interest_amount: 0,
+        date: getLocalISOString().slice(0, 10),
+        notes: `ไถ่ถอนตั๋ว #${formatTicket(pawn.ticket_number)} (${pawn.customer_name_display || pawn.customer_name})${extraText}`,
+        total_amount: current,
+        original_notes: `ไถ่ถอนตั๋ว #${formatTicket(pawn.ticket_number)}${extraText}`,
+    })
+    
+    // Add pending interest
+    if (itemsToProcess.length > 0) {
+        const totalInterest = pawn.interest_amount * itemsToProcess.length
+        const monthLabels = formatMonthRange(itemsToProcess)
+        cartAdds.push({
+          type: 'pawn_interest',
+          label: `ชำระดอกเบี้ยจำนำ (ไถ่ถอน)`,
+          weight_baht: 0,
+          price_per_baht: 0,
+          total_amount: totalInterest,
+          payments: itemsToProcess.map(m => ({
+            pawn_record_id: pawn.id,
+            month: m.month,
+            year: m.year,
+            paid_date: getLocalISOString().slice(0, 10),
+            notes: `งวด ${thaiMonthShort(m.month)} ${m.year + 543} (ไถ่ถอน)`,
+            interest_amount: pawn.interest_amount,
+            customer_name: pawn.customer_name_display || pawn.customer_name || '',
+            ticket_number: pawn.ticket_number
+          })),
+          notes: `ตั๋ว #${formatTicket(pawn.ticket_number)} (${pawn.customer_name_display || pawn.customer_name}) - งวด ${monthLabels}`
+        })
+    }
+    
+    setModal(null)
+    navigate('/sales', { state: { addItems: cartAdds } })
   }
 
   const handleForfeit = async () => {
@@ -201,6 +293,13 @@ export default function PawnDetail({ cartItems, setCartItems }) {
 
   const pendingMonths = getPendingMonths(pawn, payments)
 
+  const isRedeemInCart = cartItems?.some(item =>
+    item.type === 'pawn_principal_change' &&
+    item.change_type === 'reduction' &&
+    item.new_principal === 0 &&
+    item.pawn_record_id === pawn.id
+  )
+
   return (
     <div className="page-view">
       {/* Header */}
@@ -271,20 +370,34 @@ export default function PawnDetail({ cartItems, setCartItems }) {
             isActive={isActive}
             onStatusChange={handleTicketStatus}
           />
-          <button className="btn btn-ghost" onClick={() => setModal('principal')}>
-            เปลี่ยนเงินต้น
-          </button>
+          {isActive && (
+            <>
+              <button className="btn btn-ghost" onClick={() => setModal('principal')}>
+                เปลี่ยนเงินต้น
+              </button>
 
-          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
-            <button className="btn btn-ghost" onClick={() => setModal('redeem')}
-              style={{ flex: 1, color: 'var(--blue)', borderColor: 'var(--blue)' }}>
-              ไถ่ของ
-            </button>
-            <button className="btn btn-danger-ghost" onClick={() => setModal('forfeit')}
-              style={{ flex: 1 }}>
-              ขาด
-            </button>
-          </div>
+              <div style={{ display: 'flex', gap: 8, width: '100%', marginBottom: 16 }}>
+                <button 
+                  className="btn btn-ghost" 
+                  onClick={() => !isRedeemInCart && setModal('redeem')}
+                  disabled={isRedeemInCart}
+                  style={{ 
+                    flex: 1, 
+                    color: isRedeemInCart ? '#9ca3af' : 'var(--blue)', 
+                    borderColor: isRedeemInCart ? 'var(--border)' : 'var(--blue)',
+                    cursor: isRedeemInCart ? 'not-allowed' : 'pointer'
+                  }}>
+                  {isRedeemInCart ? 'ไถ่ของ (ในตะกร้าแล้ว)' : 'ไถ่ของ'}
+                </button>
+                <button className="btn btn-danger-ghost" onClick={() => setModal('forfeit')}
+                  style={{ flex: 1 }}>
+                  ขาด
+                </button>
+              </div>
+            </>
+          )}
+
+          <PawnTicketLogsCard logs={ticketLogs} />
         </div>
 
         <div className="pd-right">
@@ -299,7 +412,7 @@ export default function PawnDetail({ cartItems, setCartItems }) {
               </div>
             </div>
           )}
-          <PawnPaymentHistoryCard payments={payments} onDeletePayment={handleDeletePayment} />
+          <PawnPaymentHistoryCard payments={payments} onDeletePayment={handleDeletePayment} isActive={isActive} />
 
           <PawnPendingInterestCard
             pendingMonths={pendingMonths}

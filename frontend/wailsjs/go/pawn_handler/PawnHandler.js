@@ -6,6 +6,10 @@ export function AddPrincipalChange(arg1) {
   return window['go']['pawn_handler']['PawnHandler']['AddPrincipalChange'](arg1);
 }
 
+export function CheckTicketNumberExists(arg1) {
+  return window['go']['pawn_handler']['PawnHandler']['CheckTicketNumberExists'](arg1);
+}
+
 export function CreatePawn(arg1) {
   return window['go']['pawn_handler']['PawnHandler']['CreatePawn'](arg1);
 }
@@ -38,6 +42,10 @@ export function GetPrincipalChanges(arg1) {
   return window['go']['pawn_handler']['PawnHandler']['GetPrincipalChanges'](arg1);
 }
 
+export function GetTicketNumberLogs(arg1) {
+  return window['go']['pawn_handler']['PawnHandler']['GetTicketNumberLogs'](arg1);
+}
+
 export function ListPawns(arg1, arg2) {
   return window['go']['pawn_handler']['PawnHandler']['ListPawns'](arg1, arg2);
 }
@@ -50,8 +58,12 @@ export function RecordPayment(arg1) {
   return window['go']['pawn_handler']['PawnHandler']['RecordPayment'](arg1);
 }
 
-export function RedeemPawn(arg1) {
-  return window['go']['pawn_handler']['PawnHandler']['RedeemPawn'](arg1);
+export function RecordPaymentsGrouped(arg1, arg2, arg3) {
+  return window['go']['pawn_handler']['PawnHandler']['RecordPaymentsGrouped'](arg1, arg2, arg3);
+}
+
+export function RedeemPawn(arg1, arg2) {
+  return window['go']['pawn_handler']['PawnHandler']['RedeemPawn'](arg1, arg2);
 }
 
 export function Startup(arg1) {
@@ -64,6 +76,10 @@ export function UpdatePawnDescription(arg1, arg2) {
 
 export function UpdatePawnInterest(arg1, arg2, arg3) {
   return window['go']['pawn_handler']['PawnHandler']['UpdatePawnInterest'](arg1, arg2, arg3);
+}
+
+export function UpdateTicketNumber(arg1, arg2) {
+  return window['go']['pawn_handler']['PawnHandler']['UpdateTicketNumber'](arg1, arg2);
 }
 
 export function UpdateTicketStatus(arg1, arg2) {

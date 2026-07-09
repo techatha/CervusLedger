@@ -5,7 +5,7 @@ import NewSaleForm from './NewSaleForm'
 import './SalesList.css'
 import GoldPriceDashboard from '@/components/GoldPriceDashboard'
 import { CreateSale, GetSetting } from 'wailsjs/go/sale_handler/SaleHandler.js'
-import { RecordPayment, AddPrincipalChange } from 'wailsjs/go/pawn_handler/PawnHandler.js'
+import { RecordPayment, AddPrincipalChange, RedeemPawn, RecordPaymentsGrouped } from 'wailsjs/go/pawn_handler/PawnHandler.js'
 import { SendQRToDisplay, SendSuccessToDisplay, SendFailToDisplay } from 'wailsjs/go/displayer_handler/DisplayerHandler.js'
 import PromptPayQR from './components/saleList/PromptPayQR'
 import SalesCart from './components/saleList/SalesCart'
@@ -33,7 +33,7 @@ export default function SalesList({ cartItems, setCartItems }) {
 
   // Example modification inside the main transaction table calculator
   const mainTotalAmount = cartItems.reduce((acc, item) => {
-    if (item.type === 'sell' || item.type === 'pawn_interest' || (item.type === 'pawn_principal_change' && item.change_type === 'reduction')) {
+    if (item.type === 'sell' || item.type === 'pawn_interest' || (item.type === 'pawn_principal_change' && item.change_type === 'reduction') || item.type === 'addition') {
       return acc + item.total_amount;
     } else if (item.type === 'buy' || item.type === 'discount' || (item.type === 'pawn_principal_change' && item.change_type === 'increase')) {
       return acc - item.total_amount; // Subtracts buybacks and active discounts from total customer payment due
@@ -150,7 +150,27 @@ export default function SalesList({ cartItems, setCartItems }) {
         else if (currentItem.type === 'buy' || (currentItem.type === 'pawn_principal_change' && currentItem.change_type === 'increase')) {
           mergedCart.push(currentItem)
         }
-        // 3. ถ้ารายการเป็น "ส่วนลด (Discount)"
+        // 3. ถ้ารายการเป็น "เพิ่มเงิน (Addition)"
+        else if (currentItem.type === 'addition') {
+          let remainingAddition = currentItem.total_amount
+          const additionRefText = currentItem.label || 'เพิ่มเงิน'
+
+          if (revenueStack.length > 0) {
+            const topItem = revenueStack.pop()
+            topItem.total_amount += remainingAddition
+            topItem.notes = topItem.notes
+              ? `${topItem.notes} | รวม(${additionRefText}: ${remainingAddition}บ.)`
+              : `รวม(${additionRefText}: ${remainingAddition}บ.)`
+            
+            remainingAddition = 0
+            revenueStack.push(topItem)
+          }
+
+          if (remainingAddition > 0) {
+            revenueStack.push(currentItem)
+          }
+        }
+        // 4. ถ้ารายการเป็น "ส่วนลด (Discount)"
         else if (currentItem.type === 'discount') {
           let remainingDiscount = currentItem.total_amount
           const discountRefText = currentItem.label || 'ส่วนลด'
@@ -183,7 +203,7 @@ export default function SalesList({ cartItems, setCartItems }) {
             }
           }
 
-          // 4. ถ้าหักรายรับจนหมดแล้วยังมี "ส่วนลดเหลือ" (หรือไม่มีการขายเลย มีแต่รับซื้อ)
+          // 5. ถ้าหักรายรับจนหมดแล้วยังมี "ส่วนลดเหลือ" (หรือไม่มีการขายเลย มีแต่รับซื้อ)
           // ให้บันทึกส่วนลดก้อนนี้เป็น "Expense (รายจ่าย) 1 ก้อนแยกต่างหาก"
           if (remainingDiscount > 0) {
             mergedCart.push({
@@ -205,11 +225,12 @@ export default function SalesList({ cartItems, setCartItems }) {
         if (item.type === 'pawn_interest') {
           const paymentsToProcess = item.payments || [item]
           let remainingTotal = item.total_amount
+          const inputs = []
 
           for (const p of paymentsToProcess) {
             const alloc = Math.min(p.interest_amount, remainingTotal)
             
-            await RecordPayment({
+            inputs.push({
               pawn_record_id: p.pawn_record_id,
               month: p.month,
               year: p.year,
@@ -223,10 +244,19 @@ export default function SalesList({ cartItems, setCartItems }) {
             remainingTotal -= alloc
             if (remainingTotal < 0) remainingTotal = 0
           }
+          
+          await RecordPaymentsGrouped(inputs, item.total_amount, item.notes)
         } else if (item.type === 'pawn_principal_change') {
           const { label, total_amount, price_per_baht, weight_baht, type, original_notes, cart_notes, ...cleanInput } = item
           cleanInput.notes = original_notes || ''
+          if (!cleanInput.date) {
+            cleanInput.date = new Date().toLocaleDateString('sv')
+          }
           await AddPrincipalChange(cleanInput)
+          
+          if (cleanInput.change_type === 'reduction' && cleanInput.new_principal === 0) {
+            await RedeemPawn(cleanInput.pawn_record_id, cleanInput.date)
+          }
         } else {
           // ถอด label ออกก่อนส่งให้ Backend
           const { label, ...cleanInput } = item
@@ -247,7 +277,7 @@ export default function SalesList({ cartItems, setCartItems }) {
       setShowQr(false)
       priceDashboardRef.current?.refresh()
       reloadAll()
-      alert('บันทึกรายการสำเร็จเรียบร้อยแล้ว')
+      // alert('บันทึกรายการสำเร็จเรียบร้อยแล้ว')
     } catch (e) {
       setError('บันทึกรายการไม่สำเร็จ: ' + e)
     } finally {

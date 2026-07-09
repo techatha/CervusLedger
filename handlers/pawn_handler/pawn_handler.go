@@ -38,7 +38,7 @@ func (h *PawnHandler) ListPawnsSorted(status, search, sortOrder string) ([]model
 				pr.principal_amount
 			) AS current_principal,
 			pr.monthly_interest_rate, pr.interest_amount,
-			pr.status, pr.ticket_status, pr.created_at,
+			pr.status, pr.ticket_status, pr.redeemed_at, pr.forfeited_at, pr.created_at,
 			(SELECT pp.month FROM pawn_payments pp
 			 WHERE pp.pawn_record_id = pr.id
 			 ORDER BY pp.year DESC, pp.month DESC LIMIT 1) AS last_paid_month,
@@ -87,7 +87,8 @@ func (h *PawnHandler) ListPawnsSorted(status, search, sortOrder string) ([]model
 			&item.Description, &item.PawnedDate, &item.InitialPrincipal,
 			&item.CurrentPrincipal, &item.MonthlyInterestRate,
 			&item.InterestAmount, &item.Status, &item.TicketStatus,
-			&item.CreatedAt, &item.LastPaidMonth, &item.LastPaidYear,
+			&item.RedeemedAt, &item.ForfeitedAt, &item.CreatedAt,
+			&item.LastPaidMonth, &item.LastPaidYear,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan pawn list: %w", err)
@@ -104,7 +105,7 @@ func (h *PawnHandler) GetCustomerPawnRecords(id int) ([]models.PawnRecord, error
 			pr.item_type, pr.weight_grams, pr.description,
 			pr.pawned_date, pr.principal_amount AS initial_principal,
 			pr.monthly_interest_rate, pr.interest_amount,
-			pr.status, pr.ticket_status, pr.created_at,
+			pr.status, pr.ticket_status, pr.redeemed_at, pr.forfeited_at, pr.created_at,
 			COALESCE(
 				(SELECT pc.new_principal FROM principal_changes pc
 				 WHERE pc.pawn_record_id = pr.id
@@ -134,7 +135,7 @@ func (h *PawnHandler) GetCustomerPawnRecords(id int) ([]models.PawnRecord, error
 			&r.ItemType, &r.WeightGrams, &r.Description,
 			&r.PawnedDate, &r.InitialPrincipal,
 			&r.MonthlyInterestRate, &r.InterestAmount,
-			&r.Status, &r.TicketStatus, &r.CreatedAt,
+			&r.Status, &r.TicketStatus, &r.RedeemedAt, &r.ForfeitedAt, &r.CreatedAt,
 			&r.CurrentPrincipal, &r.LastPaidMonth, &r.LastPaidYear,
 		); err != nil {
 			return nil, fmt.Errorf("scan: %w", err)
@@ -274,7 +275,7 @@ func (h *PawnHandler) GetPawn(id int) (models.PawnRecord, error) {
 			pr.item_type, pr.weight_grams, pr.description,
 			pr.pawned_date, pr.principal_amount AS initial_principal,
 			pr.monthly_interest_rate, pr.interest_amount,
-			pr.status, pr.ticket_status, pr.created_at,
+			pr.status, pr.ticket_status, pr.redeemed_at, pr.forfeited_at, pr.created_at,
 			COALESCE(
 				(SELECT pc.new_principal FROM principal_changes pc
 				 WHERE pc.pawn_record_id = pr.id
@@ -289,7 +290,7 @@ func (h *PawnHandler) GetPawn(id int) (models.PawnRecord, error) {
 		&r.CustomerName, &r.ItemType, &r.WeightGrams, &r.Description,
 		&r.PawnedDate, &r.InitialPrincipal,
 		&r.MonthlyInterestRate, &r.InterestAmount,
-		&r.Status, &r.TicketStatus, &r.CreatedAt,
+		&r.Status, &r.TicketStatus, &r.RedeemedAt, &r.ForfeitedAt, &r.CreatedAt,
 		&r.CurrentPrincipal,
 	)
 	if err != nil {
@@ -314,7 +315,7 @@ func (h *PawnHandler) ListPawns(status, search string) ([]models.PawnRecord, err
 				pr.principal_amount
 			) AS current_principal,
 			pr.monthly_interest_rate, pr.interest_amount,
-			pr.status, pr.ticket_status, pr.created_at,
+			pr.status, pr.ticket_status, pr.redeemed_at, pr.forfeited_at, pr.created_at,
 			(SELECT pp.month FROM pawn_payments pp
 			 WHERE pp.pawn_record_id = pr.id
 			 ORDER BY pp.year DESC, pp.month DESC LIMIT 1) AS last_paid_month,
@@ -358,7 +359,8 @@ func (h *PawnHandler) ListPawns(status, search string) ([]models.PawnRecord, err
 			&item.Description, &item.PawnedDate, &item.InitialPrincipal,
 			&item.CurrentPrincipal, &item.MonthlyInterestRate,
 			&item.InterestAmount, &item.Status, &item.TicketStatus,
-			&item.CreatedAt, &item.LastPaidMonth, &item.LastPaidYear,
+			&item.RedeemedAt, &item.ForfeitedAt, &item.CreatedAt,
+			&item.LastPaidMonth, &item.LastPaidYear,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("scan pawn list: %w", err)
@@ -378,6 +380,9 @@ func (h *PawnHandler) AddPrincipalChange(input models.PrincipalChangeInput) erro
 	defer tx.Rollback()
 
 	dateVal := input.Date
+	if dateVal == "" {
+		dateVal = time.Now().Format("2006-01-02")
+	}
 	if len(dateVal) == 10 {
 		dateVal = dateVal + " " + time.Now().Format("15:04:05")
 	}
@@ -427,6 +432,9 @@ func (h *PawnHandler) AddPrincipalChange(input models.PrincipalChangeInput) erro
 			ieType = "expense"
 			category = "เพิ่มต้นจำนำ"
 			desc = fmt.Sprintf("เพิ่มต้นจำนำ ตั๋ว %04d (%s)", ticketNumber, customerName)
+		} else if input.NewPrincipal == 0 {
+			category = "ไถ่ถอน"
+			desc = fmt.Sprintf("ไถ่ถอน ตั๋ว %04d (%s)", ticketNumber, customerName)
 		}
 		
 		_, err = tx.Exec(`
@@ -483,3 +491,97 @@ func (h *PawnHandler) UpdatePawnInterest(id int, rate float64, amount float64) e
 	`, rate, amount, id)
 	return err
 }
+
+// CheckTicketNumberExists checks if a ticket number is already taken by an active pawn.
+func (h *PawnHandler) CheckTicketNumberExists(ticketNumber int) (bool, error) {
+	var count int
+	err := db.DB.QueryRow(`
+		SELECT COUNT(*) FROM pawn_records 
+		WHERE ticket_number = ? AND status = 'active'
+	`, ticketNumber).Scan(&count)
+	if err != nil {
+		return false, fmt.Errorf("check ticket number: %w", err)
+	}
+	return count > 0, nil
+}
+
+// UpdateTicketNumber changes a pawn's ticket number and logs the change.
+func (h *PawnHandler) UpdateTicketNumber(pawnRecordID int, newTicketNumber int) error {
+	tx, err := db.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Validate if ticket number is already taken by an active pawn
+	var count int
+	err = tx.QueryRow(`
+		SELECT COUNT(*) FROM pawn_records 
+		WHERE ticket_number = ? AND status = 'active' AND id != ?
+	`, newTicketNumber, pawnRecordID).Scan(&count)
+	if err != nil {
+		return fmt.Errorf("check active ticket number: %w", err)
+	}
+	if count > 0 {
+		return fmt.Errorf("ไม่สามารถใช้เลขตั๋ว %d ได้เนื่องจากมีรายการที่ยังไม่ไถ่ถอนใช้เลขนี้อยู่", newTicketNumber)
+	}
+
+	// Fetch old ticket number
+	var oldTicketNumber int
+	err = tx.QueryRow(`SELECT ticket_number FROM pawn_records WHERE id = ?`, pawnRecordID).Scan(&oldTicketNumber)
+	if err != nil {
+		return fmt.Errorf("get old ticket number: %w", err)
+	}
+
+	// Update the ticket number
+	_, err = tx.Exec(`UPDATE pawn_records SET ticket_number = ? WHERE id = ?`, newTicketNumber, pawnRecordID)
+	if err != nil {
+		return fmt.Errorf("update ticket number: %w", err)
+	}
+
+	// Log the change
+	_, err = tx.Exec(`
+		INSERT INTO ticket_number_logs (pawn_record_id, old_ticket_number, new_ticket_number)
+		VALUES (?, ?, ?)
+	`, pawnRecordID, oldTicketNumber, newTicketNumber)
+	if err != nil {
+		return fmt.Errorf("insert ticket number log: %w", err)
+	}
+
+	// Optionally update the global last_ticket_number if the new one is greater
+	var raw string
+	err = tx.QueryRow(`SELECT value FROM settings WHERE key = 'last_ticket_number'`).Scan(&raw)
+	if err == nil {
+		lastTicket, _ := strconv.Atoi(raw)
+		if newTicketNumber > lastTicket {
+			_, _ = tx.Exec(`UPDATE settings SET value = ? WHERE key = 'last_ticket_number'`, strconv.Itoa(newTicketNumber))
+		}
+	}
+
+	return tx.Commit()
+}
+
+// GetTicketNumberLogs retrieves the log history for a pawn's ticket numbers.
+func (h *PawnHandler) GetTicketNumberLogs(pawnRecordID int) ([]models.TicketNumberLog, error) {
+	rows, err := db.DB.Query(`
+		SELECT id, pawn_record_id, old_ticket_number, new_ticket_number, changed_at
+		FROM ticket_number_logs
+		WHERE pawn_record_id = ?
+		ORDER BY changed_at DESC, id DESC
+	`, pawnRecordID)
+	if err != nil {
+		return nil, fmt.Errorf("get ticket number logs: %w", err)
+	}
+	defer rows.Close()
+
+	var logs []models.TicketNumberLog
+	for rows.Next() {
+		var l models.TicketNumberLog
+		if err := rows.Scan(&l.ID, &l.PawnRecordID, &l.OldTicketNumber, &l.NewTicketNumber, &l.ChangedAt); err != nil {
+			return nil, fmt.Errorf("scan log: %w", err)
+		}
+		logs = append(logs, l)
+	}
+	return logs, nil
+}
+

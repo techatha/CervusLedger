@@ -144,6 +144,8 @@ export namespace models {
 	    interest_amount: number;
 	    status: string;
 	    ticket_status: string;
+	    redeemed_at?: string;
+	    forfeited_at?: string;
 	    created_at: string;
 	    last_paid_month?: number;
 	    last_paid_year?: number;
@@ -168,6 +170,8 @@ export namespace models {
 	        this.interest_amount = source["interest_amount"];
 	        this.status = source["status"];
 	        this.ticket_status = source["ticket_status"];
+	        this.redeemed_at = source["redeemed_at"];
+	        this.forfeited_at = source["forfeited_at"];
 	        this.created_at = source["created_at"];
 	        this.last_paid_month = source["last_paid_month"];
 	        this.last_paid_year = source["last_paid_year"];
@@ -666,6 +670,26 @@ export namespace models {
 	        this.item_type = source["item_type"];
 	        this.item_subtype = source["item_subtype"];
 	        this.is_inventory = source["is_inventory"];
+	    }
+	}
+	export class TicketNumberLog {
+	    id: number;
+	    pawn_record_id: number;
+	    old_ticket_number: number;
+	    new_ticket_number: number;
+	    changed_at: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new TicketNumberLog(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.pawn_record_id = source["pawn_record_id"];
+	        this.old_ticket_number = source["old_ticket_number"];
+	        this.new_ticket_number = source["new_ticket_number"];
+	        this.changed_at = source["changed_at"];
 	    }
 	}
 

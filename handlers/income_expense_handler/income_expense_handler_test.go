@@ -51,13 +51,13 @@ func TestListIncomeExpense(t *testing.T) {
 	now := time.Now()
 
 	// 2. Set up the expected rows we want the mock DB to return
-	mockRows := sqlmock.NewRows([]string{"id", "type", "category", "amount", "notes", "source", "date", "created_at"}).
-		AddRow(1, "income", "Sales", 1500.50, "Sold goods", "manual", "2023-10-01", now).
-		AddRow(2, "expense", "Rent", 500.00, "Shop rent", "auto", "2023-10-02", now)
+	mockRows := sqlmock.NewRows([]string{"id", "type", "category", "amount", "notes", "source", "is_bank_transfer", "date", "created_at"}).
+		AddRow(1, "income", "Sales", 1500.50, "Sold goods", "manual", 0, "2023-10-01", now).
+		AddRow(2, "expense", "Rent", 500.00, "Shop rent", "auto", 0, "2023-10-02", now)
 
 	// 3. Tell the mock what query to expect (using regex matching)
 	// Because your query builds dynamically, we match the core SELECT statement
-	mock.ExpectQuery(`SELECT id, type, category, amount, notes, source, date, created_at FROM income_expenses`).
+	mock.ExpectQuery(`SELECT id, type, category, amount, notes, source, is_bank_transfer, date, created_at FROM income_expenses`).
 		WillReturnRows(mockRows)
 
 	// 4. Call the actual function
@@ -104,14 +104,14 @@ func TestCreateIncomeExpense(t *testing.T) {
 	// 1. Expect the INSERT execution
 	// It expects the args exactly as they are passed to db.Exec
 	mock.ExpectExec(`INSERT INTO income_expenses`).
-		WithArgs(input.Type, input.Category, input.Amount, input.Notes, sqlmock.AnyArg()).
+		WithArgs(input.Type, input.Category, input.Amount, input.Notes, 0, sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(1, 1)) // LastInsertId = 1, RowsAffected = 1
 
 	// 2. Expect the SELECT query that fetches the newly created record
-	mockRows := sqlmock.NewRows([]string{"id", "type", "category", "amount", "notes", "source", "date", "created_at"}).
-		AddRow(1, input.Type, input.Category, input.Amount, input.Notes, "manual", input.Date, time.Now())
+	mockRows := sqlmock.NewRows([]string{"id", "type", "category", "amount", "notes", "source", "is_bank_transfer", "date", "created_at"}).
+		AddRow(1, input.Type, input.Category, input.Amount, input.Notes, "manual", 0, input.Date, time.Now())
 
-	mock.ExpectQuery(`SELECT id, type, category, amount, notes, source, date, created_at FROM income_expenses WHERE id = \?`).
+	mock.ExpectQuery(`SELECT id, type, category, amount, notes, source, is_bank_transfer, date, created_at FROM income_expenses WHERE id = \?`).
 		WithArgs(1).
 		WillReturnRows(mockRows)
 

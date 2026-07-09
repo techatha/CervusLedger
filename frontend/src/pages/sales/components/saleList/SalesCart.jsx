@@ -43,11 +43,15 @@ export default function SalesCart({
                   <td>
                     <span className={`badge ${item.type === 'sell' ? 'badge-green' :
                       item.type === 'buy' ? 'badge-amber' :
-                        item.type === 'discount' ? 'badge-red' : 'badge-purple'
+                        item.type === 'discount' ? 'badge-red' : 
+                          item.type === 'pawn_principal_change' ? 'badge-blue' : 
+                            item.type === 'addition' ? 'badge-green' : 'badge-purple'
                       }`} style={{ fontSize: '11px' }}>
                       {item.type === 'sell' ? 'ขาย' :
                         item.type === 'buy' ? 'รับซื้อ' :
-                          item.type === 'discount' ? 'ส่วนลด' : 'ดอกเบี้ย'}
+                          item.type === 'discount' ? 'ส่วนลด' : 
+                            item.type === 'pawn_principal_change' ? (item.change_type === 'reduction' ? 'ลดต้น' : 'เพิ่มต้น') : 
+                              item.type === 'addition' ? 'เพิ่มเงิน' : 'ดอกเบี้ย'}
                     </span>
                   </td>
 
@@ -68,20 +72,19 @@ export default function SalesCart({
                   </td>
 
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums', fontWeight: 'bold' }}>
-                    {item.type === 'pawn_interest' || item.type === 'discount' ? '—' : item.weight_baht.toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) + ' บาท'}
+                    {item.type === 'pawn_interest' || item.type === 'discount' || item.type === 'pawn_principal_change' || item.type === 'addition' ? '—' : (item.weight_baht || 0).toLocaleString('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 4 }) + ' บาท'}
                   </td>
                   <td style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-                    {item.type === 'pawn_interest' || item.type === 'discount' ? '—' : item.price_per_baht.toLocaleString('th-TH')}
+                    {item.type === 'pawn_interest' || item.type === 'discount' || item.type === 'pawn_principal_change' || item.type === 'addition' ? '—' : (item.price_per_baht || 0).toLocaleString('th-TH')}
                   </td>
                   <td style={{
                     textAlign: 'right',
                     fontVariantNumeric: 'tabular-nums',
                     fontWeight: 'bold',
-                    color: item.type === 'sell' ? 'var(--green)' :
-                      item.type === 'buy' ? 'var(--red)' :
-                        item.type === 'discount' ? 'var(--red)' : 'var(--blue)'
+                    color: item.type === 'sell' || item.type === 'pawn_interest' || (item.type === 'pawn_principal_change' && item.change_type === 'reduction') || item.type === 'addition' ? 'var(--green)' :
+                      item.type === 'buy' || item.type === 'discount' || (item.type === 'pawn_principal_change' && item.change_type === 'increase') ? 'var(--red)' : 'var(--blue)'
                   }}>
-                    {item.type === 'discount' ? '-' : ''} {item.total_amount.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                    {item.type === 'discount' || (item.type === 'pawn_principal_change' && item.change_type === 'increase') ? '-' : item.type === 'addition' ? '+' : ''} {(item.total_amount || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
                   </td>
                   <td style={{ textAlign: 'center' }}>
                     <button
@@ -108,7 +111,7 @@ export default function SalesCart({
             className="btn btn-ghost btn-discount-item"
             onClick={() => onShowForm('discount')}
           >
-            <FontAwesomeIcon icon={faTag} /> เพิ่มส่วนลด
+            <FontAwesomeIcon icon={faTag} /> ปรับราคา
           </button>
         </div>
       </div>

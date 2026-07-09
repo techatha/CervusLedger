@@ -87,6 +87,9 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 		}
 
 		dateVal := input.Date
+		if dateVal == "" {
+			dateVal = time.Now().Format("2006-01-02")
+		}
 		if len(dateVal) == 10 {
 			dateVal = dateVal + " " + time.Now().Format("15:04:05")
 		}
@@ -164,9 +167,9 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 			}
 		}
 
-	case "discount":
-		// Do nothing to gold_stock for discounts
-
+	case "discount", "addition":
+		// Do nothing to gold_stock for discounts or additions
+		
 	default:
 		return models.Sale{}, fmt.Errorf("ประเภทไม่ถูกต้อง: %s", input.Type)
 	}
@@ -178,8 +181,13 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 		incType, incCat = "expense", "รับซื้อทอง"
 	case "discount":
 		incType, incCat = "expense", "ส่วนลด"
+	case "addition":
+		incType, incCat = "income", "รายรับอื่นๆ"
 	}
 	dateVal := input.Date
+	if dateVal == "" {
+		dateVal = time.Now().Format("2006-01-02")
+	}
 	if len(dateVal) == 10 {
 		dateVal = dateVal + " " + time.Now().Format("15:04:05")
 	}

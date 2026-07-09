@@ -27,7 +27,7 @@ const BLANK_BUY = {
 }
 
 const BLANK_DISCOUNT = {
-  title: 'ส่วนลดพิเศษ', amount: '', notes: '', date: today()
+  type: 'discount', title: 'ส่วนลดพิเศษ', amount: '', notes: '', date: today()
 }
 
 export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd }) {
@@ -128,18 +128,19 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
       onClose()
 
     } else if (tab === 'discount') {
-      if (!formData.title?.trim()) return setError('กรุณากรอกหัวข้อส่วนลด')
-      if (!formData.amount || parseFloat(formData.amount) <= 0) return setError('กรุณากรอกมูลค่าส่วนลดให้ถูกต้อง')
+      const isAddition = formData.type === 'addition'
+      if (!formData.title?.trim()) return setError(isAddition ? 'กรุณากรอกหัวข้อเพิ่มเงิน' : 'กรุณากรอกหัวข้อส่วนลด')
+      if (!formData.amount || parseNum(formData.amount) <= 0) return setError(isAddition ? 'กรุณากรอกจำนวนเงินให้ถูกต้อง' : 'กรุณากรอกมูลค่าส่วนลดให้ถูกต้อง')
 
       const priceID = todayPrice?.id || 0
       onAdd({
-        type: 'discount',
+        type: formData.type || 'discount',
         customer_id: 0,
         gold_item_id: 0,
         weight_baht: 0,
         gold_price_id: priceID,
         price_per_baht: 0,
-        total_amount: parseFloat(formData.amount),
+        total_amount: parseNum(formData.amount),
         notes: formData.notes,
         date: formData.date,
         item_type: '', purity: '', description: '',
@@ -158,8 +159,8 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
       ? parseNum(formData.total_amount)
       : parseNum(formData.amount)
 
-  const footerLabel = tab === 'sell' ? 'ยอดขายสุทธิ' : tab === 'buy' ? 'ยอดรับซื้อ' : 'ยอดส่วนลด'
-  const footerColor = tab === 'sell' ? 'var(--green)' : tab === 'buy' ? 'var(--amber)' : 'var(--blue)'
+  const footerLabel = tab === 'sell' ? 'ยอดขายสุทธิ' : tab === 'buy' ? 'ยอดรับซื้อ' : (formData.type === 'addition' ? 'ยอดเพิ่มเงิน' : 'ยอดส่วนลด')
+  const footerColor = tab === 'sell' ? 'var(--green)' : tab === 'buy' ? 'var(--amber)' : (formData.type === 'addition' ? 'var(--green)' : 'var(--blue)')
 
   // Small contextual badge: discount applied (sell) / manual price override (buy)
   const footerBadge = (() => {
@@ -191,8 +192,8 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
           <button className={`nsf-tab ${tab === 'buy' ? 'nsf-tab-active nsf-tab-buy' : ''}`} onClick={() => handleTabChange('buy')}>
             <FontAwesomeIcon icon={faArrowDown} /> รับซื้อทอง
           </button>
-          <button className={`nsf-tab ${tab === 'discount' ? 'nsf-tab-active nsf-tab-discount' : ''}`} onClick={() => handleTabChange('discount')} style={tab === 'discount' ? { borderBottomColor: 'var(--blue)', color: 'var(--blue)' } : {}}>
-            <FontAwesomeIcon icon={faTag} /> เพิ่มส่วนลด
+          <button className={`nsf-tab ${tab === 'discount' ? 'nsf-tab-active nsf-tab-discount' : ''}`} onClick={() => handleTabChange('discount')} style={tab === 'discount' ? { borderBottomColor: formData.type === 'addition' ? 'var(--green)' : 'var(--blue)', color: formData.type === 'addition' ? 'var(--green)' : 'var(--blue)' } : {}}>
+            <FontAwesomeIcon icon={faTag} /> ปรับราคา
           </button>
         </div>
 
@@ -232,9 +233,9 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
             <button
               className="btn btn-primary"
               onClick={handleAddToCart}
-              style={tab === 'buy' ? { background: 'var(--amber)', color: '#fff', border: 'none' } : tab === 'discount' ? { background: 'var(--blue)', color: '#fff', border: 'none' } : tab === 'sell' ? { background: 'var(--green)', color: '#fff', border: 'none' } : {}}
+              style={tab === 'buy' ? { background: 'var(--amber)', color: '#fff', border: 'none' } : tab === 'discount' ? { background: formData.type === 'addition' ? 'var(--green)' : 'var(--blue)', color: '#fff', border: 'none' } : tab === 'sell' ? { background: 'var(--green)', color: '#fff', border: 'none' } : {}}
             >
-              {tab === 'buy' ? 'เพิ่มรายการรับซื้อ' : tab === 'discount' ? 'เพิ่มส่วนลดลงตะกร้า' : 'เพิ่มรายการขาย'}
+              {tab === 'buy' ? 'เพิ่มรายการรับซื้อ' : tab === 'discount' ? (formData.type === 'addition' ? 'เพิ่มรายการเพิ่มเงินลงตะกร้า' : 'เพิ่มส่วนลดลงตะกร้า') : 'เพิ่มรายการขาย'}
             </button>
           </div>
         </div>

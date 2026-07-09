@@ -17,7 +17,7 @@ function IconCheckCircle() {
   )
 }
 
-export default function PawnPaymentHistoryCard({ payments, onDeletePayment }) {
+export default function PawnPaymentHistoryCard({ payments, onDeletePayment, isActive }) {
   return (
     <div className="card">
       <div className="card-header">
@@ -49,7 +49,7 @@ export default function PawnPaymentHistoryCard({ payments, onDeletePayment }) {
                     {p.notes || '—'}
                   </td>
                   <td className="payment-actions-cell" style={{ textAlign: 'right', paddingRight: '12px' }}>
-                    {index === payments.length - 1 && onDeletePayment && (
+                    {index === payments.length - 1 && onDeletePayment && isActive && (
                       <button
                         className="btn btn-danger-ghost btn-xs dv-delete-btn payment-delete-btn"
                         onClick={() => onDeletePayment(p.id)}

@@ -1,6 +1,8 @@
 import React, { useState } from 'react'
 import { formatBaht } from '@/utils/thai'
 import { UpdatePawnInterest } from 'wailsjs/go/pawn_handler/PawnHandler'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faPenToSquare } from '@fortawesome/free-solid-svg-icons'
 
 function PdRow({ label, value }) {
   return (
@@ -94,9 +96,11 @@ export default function PawnFinancialCard({ pawn, isActive, onReload, onError })
             {!editing && isActive && (
               <button
                 className="btn btn-ghost btn-xs"
+                style={{ color: 'var(--text-muted)' }}
                 onClick={handleEdit}
+                title="แก้ไขดอกเบี้ย"
               >
-                แก้ไข
+                <FontAwesomeIcon icon={faPenToSquare} />
               </button>
             )}
           </div>

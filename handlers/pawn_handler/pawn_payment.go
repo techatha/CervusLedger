@@ -30,6 +30,9 @@ func (h *PawnHandler) RecordPayment(input models.PawnPaymentInput) error {
 	defer tx.Rollback()
 
 	paidDateVal := input.PaidDate
+	if paidDateVal == "" {
+		paidDateVal = time.Now().Format("2006-01-02")
+	}
 	if len(paidDateVal) == 10 {
 		paidDateVal = paidDateVal + " " + time.Now().Format("15:04:05")
 	}
@@ -51,6 +54,70 @@ func (h *PawnHandler) RecordPayment(input models.PawnPaymentInput) error {
 		INSERT INTO income_expenses (type, category, amount, notes, source, date)
 		VALUES ('income', 'ดอกเบี้ยจำนำ', ?, ?, 'auto', ?)
 	`, input.InterestAmount, desc, paidDateVal)
+	if err != nil {
+		return fmt.Errorf("auto income: %w", err)
+	}
+
+	return tx.Commit()
+}
+
+// RecordPaymentsGrouped records multiple monthly interest payments and logs a single grouped income entry.
+func (h *PawnHandler) RecordPaymentsGrouped(inputs []models.PawnPaymentInput, totalAmount float64, groupNotes string) error {
+	if len(inputs) == 0 {
+		return nil
+	}
+
+	tx, err := db.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// 1. Loop through inputs and insert payment records
+	for _, input := range inputs {
+		// Guard: don't allow duplicate month+year for same pawn
+		var exists int
+		err := tx.QueryRow(`
+			SELECT COUNT(*) FROM pawn_payments
+			WHERE pawn_record_id = ? AND month = ? AND year = ?
+		`, input.PawnRecordID, input.Month, input.Year).Scan(&exists)
+		if err != nil {
+			return fmt.Errorf("check duplicate: %w", err)
+		}
+		if exists > 0 {
+			return fmt.Errorf("เดือน %s/%d จ่ายไปแล้ว", thaiMonthName(input.Month), input.Year+543)
+		}
+
+		paidDateVal := input.PaidDate
+		if paidDateVal == "" {
+			paidDateVal = time.Now().Format("2006-01-02")
+		}
+		if len(paidDateVal) == 10 {
+			paidDateVal = paidDateVal + " " + time.Now().Format("15:04:05")
+		}
+
+		_, err = tx.Exec(`
+			INSERT INTO pawn_payments (pawn_record_id, month, year, paid_date, notes)
+			VALUES (?, ?, ?, ?, ?)
+		`, input.PawnRecordID, input.Month, input.Year, paidDateVal, input.Notes)
+		if err != nil {
+			return fmt.Errorf("insert payment: %w", err)
+		}
+	}
+
+	// 2. Auto-log single grouped income entry
+	firstPaidDate := inputs[0].PaidDate
+	if firstPaidDate == "" {
+		firstPaidDate = time.Now().Format("2006-01-02")
+	}
+	if len(firstPaidDate) == 10 {
+		firstPaidDate = firstPaidDate + " " + time.Now().Format("15:04:05")
+	}
+
+	_, err = tx.Exec(`
+		INSERT INTO income_expenses (type, category, amount, notes, source, date)
+		VALUES ('income', 'ดอกเบี้ยจำนำ', ?, ?, 'auto', ?)
+	`, totalAmount, groupNotes, firstPaidDate)
 	if err != nil {
 		return fmt.Errorf("auto income: %w", err)
 	}
@@ -121,9 +188,17 @@ func (h *PawnHandler) DeletePayment(paymentID int) error {
 	return tx.Commit()
 }
 
-// RedeemPawn transitions pawn status to redeemed ('ถอน').
-func (h *PawnHandler) RedeemPawn(id int) error {
-	res, err := db.DB.Exec(`UPDATE pawn_records SET status = 'ถอน' WHERE id = ? AND status = 'active'`, id)
+// RedeemPawn transitions pawn status to redeemed ('ถอน') and records the redemption date.
+func (h *PawnHandler) RedeemPawn(id int, dateStr string) error {
+	dateVal := dateStr
+	if dateVal == "" {
+		dateVal = time.Now().Format("2006-01-02")
+	}
+	if len(dateVal) == 10 {
+		dateVal = dateVal + " " + time.Now().Format("15:04:05")
+	}
+
+	res, err := db.DB.Exec(`UPDATE pawn_records SET status = 'ถอน', redeemed_at = ? WHERE id = ? AND status = 'active'`, dateVal, id)
 	if err != nil {
 		return fmt.Errorf("redeem pawn: %w", err)
 	}
@@ -141,6 +216,8 @@ func (h *PawnHandler) ForfeitPawn(id int) error {
 	}
 	defer tx.Rollback()
 
+	todayStr := time.Now().Format("2006-01-02 15:04:05")
+
 	// 1. Get pawn record details
 	var customerID int
 	var ticketNumber int
@@ -156,8 +233,8 @@ func (h *PawnHandler) ForfeitPawn(id int) error {
 		return fmt.Errorf("pawn record not found or not active: %w", err)
 	}
 
-	// 2. Update status to 'ขาด'
-	_, err = tx.Exec(`UPDATE pawn_records SET status = 'ขาด' WHERE id = ?`, id)
+	// 2. Update status to 'ขาด' and record forfeit date
+	_, err = tx.Exec(`UPDATE pawn_records SET status = 'ขาด', forfeited_at = ? WHERE id = ?`, todayStr, id)
 	if err != nil {
 		return fmt.Errorf("update status to forfeit: %w", err)
 	}
@@ -167,8 +244,6 @@ func (h *PawnHandler) ForfeitPawn(id int) error {
 	if description != "" {
 		pawnNotes += fmt.Sprintf(" (%s)", description)
 	}
-
-	todayStr := time.Now().Format("2006-01-02 15:04:05")
 
 	// 4. Insert into purchased_gold
 	_, err = tx.Exec(`

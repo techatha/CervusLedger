@@ -27,12 +27,11 @@ export default function PawnPendingInterestCard({ pendingMonths, pawn, onPayPend
   }, [cartItems])
 
   const isMonthInCart = (m) => {
-    return cartItems?.some(item =>
-      item.type === 'pawn_interest' &&
-      item.pawn_record_id === pawn.id &&
-      item.month === m.month &&
-      item.year === m.year
-    )
+    return cartItems?.some(item => {
+      if (item.type !== 'pawn_interest') return false;
+      const payments = item.payments || [item];
+      return payments.some(p => p.pawn_record_id === pawn.id && p.month === m.month && p.year === m.year);
+    })
   }
 
   const selectableIndexes = pendingMonths
