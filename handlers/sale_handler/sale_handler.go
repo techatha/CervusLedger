@@ -191,10 +191,14 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 	if len(dateVal) == 10 {
 		dateVal = dateVal + " " + time.Now().Format("15:04:05")
 	}
+	isBankInt := 0
+	if input.IsBankTransfer {
+		isBankInt = 1
+	}
 	_, err = tx.Exec(`
-		INSERT INTO income_expenses (type, category, amount, notes, source, date)
-		VALUES (?, ?, ?, ?, 'auto', ?)
-	`, incType, incCat, input.TotalAmount, input.Notes, dateVal)
+		INSERT INTO income_expenses (type, category, amount, notes, source, is_bank_transfer, date)
+		VALUES (?, ?, ?, ?, 'auto', ?, ?)
+	`, incType, incCat, input.TotalAmount, input.Notes, isBankInt, dateVal)
 	if err != nil {
 		return models.Sale{}, fmt.Errorf("auto income_expenses: %w", err)
 	}

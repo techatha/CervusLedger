@@ -58,8 +58,8 @@ export function RecordPayment(arg1) {
   return window['go']['pawn_handler']['PawnHandler']['RecordPayment'](arg1);
 }
 
-export function RecordPaymentsGrouped(arg1, arg2, arg3) {
-  return window['go']['pawn_handler']['PawnHandler']['RecordPaymentsGrouped'](arg1, arg2, arg3);
+export function RecordPaymentsGrouped(arg1, arg2, arg3, arg4) {
+  return window['go']['pawn_handler']['PawnHandler']['RecordPaymentsGrouped'](arg1, arg2, arg3, arg4);
 }
 
 export function RedeemPawn(arg1, arg2) {
@@ -72,6 +72,10 @@ export function Startup(arg1) {
 
 export function UpdatePawnDescription(arg1, arg2) {
   return window['go']['pawn_handler']['PawnHandler']['UpdatePawnDescription'](arg1, arg2);
+}
+
+export function UpdatePawnInfo(arg1, arg2, arg3, arg4, arg5, arg6) {
+  return window['go']['pawn_handler']['PawnHandler']['UpdatePawnInfo'](arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
 export function UpdatePawnInterest(arg1, arg2, arg3) {

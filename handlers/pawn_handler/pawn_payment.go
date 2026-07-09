@@ -62,7 +62,7 @@ func (h *PawnHandler) RecordPayment(input models.PawnPaymentInput) error {
 }
 
 // RecordPaymentsGrouped records multiple monthly interest payments and logs a single grouped income entry.
-func (h *PawnHandler) RecordPaymentsGrouped(inputs []models.PawnPaymentInput, totalAmount float64, groupNotes string) error {
+func (h *PawnHandler) RecordPaymentsGrouped(inputs []models.PawnPaymentInput, totalAmount float64, groupNotes string, isBankTransfer bool) error {
 	if len(inputs) == 0 {
 		return nil
 	}
@@ -114,10 +114,14 @@ func (h *PawnHandler) RecordPaymentsGrouped(inputs []models.PawnPaymentInput, to
 		firstPaidDate = firstPaidDate + " " + time.Now().Format("15:04:05")
 	}
 
+	isBankInt := 0
+	if isBankTransfer {
+		isBankInt = 1
+	}
 	_, err = tx.Exec(`
-		INSERT INTO income_expenses (type, category, amount, notes, source, date)
-		VALUES ('income', 'ดอกเบี้ยจำนำ', ?, ?, 'auto', ?)
-	`, totalAmount, groupNotes, firstPaidDate)
+		INSERT INTO income_expenses (type, category, amount, notes, source, is_bank_transfer, date)
+		VALUES ('income', 'ดอกเบี้ยจำนำ', ?, ?, 'auto', ?, ?)
+	`, totalAmount, groupNotes, isBankInt, firstPaidDate)
 	if err != nil {
 		return fmt.Errorf("auto income: %w", err)
 	}

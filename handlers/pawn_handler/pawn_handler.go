@@ -437,10 +437,14 @@ func (h *PawnHandler) AddPrincipalChange(input models.PrincipalChangeInput) erro
 			desc = fmt.Sprintf("ไถ่ถอน ตั๋ว %04d (%s)", ticketNumber, customerName)
 		}
 		
+		isBankInt := 0
+		if input.IsBankTransfer {
+			isBankInt = 1
+		}
 		_, err = tx.Exec(`
-			INSERT INTO income_expenses (type, category, amount, notes, source, date)
-			VALUES (?, ?, ?, ?, 'auto', ?)
-		`, ieType, category, input.Amount, desc, dateVal)
+			INSERT INTO income_expenses (type, category, amount, notes, source, is_bank_transfer, date)
+			VALUES (?, ?, ?, ?, 'auto', ?, ?)
+		`, ieType, category, input.Amount, desc, isBankInt, dateVal)
 		if err != nil {
 			return fmt.Errorf("auto income/expense: %w", err)
 		}
@@ -556,6 +560,67 @@ func (h *PawnHandler) UpdateTicketNumber(pawnRecordID int, newTicketNumber int) 
 		if newTicketNumber > lastTicket {
 			_, _ = tx.Exec(`UPDATE settings SET value = ? WHERE key = 'last_ticket_number'`, strconv.Itoa(newTicketNumber))
 		}
+	}
+	return tx.Commit()
+}
+
+// UpdatePawnInfo updates the core pawn information including ticket number, date, type, weight, and description.
+func (h *PawnHandler) UpdatePawnInfo(id int, ticketNumber int, pawnedDate string, itemType string, weightGrams float64, description string) error {
+	tx, err := db.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// Check if ticket number changed
+	var oldTicketNumber int
+	err = tx.QueryRow(`SELECT ticket_number FROM pawn_records WHERE id = ?`, id).Scan(&oldTicketNumber)
+	if err != nil {
+		return fmt.Errorf("get old ticket number: %w", err)
+	}
+
+	if ticketNumber != oldTicketNumber {
+		// Validate if ticket number is already taken by an active pawn
+		var count int
+		err = tx.QueryRow(`
+			SELECT COUNT(*) FROM pawn_records 
+			WHERE ticket_number = ? AND status = 'active' AND id != ?
+		`, ticketNumber, id).Scan(&count)
+		if err != nil {
+			return fmt.Errorf("check active ticket number: %w", err)
+		}
+		if count > 0 {
+			return fmt.Errorf("ไม่สามารถใช้เลขตั๋ว %d ได้เนื่องจากมีรายการที่ยังไม่ไถ่ถอนใช้เลขนี้อยู่", ticketNumber)
+		}
+
+		// Log the change
+		_, err = tx.Exec(`
+			INSERT INTO ticket_number_logs (pawn_record_id, old_ticket_number, new_ticket_number)
+			VALUES (?, ?, ?)
+		`, id, oldTicketNumber, ticketNumber)
+		if err != nil {
+			return fmt.Errorf("insert ticket number log: %w", err)
+		}
+
+		// Update last_ticket_number settings if new one is greater
+		var raw string
+		err = tx.QueryRow(`SELECT value FROM settings WHERE key = 'last_ticket_number'`).Scan(&raw)
+		if err == nil {
+			lastTicket, _ := strconv.Atoi(raw)
+			if ticketNumber > lastTicket {
+				_, _ = tx.Exec(`UPDATE settings SET value = ? WHERE key = 'last_ticket_number'`, strconv.Itoa(ticketNumber))
+			}
+		}
+	}
+
+	// Update pawn record
+	_, err = tx.Exec(`
+		UPDATE pawn_records
+		SET ticket_number = ?, pawned_date = ?, item_type = ?, weight_grams = ?, description = ?
+		WHERE id = ?
+	`, ticketNumber, pawnedDate, itemType, weightGrams, description, id)
+	if err != nil {
+		return fmt.Errorf("update pawn records: %w", err)
 	}
 
 	return tx.Commit()

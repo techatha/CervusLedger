@@ -22,8 +22,10 @@ type IncomeExpenseInput struct {
 }
 
 type IncomeExpenseUpdateInput struct {
-	Notes          string `json:"notes"`
-	IsBankTransfer bool   `json:"is_bank_transfer"`
+	Notes          string  `json:"notes"`
+	IsBankTransfer bool    `json:"is_bank_transfer"`
+	Amount         float64 `json:"amount"`
+	Category       string  `json:"category"`
 }
 
 type IncomeExpenseFilter struct {

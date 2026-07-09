@@ -43,7 +43,8 @@ type SaleInput struct {
 	Date         string  `json:"date"` // YYYY-MM-DD CE
 
 	// Buy only: details for the new gold_item created from this purchase
-	ItemType    string `json:"item_type"`
-	ItemSubtype string `json:"item_subtype"`
-	IsInventory int    `json:"is_inventory"` // 1 = entered as store stock, 0 = scrap
+	ItemType       string `json:"item_type"`
+	ItemSubtype    string `json:"item_subtype"`
+	IsInventory    int    `json:"is_inventory"` // 1 = entered as store stock, 0 = scrap
+	IsBankTransfer bool   `json:"is_bank_transfer"`
 }

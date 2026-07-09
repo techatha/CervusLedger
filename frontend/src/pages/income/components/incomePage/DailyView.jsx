@@ -242,10 +242,9 @@ export default function DailyView({
               <tr className="loading-row"><td colSpan={5}>ไม่มีรายการในวันนี้</td></tr>
             ) : null}
           </tbody>
-
           {entries.length > 0 && !loading && entries.map(e => (
             <tbody key={e.id} className="dv-table-row-group">
-              <tr className={e.notes ? 'dv-row-has-notes' : ''} style={{ cursor: 'default' }}>
+              <tr className={e.notes ? 'dv-row-has-notes' : ''} style={{ cursor: 'pointer' }} onClick={() => onEdit && onEdit(e, false)}>
                 <td>
                   <span className={`badge ${e.type === 'income' ? 'badge-green' : 'badge-red'}`}>
                     {e.type === 'income' ? 'รายรับ' : 'รายจ่าย'}
@@ -291,17 +290,17 @@ export default function DailyView({
                 </td>
                 <td className="ip-del dv-actions-cell">
                   <div className="dv-actions-wrap">
-                    <button className="btn btn-ghost btn-xs" onClick={() => onEdit && onEdit(e)} title="แก้ไข">
+                    <button className="btn btn-ghost btn-xs" onClick={(evt) => { evt.stopPropagation(); onEdit && onEdit(e, true); }} title="แก้ไข">
                       <FontAwesomeIcon icon={faPenToSquare} />
                     </button>
-                    <button className="btn btn-danger-ghost btn-xs dv-delete-btn" onClick={() => onDelete(e)} title="ลบ">
+                    <button className="btn btn-danger-ghost btn-xs dv-delete-btn" onClick={(evt) => { evt.stopPropagation(); onDelete(e); }} title="ลบ">
                       <FontAwesomeIcon icon={faTrashCan} />
                     </button>
                   </div>
                 </td>
               </tr>
               {e.notes && (
-                <tr className="dv-notes-row">
+                <tr className="dv-notes-row" style={{ cursor: 'pointer' }} onClick={() => onEdit && onEdit(e, false)}>
                   <td></td>
                   <td colSpan={4} className="dv-notes-cell">
                     <span className="dv-notes-label">หมายเหตุ:</span>

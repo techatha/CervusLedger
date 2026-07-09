@@ -112,9 +112,9 @@ func (h *IncomeExpenseHandler) UpdateIncomeExpense(id int, input models.IncomeEx
 	}
 	_, err := db.DB.Exec(`
 		UPDATE income_expenses
-		SET notes = ?, is_bank_transfer = ?
+		SET notes = ?, is_bank_transfer = ?, amount = ?, category = ?
 		WHERE id = ?
-	`, input.Notes, isBankInt, id)
+	`, input.Notes, isBankInt, input.Amount, input.Category, id)
 	return err
 }
 

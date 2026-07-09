@@ -31,13 +31,15 @@ export function ListPawnsSorted(arg1:string,arg2:string,arg3:string):Promise<Arr
 
 export function RecordPayment(arg1:models.PawnPaymentInput):Promise<void>;
 
-export function RecordPaymentsGrouped(arg1:Array<models.PawnPaymentInput>,arg2:number,arg3:string):Promise<void>;
+export function RecordPaymentsGrouped(arg1:Array<models.PawnPaymentInput>,arg2:number,arg3:string,arg4:boolean):Promise<void>;
 
 export function RedeemPawn(arg1:number,arg2:string):Promise<void>;
 
 export function Startup(arg1:context.Context):Promise<void>;
 
 export function UpdatePawnDescription(arg1:number,arg2:string):Promise<void>;
+
+export function UpdatePawnInfo(arg1:number,arg2:number,arg3:string,arg4:string,arg5:number,arg6:string):Promise<void>;
 
 export function UpdatePawnInterest(arg1:number,arg2:number,arg3:number):Promise<void>;
 

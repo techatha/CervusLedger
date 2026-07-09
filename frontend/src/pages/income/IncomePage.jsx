@@ -46,6 +46,12 @@ export default function IncomePage() {
   const [error, setError] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [editEntry, setEditEntry] = useState(null)
+  const [startEditable, setStartEditable] = useState(false)
+
+  const handleEdit = (entry, editable = false) => {
+    setEditEntry(entry)
+    setStartEditable(editable)
+  }
   const [exporting, setExporting] = useState(false)
   const [confirmDel, setConfirmDel] = useState(null)
   const [dailyCashList, setDailyCashList] = useState([])
@@ -236,10 +242,11 @@ export default function IncomePage() {
               onDateChange={handleDateChange}
               onBack={() => setSelectedDate(null)}
               onAddEntry={() => setShowForm(true)}
-              onEdit={setEditEntry}
+              onEdit={handleEdit}
             />
           )}
         </div>
+
 
         {/* Right: Summary sidebar (30%) */}
         <div className="ip-sidebar">
@@ -266,6 +273,7 @@ export default function IncomePage() {
       {editEntry && (
         <EditIncomeExpenseModal
           entry={editEntry}
+          startEditable={startEditable}
           onSaved={() => { setEditEntry(null); reload() }}
           onClose={() => setEditEntry(null)}
         />

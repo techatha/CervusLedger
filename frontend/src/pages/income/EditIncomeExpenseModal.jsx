@@ -14,10 +14,13 @@ import { formatBaht } from '@/utils/thai'
 import './ManualEntryModal.css'
 import './EditIncomeExpenseModal.css'
 
-export default function EditIncomeExpenseModal({ entry, onSaved, onClose }) {
+export default function EditIncomeExpenseModal({ entry, startEditable, onSaved, onClose }) {
+  const [isEditable, setIsEditable] = useState(startEditable || false)
   const [form, setForm] = useState({
     notes: entry.notes || '',
     isBankTransfer: entry.is_bank_transfer || false,
+    amount: entry.amount || '',
+    category: entry.category || '',
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
@@ -36,6 +39,8 @@ export default function EditIncomeExpenseModal({ entry, onSaved, onClose }) {
       await UpdateIncomeExpense(entry.id, {
         notes: form.notes,
         is_bank_transfer: form.isBankTransfer,
+        amount: parseFloat(form.amount) || 0.0,
+        category: form.category || '',
       })
       onSaved()
     } catch (e) {
@@ -73,23 +78,62 @@ export default function EditIncomeExpenseModal({ entry, onSaved, onClose }) {
             </div>
           )}
 
-          {/* ── Read-only preview (locked fields) ── */}
-          <div className={`mem-preview mem-preview-readonly ${isIncome ? 'mem-preview-income' : 'mem-preview-expense'}`}>
-            <div className="mem-preview-left">
-              <span className="mem-preview-label">
-                <FontAwesomeIcon icon={faLock} /> {isIncome ? 'รายรับ' : 'รายจ่าย'} · รายการนี้แก้ไขไม่ได้
+          {/* ── Preview card: Read-only or Editable ── */}
+          {!isEditable ? (
+            <div className={`mem-preview mem-preview-readonly ${isIncome ? 'mem-preview-income' : 'mem-preview-expense'}`} style={{ position: 'relative', minHeight: '60px' }}>
+              <div className="mem-preview-left">
+                <span className="mem-preview-label">
+                  <FontAwesomeIcon icon={faLock} /> {isIncome ? 'รายรับ' : 'รายจ่าย'} · รายการนี้แก้ไขไม่ได้
+                </span>
+                <span className="mem-preview-cat">
+                  {entry.color && <span className="mem-preview-dot" style={{ background: entry.color }} />}
+                  {entry.category}
+                </span>
+              </div>
+              <span className="mem-preview-amount" style={{ marginRight: '110px' }}>
+                {isIncome ? '+' : '−'}{formatBaht(entry.amount)}
               </span>
-              <span className="mem-preview-cat">
-                {entry.color && <span className="mem-preview-dot" style={{ background: entry.color }} />}
-                {entry.category}
-              </span>
+              <button
+                type="button"
+                className="btn btn-ghost btn-xs"
+                style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', border: '1px solid var(--border)' }}
+                onClick={() => setIsEditable(true)}
+                title="แก้ไขจำนวนและหมวดหมู่"
+              >
+                <FontAwesomeIcon icon={faPenToSquare} /> แก้ไขข้อมูล
+              </button>
             </div>
-            <span className="mem-preview-amount">
-              {isIncome ? '+' : '−'}{formatBaht(entry.amount)}
-            </span>
-          </div>
-
-          {/* ── Meta row: date + source badge (same colors as list page) ── */}
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--bg-hover)', padding: '14px', borderRadius: 'var(--radius)', border: '1.5px solid var(--border)', marginBottom: '14px' }}>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label form-label-required" style={{ fontSize: '12px', marginBottom: '4px' }}>หมวดหมู่</label>
+                <input
+                  className="input"
+                  placeholder="ระบุหมวดหมู่..."
+                  value={form.category}
+                  onChange={e => set('category', e.target.value)}
+                  style={{ width: '100%', boxSizing: 'border-box' }}
+                  required
+                />
+              </div>
+              <div className="form-group" style={{ margin: 0 }}>
+                <label className="form-label form-label-required" style={{ fontSize: '12px', marginBottom: '4px' }}>จำนวนเงิน</label>
+                <div className="mem-amount-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                  <input
+                    className={`input mem-amount ${isIncome ? 'mem-amount-income' : 'mem-amount-expense'}`}
+                    type="number"
+                    step="any"
+                    placeholder="0"
+                    value={form.amount}
+                    onChange={e => set('amount', e.target.value)}
+                    style={{ width: '100%', boxSizing: 'border-box', fontSize: '20px', fontWeight: 'bold' }}
+                    required
+                  />
+                  <span className="mem-amount-suffix" style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>฿</span>
+                </div>
+              </div>
+            </div>
+          )}
           <div className="eiem-meta-row">
             <span className="eiem-meta-item">
               <FontAwesomeIcon icon={faCalendarDays} />

@@ -9,6 +9,8 @@ import { RecordPayment, AddPrincipalChange, RedeemPawn, RecordPaymentsGrouped } 
 import { SendQRToDisplay, SendSuccessToDisplay, SendFailToDisplay } from 'wailsjs/go/displayer_handler/DisplayerHandler.js'
 import PromptPayQR from './components/saleList/PromptPayQR'
 import SalesCart from './components/saleList/SalesCart'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faBuildingColumns } from '@fortawesome/free-solid-svg-icons'
 
 export default function SalesList({ cartItems, setCartItems }) {
   const location = useLocation()
@@ -19,6 +21,7 @@ export default function SalesList({ cartItems, setCartItems }) {
   const [price, setPrice] = useState(null)
   const [qrAmount, setQrAmount] = useState(0)
   const [showQr, setShowQr] = useState(false)
+  const [isBankTransfer, setIsBankTransfer] = useState(false)
   const [savingCart, setSavingCart] = useState(false)
   const [error, setError] = useState(null)
   const [displayStatus, setDisplayStatus] = useState('idle') // idle | sending | done | error
@@ -86,18 +89,22 @@ export default function SalesList({ cartItems, setCartItems }) {
     }
   }
 
-  // Auto-generate QR code when cart items or total amount changes
+  // Auto-generate QR code when cart items, total amount, or bank transfer changes
   useEffect(() => {
-    if (cartItems.length > 0 && mainTotalAmount > 0) {
+    if (isBankTransfer && cartItems.length > 0 && mainTotalAmount > 0) {
       setQrAmount(mainTotalAmount)
       setShowQr(true)
       handleSendQR()
     } else {
       setShowQr(false)
       setQrAmount(0)
+      if (displayStatus === 'done' || displayStatus === 'sending') {
+        setDisplayStatus('idle')
+        setDisplayError(null)
+        SendFailToDisplay().catch(err => console.error('Failed to send fail to display:', err))
+      }
     }
-    // We intentionally don't want to re-run on every state change unless cart or total or promptpay changes
-  }, [cartItems, mainTotalAmount, promptpayNumber])
+  }, [cartItems, mainTotalAmount, promptpayNumber, isBankTransfer])
 
 
   useEffect(() => {
@@ -122,6 +129,7 @@ export default function SalesList({ cartItems, setCartItems }) {
     setCartItems([])
     setQrAmount(0)
     setShowQr(false)
+    setIsBankTransfer(false)
     setDisplayStatus('idle')
     setDisplayError(null)
     try {
@@ -245,13 +253,14 @@ export default function SalesList({ cartItems, setCartItems }) {
             if (remainingTotal < 0) remainingTotal = 0
           }
           
-          await RecordPaymentsGrouped(inputs, item.total_amount, item.notes)
+          await RecordPaymentsGrouped(inputs, item.total_amount, item.notes, isBankTransfer)
         } else if (item.type === 'pawn_principal_change') {
           const { label, total_amount, price_per_baht, weight_baht, type, original_notes, cart_notes, ...cleanInput } = item
           cleanInput.notes = original_notes || ''
           if (!cleanInput.date) {
             cleanInput.date = new Date().toLocaleDateString('sv')
           }
+          cleanInput.is_bank_transfer = isBankTransfer
           await AddPrincipalChange(cleanInput)
           
           if (cleanInput.change_type === 'reduction' && cleanInput.new_principal === 0) {
@@ -260,7 +269,7 @@ export default function SalesList({ cartItems, setCartItems }) {
         } else {
           // ถอด label ออกก่อนส่งให้ Backend
           const { label, ...cleanInput } = item
-          await CreateSale({ ...cleanInput, date: new Date().toISOString() })
+          await CreateSale({ ...cleanInput, is_bank_transfer: isBankTransfer, date: new Date().toISOString() })
         }
       }
 
@@ -275,8 +284,10 @@ export default function SalesList({ cartItems, setCartItems }) {
       setCartItems([])
       setQrAmount(0)
       setShowQr(false)
+      setIsBankTransfer(false)
       priceDashboardRef.current?.refresh()
       reloadAll()
+
       // alert('บันทึกรายการสำเร็จเรียบร้อยแล้ว')
     } catch (e) {
       setError('บันทึกรายการไม่สำเร็จ: ' + e)
@@ -317,19 +328,42 @@ export default function SalesList({ cartItems, setCartItems }) {
           {/* Gold Price Dashboard (Adjustable to 100% width of parent 70% container) */}
           <GoldPriceDashboard ref={priceDashboardRef} onPriceLoaded={setPrice} />
         </div>
-        {/* Right Side: 30% PromptPay QR Code */}
-        <PromptPayQR
-          showQr={showQr}
-          qrAmount={qrAmount}
-          promptpayNumber={promptpayNumber}
-          promptpayName={promptpayName}
-          bankName={bankName}
-          bankAccount={bankAccount}
-          savingCart={savingCart}
-          displayStatus={displayStatus}
-          displayError={displayError}
-          onRetryQR={handleSendQR}
-        />
+        {/* Right Side: 30% Column with Bank Transfer Toggle & PromptPay QR Code */}
+        <div className="cashier-right-col">
+          {/* ── Bank transfer toggle (boxed) ── */}
+          <label className={`eiem-bank-toggle ${isBankTransfer ? 'eiem-bank-toggle-active' : ''}`}>
+            <input
+              type="checkbox"
+              checked={isBankTransfer}
+              onChange={e => setIsBankTransfer(e.target.checked)}
+              className="eiem-bank-checkbox"
+            />
+            <span className="eiem-bank-icon-wrap">
+              <FontAwesomeIcon icon={faBuildingColumns} />
+            </span>
+            <span className="eiem-bank-text">
+              <span className="eiem-bank-title">รับ/จ่ายผ่านช่องทางธนาคาร (โอน)</span>
+              <span className="eiem-bank-sub">
+                เมื่อเลือก จะแสดงกล่องรับชำระเงิน PromptPay QR
+              </span>
+            </span>
+          </label>
+
+          {isBankTransfer && (
+            <PromptPayQR
+              showQr={showQr}
+              qrAmount={qrAmount}
+              promptpayNumber={promptpayNumber}
+              promptpayName={promptpayName}
+              bankName={bankName}
+              bankAccount={bankAccount}
+              savingCart={savingCart}
+              displayStatus={displayStatus}
+              displayError={displayError}
+              onRetryQR={handleSendQR}
+            />
+          )}
+        </div>
       </div>
 
       {/* Checkout Form Modal */}

@@ -71,14 +71,15 @@ type PrincipalChange struct {
 
 // PrincipalChangeInput is the payload for adding a principal change.
 type PrincipalChangeInput struct {
-	PawnRecordID     int     `json:"pawn_record_id"`
-	Date             string  `json:"date"`
-	ChangeType       string  `json:"change_type"`
-	Amount           float64 `json:"amount"`
-	NewPrincipal     float64 `json:"new_principal"`
-	NewInterestRate  float64 `json:"new_interest_rate"`
+	PawnRecordID      int     `json:"pawn_record_id"`
+	Date              string  `json:"date"`
+	ChangeType        string  `json:"change_type"`
+	Amount            float64 `json:"amount"`
+	NewPrincipal      float64 `json:"new_principal"`
+	NewInterestRate   float64 `json:"new_interest_rate"`
 	NewInterestAmount float64 `json:"new_interest_amount"`
-	Notes            string  `json:"notes"`
+	Notes             string  `json:"notes"`
+	IsBankTransfer    bool    `json:"is_bank_transfer"`
 }
 
 // PawnSettings holds the interest config read from the settings table.

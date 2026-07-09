@@ -408,6 +408,8 @@ export namespace models {
 	export class IncomeExpenseUpdateInput {
 	    notes: string;
 	    is_bank_transfer: boolean;
+	    amount: number;
+	    category: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new IncomeExpenseUpdateInput(source);
@@ -417,6 +419,8 @@ export namespace models {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.notes = source["notes"];
 	        this.is_bank_transfer = source["is_bank_transfer"];
+	        this.amount = source["amount"];
+	        this.category = source["category"];
 	    }
 	}
 	export class PawnInput {
@@ -547,6 +551,7 @@ export namespace models {
 	    new_interest_rate: number;
 	    new_interest_amount: number;
 	    notes: string;
+	    is_bank_transfer: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new PrincipalChangeInput(source);
@@ -562,6 +567,7 @@ export namespace models {
 	        this.new_interest_rate = source["new_interest_rate"];
 	        this.new_interest_amount = source["new_interest_amount"];
 	        this.notes = source["notes"];
+	        this.is_bank_transfer = source["is_bank_transfer"];
 	    }
 	}
 	export class PurchasedGold {
@@ -650,6 +656,7 @@ export namespace models {
 	    item_type: string;
 	    item_subtype: string;
 	    is_inventory: number;
+	    is_bank_transfer: boolean;
 	
 	    static createFrom(source: any = {}) {
 	        return new SaleInput(source);
@@ -670,6 +677,7 @@ export namespace models {
 	        this.item_type = source["item_type"];
 	        this.item_subtype = source["item_subtype"];
 	        this.is_inventory = source["is_inventory"];
+	        this.is_bank_transfer = source["is_bank_transfer"];
 	    }
 	}
 	export class TicketNumberLog {
