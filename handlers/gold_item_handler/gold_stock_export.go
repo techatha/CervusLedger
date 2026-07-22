@@ -2,6 +2,7 @@ package gold_item_handler
 
 import (
 	"CervusLedger/db"
+	"CervusLedger/models"
 	"fmt"
 	"time"
 
@@ -23,7 +24,7 @@ var thaiMonthFull = []string{
 }
 
 // ExportGoldStock opens a save dialog and exports gold stock history to xlsx.
-func (h *GoldItemHandler) ExportGoldStock(startDate, endDate string) error {
+func (h *GoldItemHandler) ExportGoldStock(startDate, endDate string, excludedTypes []string) error {
 	filePath, err := runtime.SaveFileDialog(h.ctx, runtime.SaveDialogOptions{
 		Title:           "ส่งออกสต็อกทองคำ",
 		DefaultFilename: fmt.Sprintf("สต็อกทองคำ_%s_%s.xlsx", startDate, endDate),
@@ -37,11 +38,11 @@ func (h *GoldItemHandler) ExportGoldStock(startDate, endDate string) error {
 	if filePath == "" {
 		return nil // user cancelled
 	}
-	return h.ExportGoldStockToXlsx(startDate, endDate, filePath)
+	return h.ExportGoldStockToXlsx(startDate, endDate, excludedTypes, filePath)
 }
 
 // ExportGoldStockToXlsx writes gold stock history to an xlsx file.
-func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate, filePath string) error {
+func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate string, excludedTypes []string, filePath string) error {
 	start, err := time.Parse("2006-01-02", startDate)
 	if err != nil {
 		return fmt.Errorf("parse start date: %w", err)
@@ -57,6 +58,24 @@ func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate, filePath str
 	}
 	if len(items) == 0 {
 		return fmt.Errorf("ไม่มีรายการทองคำในระบบ")
+	}
+
+	if len(excludedTypes) > 0 {
+		excludedMap := make(map[string]bool)
+		for _, t := range excludedTypes {
+			excludedMap[t] = true
+		}
+		var filtered []models.GoldItem
+		for _, item := range items {
+			if !excludedMap[item.Type] {
+				filtered = append(filtered, item)
+			}
+		}
+		items = filtered
+	}
+
+	if len(items) == 0 {
+		return fmt.Errorf("ไม่มีรายการทองคำที่จะส่งออก (ถูกปิดการส่งออกทุกประเภท)")
 	}
 
 	logRows, err := db.DB.Query(`

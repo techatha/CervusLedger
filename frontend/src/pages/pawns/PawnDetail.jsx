@@ -11,6 +11,7 @@ import {
   DeletePayment,
   GetTicketNumberLogs,
   UpdatePawnInfo,
+  RecordPaymentsGrouped,
 } from 'wailsjs/go/pawn_handler/PawnHandler'
 import { GetCustomer } from 'wailsjs/go/customer_handler/CustomerHandler'
 import { GetAllSettings } from 'wailsjs/go/settings_handler/SettingsHandler'
@@ -25,7 +26,11 @@ import PawnTicketLogsCard from './components/pawnDetail/PawnTicketLogsCard'
 import { formatTicket, pawnStatusBadge } from '@/utils/thai'
 import { getPendingMonths, getLatestPaidMonth, thaiMonthShort } from '@/utils/pawn'
 import { getLocalISOString } from '@/utils/date'
-import { RecordPaymentModal, PrincipalChangeForm } from './PrincipalChangeForm'
+import RedeemModal from './modals/RedeemModal'
+import ForfeitModal from './modals/ForfeitModal'
+import EditPawnInfoModal from './modals/EditPawnInfoModal'
+import RecordPaymentModal from './modals/RecordPaymentModal'
+import PrincipalChangeModal from './modals/PrincipalChangeModal'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPrint, faHandshakeSlash, faMoneyBills } from '@fortawesome/free-solid-svg-icons'
 import './PawnDetail.css'
@@ -92,7 +97,7 @@ export default function PawnDetail({ cartItems, setCartItems }) {
     }
   }
 
-  const handleRedeem = () => {
+  const handleRedeem = (includeExtraMonth = false) => {
     // We add pending interest (if any)
     const itemsToProcess = [...pendingMonths]
     
@@ -124,16 +129,7 @@ export default function PawnDetail({ cartItems, setCartItems }) {
         checkYear++
     }
 
-    const maxDaysInCheckMonth = new Date(checkYear, checkMonth + 1, 0).getDate()
-    const actualDueDay = Math.min(dueDay, maxDaysInCheckMonth)
-    const nextDueDate = new Date(checkYear, checkMonth, actualDueDay)
-    nextDueDate.setHours(0, 0, 0, 0)
-    
-    const diffTime = nextDueDate - today
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-    
-    const addedExtraMonth = (diffDays < 15 && diffDays >= 0);
-    if (addedExtraMonth) {
+    if (includeExtraMonth) {
         itemsToProcess.push({
             month: checkMonth + 1,
             year: checkYear
@@ -142,7 +138,7 @@ export default function PawnDetail({ cartItems, setCartItems }) {
     
     const cartAdds = []
     
-    const extraText = addedExtraMonth ? ' (รวมดอกเบี้ยเดือนถัดไป)' : '';
+    const extraText = includeExtraMonth ? ' (รวมดอกเบี้ยเดือนถัดไป)' : '';
     
     // Add principal reduction
     cartAdds.push({
@@ -284,6 +280,38 @@ export default function PawnDetail({ cartItems, setCartItems }) {
     alert(`เพิ่มดอกเบี้ยค้างชำระ ${itemsToProcess.length} งวดลงในตะกร้าแล้ว (รวมเป็น 1 รายการ)`)
   }
 
+  const handleMarkAsPaidPendingInterest = async (selectedIndexes) => {
+    if (selectedIndexes.length === 0) return
+    const itemsToProcess = selectedIndexes.map(idx => pendingMonths[idx])
+    const totalAmount = pawn.interest_amount * itemsToProcess.length
+    const monthLabels = formatMonthRange(itemsToProcess)
+
+    if (!window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการทำรายการว่าชำระแล้วสำหรับดอกเบี้ย ${selectedIndexes.length} งวด (${monthLabels})?`)) {
+      return
+    }
+
+    try {
+      const inputs = itemsToProcess.map(m => ({
+        pawn_record_id: pawn.id,
+        month: m.month,
+        year: m.year,
+        paid_date: getLocalISOString().slice(0, 10),
+        notes: `งวด ${thaiMonthShort(m.month)} ${m.year + 543}`,
+        interest_amount: pawn.interest_amount,
+        customer_name: pawn.customer_name_display || pawn.customer_name || '',
+        ticket_number: pawn.ticket_number
+      }))
+
+      const notes = `ตั๋ว #${formatTicket(pawn.ticket_number)} (${pawn.customer_name_display || pawn.customer_name}) - งวด ${monthLabels}`
+
+      await RecordPaymentsGrouped(inputs, totalAmount, notes, false)
+      await load()
+      reloadAll()
+    } catch (e) {
+      setError('บันทึกการชำระดอกเบี้ยไม่สำเร็จ: ' + e)
+    }
+  }
+
   if (loading) return <div className="page-view"><div className="empty-state"><div className="empty-state-text">กำลังโหลด...</div></div></div>
   if (error) return <div className="page-view"><div className="alert alert-error">{error}</div></div>
   if (!pawn) return null
@@ -421,6 +449,7 @@ export default function PawnDetail({ cartItems, setCartItems }) {
             pawn={pawn}
             onPayPendingInterest={handlePayPendingInterest}
             onAddToCart={handleAddToCartPendingInterest}
+            onMarkAsPaid={handleMarkAsPaidPendingInterest}
             cartItems={cartItems}
           />
 
@@ -443,7 +472,7 @@ export default function PawnDetail({ cartItems, setCartItems }) {
       }
       {
         modal === 'principal' && (
-          <PrincipalChangeForm
+          <PrincipalChangeModal
             pawn={{ ...pawn, current_principal: current }}
             onSaved={() => { setModal(null); load(); reloadAll() }}
             onClose={() => setModal(null)}
@@ -452,11 +481,10 @@ export default function PawnDetail({ cartItems, setCartItems }) {
       }
       {
         modal === 'redeem' && (
-          <ConfirmModal
-            title="ยืนยันการไถ่"
-            body={`ตั๋ว ${formatTicket(pawn.ticket_number)} — ลูกค้ามารับทองคืนและชำระหนี้ครบแล้ว?`}
-            confirmLabel="ไถ่"
-            confirmStyle={{ background: 'var(--blue)', color: '#fff', border: 'none' }}
+          <RedeemModal
+            pawn={pawn}
+            payments={payments}
+            pendingMonths={pendingMonths}
             onConfirm={handleRedeem}
             onClose={() => setModal(null)}
           />
@@ -464,11 +492,8 @@ export default function PawnDetail({ cartItems, setCartItems }) {
       }
       {
         modal === 'forfeit' && (
-          <ConfirmModal
-            title="ยืนยันการขาด"
-            body={`ตั๋ว ${formatTicket(pawn.ticket_number)} — ลูกค้าหมดสิทธิ์ไถ่ถอนแล้ว?`}
-            confirmLabel="ขาด"
-            confirmStyle={{ background: 'var(--red)', color: '#fff', border: 'none' }}
+          <ForfeitModal
+            pawn={pawn}
             onConfirm={handleForfeit}
             onClose={() => setModal(null)}
           />
@@ -495,150 +520,6 @@ export default function PawnDetail({ cartItems, setCartItems }) {
         )
       }
     </div >
-  )
-}
-
-/* ─── Sub-components ──────────────────────────────────────────────── */
-function ConfirmModal({ title, body, confirmLabel, confirmStyle, onConfirm, onClose }) {
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" style={{ width: 400 }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="modal-title">{title}</div>
-          <button className="modal-close" onClick={onClose}>×</button>
-        </div>
-        <div className="modal-body">
-          <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>{body}</p>
-        </div>
-        <div className="modal-footer">
-          <button className="btn btn-ghost" onClick={onClose}>ยกเลิก</button>
-          <button className="btn" style={confirmStyle} onClick={onConfirm}>{confirmLabel}</button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function EditPawnInfoModal({ pawn, onSaved, onClose }) {
-  const [ticketNumber, setTicketNumber] = useState(pawn.ticket_number)
-  const [pawnedDate, setPawnedDate] = useState(pawn.pawned_date ? pawn.pawned_date.slice(0, 10) : '')
-  const [itemType, setItemType] = useState(pawn.item_type || '')
-  const [weightGrams, setWeightGrams] = useState(pawn.weight_grams || '')
-  const [description, setDescription] = useState(pawn.description || '')
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
-
-  const handleSave = async () => {
-    const ticketNum = parseInt(ticketNumber, 10)
-    if (isNaN(ticketNum) || ticketNum <= 0) {
-      setError('กรุณากรอกเลขที่ตั๋วให้ถูกต้อง')
-      return
-    }
-    const weight = parseFloat(weightGrams)
-    if (isNaN(weight) || weight < 0) {
-      setError('กรุณากรอกน้ำหนักให้ถูกต้อง')
-      return
-    }
-    if (!pawnedDate) {
-      setError('กรุณาเลือกวันที่จำนำ')
-      return
-    }
-    if (!itemType.trim()) {
-      setError('กรุณากรอกประเภทรายการ')
-      return
-    }
-
-    setSaving(true)
-    setError(null)
-    try {
-      await UpdatePawnInfo(pawn.id, ticketNum, pawnedDate, itemType, weight, description)
-      onSaved()
-    } catch (e) {
-      setError(String(e))
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" style={{ width: 450 }} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className="modal-title">แก้ไขข้อมูลตั๋วจำนำ</div>
-          <button className="modal-close" onClick={onClose}>×</button>
-        </div>
-        <div className="modal-body">
-          {error && <div className="alert alert-error" style={{ marginBottom: 12 }}>{error}</div>}
-          
-          <div className="form-group">
-            <label className="form-label form-label-required">เลขที่ตั๋ว</label>
-            <input
-              className="input"
-              type="number"
-              value={ticketNumber}
-              onChange={e => setTicketNumber(e.target.value)}
-              disabled={saving}
-            />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label form-label-required">วันที่จำนำ</label>
-            <input
-              className="input"
-              type="date"
-              value={pawnedDate}
-              onChange={e => setPawnedDate(e.target.value)}
-              disabled={saving}
-            />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label form-label-required">ประเภทรายการ</label>
-            <input
-              className="input"
-              type="text"
-              placeholder="เช่น สร้อยคอ, แหวน"
-              value={itemType}
-              onChange={e => setItemType(e.target.value)}
-              disabled={saving}
-            />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">น้ำหนัก (กรัม)</label>
-            <input
-              className="input"
-              type="number"
-              step="any"
-              placeholder="0.00"
-              value={weightGrams}
-              onChange={e => setWeightGrams(e.target.value)}
-              disabled={saving}
-            />
-          </div>
-          
-          <div className="form-group">
-            <label className="form-label">รายละเอียด</label>
-            <textarea
-              className="input"
-              style={{ minHeight: 80, resize: 'vertical' }}
-              placeholder="ระบุรายละเอียดเพิ่มเติม..."
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              disabled={saving}
-            />
-          </div>
-        </div>
-        <div className="modal-footer">
-          <button className="btn btn-ghost" onClick={onClose} disabled={saving}>
-            ยกเลิก
-          </button>
-          <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-            {saving ? 'กำลังบันทึก...' : 'บันทึก'}
-          </button>
-        </div>
-      </div>
-    </div>
   )
 }
 

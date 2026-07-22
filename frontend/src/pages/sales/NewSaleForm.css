@@ -107,21 +107,6 @@
 .nsf-total-buy  .nsf-total-amount { color: var(--amber); }
 .nsf-total-gold .nsf-total-amount { color: var(--gold); }
 
-/* ─── Red/White Negotiated Price Styles ───────────────────── */
-.input-negotiated {
-  background: var(--white) !important;
-  border: 1px solid var(--red) !important;
-  color: var(--red) !important;
-  font-weight: bold !important;
-}
-.input-negotiated::placeholder {
-  color: rgba(212, 92, 92, 0.5) !important;
-}
-.input-negotiated:focus {
-  border-color: var(--red) !important;
-  box-shadow: 0 0 0 2px var(--red-bg) !important;
-}
-
 .btn-red-outline {
   background: var(--white);
   border: 1px solid var(--red);
@@ -143,20 +128,6 @@
 }
 .btn-red-outline:active {
   transform: scale(0.95);
-}
-
-/* ─── Buy Price Override ─────────────────────────────────── */
-.input-buy-override {
-  border: 1.5px solid var(--amber) !important;
-  color: var(--amber) !important;
-  font-weight: 700 !important;
-}
-.input-buy-override:focus {
-  border-color: var(--amber) !important;
-  box-shadow: 0 0 0 2px var(--amber-bg) !important;
-}
-.input-buy-override::placeholder {
-  color: rgba(212, 140, 60, 0.4) !important;
 }
 
 /* ─── Price hint (today's price reference) ────────────────── */
@@ -189,109 +160,6 @@
   margin-top: 2px;
 }
 
-/* ─── Negotiation section ─────────────────────────────────── */
-.nsf-negotiate { margin-top: 12px; }
-
-.nsf-negotiate-trigger {
-  color: var(--text-muted);
-  gap: 6px;
-}
-
-.nsf-negotiate-bar {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  background: var(--red-bg);
-  border-radius: var(--radius);
-  border: 1px solid rgba(212, 92, 92, 0.25);
-}
-.nsf-negotiate-bar--confirmed {
-  justify-content: space-between;
-}
-
-.nsf-negotiate-confirm {
-  height: 40px;
-  width: 40px;
-  background: var(--red);
-  border: none;
-  border-radius: var(--radius-sm);
-  color: #fff;
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: opacity 0.15s;
-}
-.nsf-negotiate-confirm:hover { opacity: 0.85; }
-
-.nsf-negotiate-cancel {
-  height: 40px;
-  width: 40px;
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  font-size: 16px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.nsf-negotiate-cancel:hover { background: var(--bg-hover); }
-
-.nsf-negotiate-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.nsf-negotiate-check {
-  width: 24px;
-  height: 24px;
-  background: var(--green);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  color: #fff;
-  font-size: 11px;
-}
-
-.nsf-negotiate-discount {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--red);
-}
-
-.nsf-negotiate-agreed {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 1px;
-}
-
-.nsf-negotiate-edit {
-  color: var(--text-muted);
-}
-
-.nsf-negotiate-tag {
-  color: var(--red);
-  font-size: 13px;
-  flex-shrink: 0;
-}
-
-/* ─── Buy price summary ──────────────────────────────────── */
-.nsf-price-summary {
-  margin-top: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
 .nsf-total-label--flex {
   display: flex;
   align-items: center;
@@ -305,135 +173,6 @@
   transition: all 0.2s ease;
 }
 
-.nsf-total-editable {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  transition: all 0.2s ease;
-}
-.nsf-total-editable--active {
-  background: var(--amber-bg);
-  border: 1.5px solid var(--amber);
-}
-
-.nsf-total-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.nsf-buy-diff-badge {
-  padding: 1px 7px;
-  border-radius: 99px;
-  background: var(--amber-bg);
-  color: var(--amber);
-  font-size: 11px;
-  font-weight: 600;
-  border: 1px solid rgba(212, 140, 60, 0.3);
-}
-
-.nsf-buy-edit-input {
-  width: 140px;
-  text-align: right;
-  font-size: 18px !important;
-  font-weight: 700 !important;
-  color: var(--amber) !important;
-  border: 1.5px solid var(--amber) !important;
-}
-
-.nsf-buy-confirm {
-  height: 40px;
-  width: 40px;
-  flex-shrink: 0;
-  background: var(--amber);
-  border: none;
-  border-radius: var(--radius-sm);
-  color: #fff;
-  font-size: 15px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: opacity 0.15s;
-}
-.nsf-buy-confirm:hover { opacity: 0.85; }
-
-.nsf-buy-edit {
-  color: var(--text-muted);
-  flex-shrink: 0;
-}
-
-.nsf-buy-reset {
-  align-self: flex-end;
-  color: var(--text-muted);
-  gap: 5px;
-}
-
-/* ─── Inventory checkbox card ────────────────────────────── */
-.nsf-inventory { margin-top: 16px; }
-
-.nsf-inventory-label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.2s ease;
-}
-.nsf-inventory-label--active {
-  background: var(--green-bg);
-  border-color: rgba(91, 175, 130, 0.35);
-}
-
-.nsf-inventory-checkbox {
-  transform: scale(1.2);
-  cursor: pointer;
-  accent-color: var(--green);
-}
-
-.nsf-inventory-title {
-  font-size: 14px;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-.nsf-inventory-title--active {
-  color: var(--green);
-}
-
-.nsf-inventory-desc {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 1px;
-}
-
-/* ─── Discount presets ───────────────────────────────────── */
-.nsf-presets {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.nsf-preset-chip {
-  padding: 3px 10px;
-  border-radius: 99px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text-muted);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all var(--transition);
-  font-family: var(--font);
-}
-.nsf-preset-chip--active {
-  border-color: var(--gold);
-  background: var(--gold-dim);
-  color: var(--gold);
-}
-
 .nsf-total-label--icon {
   display: flex;
   align-items: center;
@@ -443,24 +182,6 @@
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-4px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-
-.nsf-buy-price-group {
-  margin-top: 16px;
-}
-
-.nsf-buy-today-price-hint {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-left: 8px;
-}
-
-.nsf-buy-edit svg {
-  font-size: 12px;
-}
-
-.nsf-buy-reset svg {
-  font-size: 11px;
 }
 
 /* ─── Pinned footer: plain total stacked above buttons ────── */
@@ -515,21 +236,6 @@
   gap: 10px;
 }
 
-/* ─── Sell: out-of-stock notice ──────────────────────────── */
-.nsf-stock-warning {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  padding: 8px 12px;
-  background: var(--red-bg);
-  border: 1px solid rgba(212, 92, 92, 0.25);
-  border-radius: var(--radius-sm);
-  color: var(--red);
-  font-size: 12.5px;
-  font-weight: 500;
-}
-
 .nsf-footer-stock-badge {
   display: flex;
   align-items: center;
@@ -539,125 +245,4 @@
   font-size: 10.5px;
   font-weight: 600;
   color: var(--red);
-}
-
-/* ─── Discount/Addition type toggle ───────────────────────── */
-.nsf-adj-toggle {
-  display: flex;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-}
-
-.nsf-adj-btn {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 7px;
-  padding: 9px;
-  border: none;
-  background: var(--bg-card);
-  font-family: var(--font);
-  font-size: 13.5px;
-  font-weight: 500;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: all var(--transition);
-}
-
-.nsf-adj-btn:not(:first-child) {
-  border-left: 1px solid var(--border);
-}
-
-.nsf-adj-btn:hover {
-  background: var(--bg-hover);
-  color: var(--text-secondary);
-}
-
-.nsf-adj-btn--discount {
-  background: var(--red-bg);
-  color: var(--red);
-}
-
-.nsf-adj-btn--addition {
-  background: var(--green-bg);
-  color: var(--green);
-}
-
-/* ─── Amount input with sign prefix ───────────────────────── */
-.nsf-adj-amount-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.nsf-adj-amount-sign {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 40px;
-  border-radius: var(--radius-sm);
-  font-size: 16px;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.nsf-adj-amount-sign--discount {
-  background: var(--red-bg);
-  color: var(--red);
-}
-
-.nsf-adj-amount-sign--addition {
-  background: var(--green-bg);
-  color: var(--green);
-}
-
-.nsf-adj-amount-input--discount:focus {
-  border-color: var(--red) !important;
-}
-
-.nsf-adj-amount-input--addition:focus {
-  border-color: var(--green) !important;
-}
-
-/* ─── Preview badge ────────────────────────────────────────── */
-.nsf-adj-preview {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  border-radius: var(--radius);
-  margin-top: 4px;
-  font-size: 13px;
-  animation: nsf-adj-fade-in 0.2s ease;
-}
-
-.nsf-adj-preview--discount {
-  background: var(--red-bg);
-  color: var(--red);
-  border: 1px solid rgba(212, 92, 92, 0.2);
-}
-
-.nsf-adj-preview--addition {
-  background: var(--green-bg);
-  color: var(--green);
-  border: 1px solid rgba(91, 175, 130, 0.2);
-}
-
-.nsf-adj-preview-label {
-  font-weight: 600;
-}
-
-.nsf-adj-preview-val {
-  font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-}
-
-@keyframes nsf-adj-fade-in {
-  from { opacity: 0; transform: translateY(3px); }
-  to   { opacity: 1; transform: translateY(0); }
 }

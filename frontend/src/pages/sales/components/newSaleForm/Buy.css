@@ -1,0 +1,145 @@
+/* ─── Buy Component Styles ──────────────────────────────────────────── */
+
+/* ─── Buy Price Override ─────────────────────────────────── */
+.input-buy-override {
+  border: 1.5px solid var(--amber) !important;
+  color: var(--amber) !important;
+  font-weight: 700 !important;
+}
+.input-buy-override:focus {
+  border-color: var(--amber) !important;
+  box-shadow: 0 0 0 2px var(--amber-bg) !important;
+}
+.input-buy-override::placeholder {
+  color: rgba(212, 140, 60, 0.4) !important;
+}
+
+/* ─── Buy price summary ──────────────────────────────────── */
+.nsf-price-summary {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nsf-total-editable {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+}
+.nsf-total-editable--active {
+  background: var(--amber-bg);
+  border: 1.5px solid var(--amber);
+}
+
+.nsf-total-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nsf-buy-diff-badge {
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: var(--amber-bg);
+  color: var(--amber);
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid rgba(212, 140, 60, 0.3);
+}
+
+.nsf-buy-edit-input {
+  width: 140px;
+  text-align: right;
+  font-size: 18px !important;
+  font-weight: 700 !important;
+  color: var(--amber) !important;
+  border: 1.5px solid var(--amber) !important;
+}
+
+.nsf-buy-confirm {
+  height: 40px;
+  width: 40px;
+  flex-shrink: 0;
+  background: var(--amber);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 15px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s;
+}
+.nsf-buy-confirm:hover { opacity: 0.85; }
+
+.nsf-buy-edit {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.nsf-buy-edit svg {
+  font-size: 12px;
+}
+
+.nsf-buy-reset {
+  align-self: flex-end;
+  color: var(--text-muted);
+  gap: 5px;
+}
+.nsf-buy-reset svg {
+  font-size: 11px;
+}
+
+.nsf-buy-price-group {
+  margin-top: 16px;
+}
+
+.nsf-buy-today-price-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 8px;
+}
+
+/* ─── Inventory checkbox card ────────────────────────────── */
+.nsf-inventory {
+  margin-top: 16px;
+}
+
+.nsf-inventory-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.2s ease;
+}
+.nsf-inventory-label--active {
+  background: var(--green-bg);
+  border-color: rgba(91, 175, 130, 0.35);
+}
+
+.nsf-inventory-checkbox {
+  transform: scale(1.2);
+  cursor: pointer;
+  accent-color: var(--green);
+}
+
+.nsf-inventory-title {
+  font-size: 14px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+.nsf-inventory-title--active {
+  color: var(--green);
+}
+
+.nsf-inventory-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}

@@ -1,10 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { GetCustomers } from 'wailsjs/go/customer_handler/CustomerHandler.js'
 import { fullName } from '@/utils/thai.js'
 import { SMARTCARD_EVENTS } from '@/utils/smartcard'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faUserPlus } from '@fortawesome/free-solid-svg-icons'
+import CustomerForm from '@/pages/customers/CustomerForm.jsx'
 
 export default function CustomerNoteSection({ 
   tabMode,         // 'sell' or 'buy'
+  isCustomerRequired = false, // optional override
   customerId,      // current selected ID
   customerLabel,   // current selected Name
   notes,           // current notes
@@ -15,7 +20,10 @@ export default function CustomerNoteSection({
   const [custSearch, setCustSearch] = useState('')
   const [customers, setCustomers] = useState([])
   const [showCustDrop, setShowCustDrop] = useState(false)
+  const [showAddCustModal, setShowAddCustModal] = useState(false)
   const custRef = useRef(null)
+
+  const required = tabMode === 'buy' || isCustomerRequired
 
   // Auto-fetch customers when typing
   useEffect(() => {
@@ -73,8 +81,8 @@ export default function CustomerNoteSection({
       <div className="form-row form-row-2">
         
         <div className="form-group" ref={custRef}>
-          <label className={`form-label ${tabMode === 'buy' ? 'form-label-required' : ''}`}>
-            {tabMode === 'buy' ? 'ลูกค้า' : 'ลูกค้า (ไม่บังคับ)'}
+          <label className={`form-label ${required ? 'form-label-required' : ''}`}>
+            {required ? 'ลูกค้า' : 'ลูกค้า (ไม่บังคับ)'}
           </label>
           <div style={{ position: 'relative' }}>
             {showCustDrop && customers.length > 0 && (
@@ -95,12 +103,37 @@ export default function CustomerNoteSection({
               onFocus={() => custSearch && setShowCustDrop(true)}
             />
           </div>
-          
+
           {customerId > 0 && (
-            <div className="nsf-selected-item">
+            <div className="nsf-selected-item" style={{ marginTop: '6px' }}>
               <IconCheck /> {customerLabel}
             </div>
           )}
+
+          <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '6px' }}>
+            <button
+              type="button"
+              className="btn btn-ghost btn-xs"
+              style={{
+                color: 'var(--amber)',
+                fontSize: '12px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '4px 10px',
+                background: 'rgba(217, 119, 6, 0.06)',
+                border: '1px solid var(--amber)',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontWeight: 500
+              }}
+              onClick={() => setShowAddCustModal(true)}
+              title="เพิ่มลูกค้าใหม่"
+            >
+              <FontAwesomeIcon icon={faUserPlus} />
+              เพิ่มลูกค้าใหม่
+            </button>
+          </div>
         </div>
 
         {/* Notes Input */}
@@ -113,8 +146,16 @@ export default function CustomerNoteSection({
             onChange={e => onNotesChange(e.target.value)}
           />
         </div>
-
       </div>
+
+      {showAddCustModal && createPortal(
+        <CustomerForm
+          customerId={null}
+          onSaved={() => setShowAddCustModal(false)}
+          onClose={() => setShowAddCustModal(false)}
+        />,
+        document.body
+      )}
     </>
   )
 }

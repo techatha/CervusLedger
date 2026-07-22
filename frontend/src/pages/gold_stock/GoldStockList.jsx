@@ -3,6 +3,7 @@ import {
   ListGoldItems,
   DeleteGoldItem,
   ListStockLogs,
+  ExportGoldStock,
 } from 'wailsjs/go/gold_item_handler/GoldItemHandler'
 import GoldStockForm from './GoldStockForm'
 import GoldStockWizard from './component/GoldStockWizard'
@@ -32,6 +33,9 @@ export default function GoldStockList() {
   const [exporting, setExporting] = useState(false)
   const [wizardOpen, setWizardOpen] = useState(null)
 
+  // Main types toggle state for excel export — keyed by mainType (default: true)
+  const [exportToggleState, setExportToggleState] = useState({})
+
   // History overlay state — which type is open
   const [historyType, setHistoryType] = useState(null) // null = closed, string = type name
 
@@ -41,6 +45,13 @@ export default function GoldStockList() {
   const [editedAmounts, setEditedAmounts] = useState({})
 
   const [auditLoading, setAuditLoading] = useState(false)
+
+  const handleToggleExport = (mainType) => {
+    setExportToggleState(prev => ({
+      ...prev,
+      [mainType]: prev[mainType] === false ? true : false
+    }))
+  }
 
   // ── Load catalog ────────────────────────────────────────────────────────────
   const loadCatalog = useCallback(async () => {
@@ -102,14 +113,35 @@ export default function GoldStockList() {
     }
   }
 
-  const handleExport = async () => {
-    setExporting(true)
-    setTimeout(() => setExporting(false), 1500) // TODO: implement
-  }
-
   // ── Grouping & computation ──────────────────────────────────────────────────
   const auditGroups = groupBy(items, 'type')
   const typeKeys = Object.keys(auditGroups)
+
+  const handleExport = async () => {
+    try {
+      setError(null)
+      const now = new Date()
+      const year = now.getFullYear()
+      const month = String(now.getMonth() + 1).padStart(2, '0')
+      const day = String(now.getDate()).padStart(2, '0')
+
+      const startDate = `${year}-01-01`
+      const endDate = `${year}-${month}-${day}`
+
+      const excludedTypes = typeKeys.filter(t => exportToggleState[t] === false)
+      if (typeKeys.length > 0 && excludedTypes.length === typeKeys.length) {
+        setError('กรุณาเปิดส่งออกอย่างน้อย 1 ประเภท')
+        return
+      }
+
+      setExporting(true)
+      await ExportGoldStock(startDate, endDate, excludedTypes)
+    } catch (e) {
+      if (e) setError('ส่งออก Excel ไม่สำเร็จ: ' + String(e))
+    } finally {
+      setExporting(false)
+    }
+  }
 
   const computedGroups = typeKeys.map(mainType => {
     const groupItems = auditGroups[mainType]
@@ -188,34 +220,52 @@ export default function GoldStockList() {
           </button>
         </div>
       ) : (
-        computedGroups.map(group => (
-          <div key={group.mainType} className="gl-type-section">
+        computedGroups.map(group => {
+          const isExportEnabled = exportToggleState[group.mainType] !== false
+          return (
+            <div key={group.mainType} className="gl-type-section">
 
-            {/* Editorial heading — type name as title, history button inline */}
-            <div className="gl-type-heading">
-              <span className="gl-type-heading-name">{group.mainType}</span>
-              <span className="gl-type-heading-count">{group.logsCount} รายการ</span>
-              <span className="gl-type-heading-summary">
-                {group.groupQty} ชิ้น · {group.groupWeight.toFixed(2)} กรัม
-              </span>
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => setWizardOpen(group.mainType)}
-                disabled={auditLoading || group.rows.length === 0}
-                title={`ตรวจนับสต็อก ${group.mainType}`}
-              >
-                <FontAwesomeIcon icon={faFilePen} />
-                ตรวจนับ
-              </button>
-              <button
-                className="btn btn-ghost btn-sm gl-history-btn"
-                onClick={() => setHistoryType(group.mainType)}
-                title={`ดูประวัติสต็อก ${group.mainType}`}
-              >
-                <FontAwesomeIcon icon={faClockRotateLeft} />
-                ประวัติ
-              </button>
-            </div>
+              {/* Editorial heading — type name as title, history button inline */}
+              <div className="gl-type-heading">
+                <span className="gl-type-heading-name">{group.mainType}</span>
+                <span className="gl-type-heading-count">{group.logsCount} รายการ</span>
+                <span className="gl-type-heading-summary">
+                  {group.groupQty} ชิ้น · {group.groupWeight.toFixed(2)} กรัม
+                </span>
+                <label
+                  className={`gl-type-export-toggle ${!isExportEnabled ? 'is-disabled' : ''}`}
+                  title={isExportEnabled ? 'รวมประเภทนี้ในการส่งออก Excel' : 'ไม่ส่งออกประเภทนี้ไปยัง Excel'}
+                >
+                  <span className="gl-toggle-label">
+                    {isExportEnabled ? 'ส่งออก Excel' : 'ไม่ส่งออก'}
+                  </span>
+                  <span className="gl-toggle-switch">
+                    <input
+                      type="checkbox"
+                      checked={isExportEnabled}
+                      onChange={() => handleToggleExport(group.mainType)}
+                    />
+                    <span className="gl-toggle-slider" />
+                  </span>
+                </label>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setWizardOpen(group.mainType)}
+                  disabled={auditLoading || group.rows.length === 0}
+                  title={`ตรวจนับสต็อก ${group.mainType}`}
+                >
+                  <FontAwesomeIcon icon={faFilePen} />
+                  ตรวจนับ
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm gl-history-btn"
+                  onClick={() => setHistoryType(group.mainType)}
+                  title={`ดูประวัติสต็อก ${group.mainType}`}
+                >
+                  <FontAwesomeIcon icon={faClockRotateLeft} />
+                  ประวัติ
+                </button>
+              </div>
 
             <div className="card">
               <div className="table-wrap">
@@ -280,7 +330,8 @@ export default function GoldStockList() {
             </div>
 
           </div>
-        ))
+        )
+      })
       )}
 
       {/* ── History Overlay ──────────────────────────────────────── */}

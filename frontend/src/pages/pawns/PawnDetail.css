@@ -169,7 +169,7 @@
 .pawn-detail-footer {
   border-top: 1px solid var(--border);
   padding: 16px 20px;
-  background: var(--bg-hover);
+  background: #ffffff;
   display: flex;
   flex-direction: column;
   gap: 14px;

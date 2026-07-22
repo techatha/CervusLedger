@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faArrowUp, faArrowDown, faTag } from '@fortawesome/free-solid-svg-icons'
 import NewSaleFormSell from './components/newSaleForm/Sell.jsx'
 import NewSaleFormBuy from './components/newSaleForm/Buy.jsx'
-import NewSaleFormDiscount from './components/newSaleForm/Discount.jsx'
+import NewSaleFormPriceAdjustment from './components/newSaleForm/PriceAdjustment.jsx'
 import './NewSaleForm.css'
 
 import { getLocalISOString } from '@/utils/date'
@@ -63,6 +63,11 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
       if (!formData.weight_grams) return setError('กรุณากรอกน้ำหนักชั่งจริง (กรัม)')
       if (!formData.total_amount) return setError('กรุณากรอกราคารวมขาย')
 
+      // ถ้าเลือก "เปลี่ยนทองเก่า" ต้องบังคับเลือกลูกค้า!
+      if (formData.exchange_data?.is_exchange && formData.exchange_data.total_amount > 0) {
+        if (!formData.customer_id) return setError('กรุณาเลือกลูกค้าสำหรับการเปลี่ยนทองเก่า')
+      }
+
       const priceID = todayPrice?.id || 0
       const finalWeightBaht = parseFloat(formData.weight_grams || 0) * 656 / 10000
       const displayNotes = formData.notes
@@ -100,6 +105,28 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
           label: 'ส่วนลดพิเศษ',
         })
       }
+
+      // 3. ถ้าเลือก "เปลี่ยนทองเก่า" ให้ส่ง Payload รับซื้อ (Buy) แยกไปด้วย
+      if (formData.exchange_data?.is_exchange && formData.exchange_data.total_amount > 0) {
+        const ex = formData.exchange_data
+        onAdd({
+          type: 'buy',
+          customer_id: formData.customer_id,
+          gold_item_id: 0,
+          weight_baht: (ex.weight_grams * 656) / 10000,
+          weight_grams: ex.weight_grams,
+          gold_price_id: priceID,
+          price_per_baht: ex.price_per_baht,
+          total_amount: ex.total_amount,
+          notes: `ทองเก่าแลกเปลี่ยนจากการซื้อ: ${formData.gold_item_label}`,
+          date: formData.date,
+          item_type: 'ทองเก่า (แลกเปลี่ยน)',
+          item_subtype: '',
+          is_inventory: 0,
+          label: `รับซื้อ: ทองแลกเปลี่ยน (${ex.weight_grams} ก., ${ex.purity}%)`,
+        })
+      }
+
       onClose()
 
     } else if (tab === 'buy') {
@@ -152,21 +179,24 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
 
   // ─── Pinned footer total ───────────────────────────────────────────
   const parseNum = (v) => parseFloat(String(v ?? '').replace(/,/g, '')) || 0
+  const exchangeVal = formData.exchange_data?.is_exchange ? parseNum(formData.exchange_data.total_amount) : 0
 
   const footerTotal = tab === 'sell'
-    ? Math.max(0, parseNum(formData.total_amount) - parseNum(formData.discount_amount))
+    ? Math.max(0, parseNum(formData.total_amount) - parseNum(formData.discount_amount) - exchangeVal)
     : tab === 'buy'
       ? parseNum(formData.total_amount)
       : parseNum(formData.amount)
 
   const footerLabel = tab === 'sell' ? 'ยอดขายสุทธิ' : tab === 'buy' ? 'ยอดรับซื้อ' : (formData.type === 'addition' ? 'ยอดเพิ่มเงิน' : 'ยอดส่วนลด')
-  const footerColor = tab === 'sell' ? 'var(--green)' : tab === 'buy' ? 'var(--amber)' : (formData.type === 'addition' ? 'var(--green)' : 'var(--blue)')
+  const footerColor = tab === 'sell' ? 'var(--green)' : tab === 'buy' ? 'var(--amber)' : 'var(--blue)'
 
   // Small contextual badge: discount applied (sell) / manual price override (buy)
   const footerBadge = (() => {
     if (tab === 'sell') {
       const d = parseNum(formData.discount_amount)
-      return d > 0 ? `-${formatBaht(d)}` : null
+      if (d > 0) return `-${formatBaht(d)}`
+      if (exchangeVal > 0) return `ทองแลก -${formatBaht(exchangeVal)}`
+      return null
     }
     if (tab === 'buy' && formData.is_override) {
       const diff = parseNum(formData.override_diff)
@@ -192,7 +222,7 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
           <button className={`nsf-tab ${tab === 'buy' ? 'nsf-tab-active nsf-tab-buy' : ''}`} onClick={() => handleTabChange('buy')}>
             <FontAwesomeIcon icon={faArrowDown} /> รับซื้อทอง
           </button>
-          <button className={`nsf-tab ${tab === 'discount' ? 'nsf-tab-active nsf-tab-discount' : ''}`} onClick={() => handleTabChange('discount')} style={tab === 'discount' ? { borderBottomColor: formData.type === 'addition' ? 'var(--green)' : 'var(--blue)', color: formData.type === 'addition' ? 'var(--green)' : 'var(--blue)' } : {}}>
+          <button className={`nsf-tab ${tab === 'discount' ? 'nsf-tab-active nsf-tab-discount' : ''}`} onClick={() => handleTabChange('discount')} style={tab === 'discount' ? { borderBottomColor: 'var(--blue)', color: 'var(--blue)' } : {}}>
             <FontAwesomeIcon icon={faTag} /> ปรับราคา
           </button>
         </div>
@@ -203,7 +233,7 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
           {/* ส่ง State ที่รวมกันแล้วลงไปให้ตัวลูกใช้งาน */}
           {tab === 'sell' && <NewSaleFormSell formData={formData} setFormData={setFormData} todayPrice={todayPrice} />}
           {tab === 'buy' && <NewSaleFormBuy formData={formData} setFormData={setFormData} todayPrice={todayPrice} />}
-          {tab === 'discount' && <NewSaleFormDiscount formData={formData} setFormData={setFormData} />}
+          {tab === 'discount' && <NewSaleFormPriceAdjustment formData={formData} setFormData={setFormData} />}
         </div>
 
         {/* ─── Pinned footer: final price + actions, always visible ───── */}
@@ -233,7 +263,7 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
             <button
               className="btn btn-primary"
               onClick={handleAddToCart}
-              style={tab === 'buy' ? { background: 'var(--amber)', color: '#fff', border: 'none' } : tab === 'discount' ? { background: formData.type === 'addition' ? 'var(--green)' : 'var(--blue)', color: '#fff', border: 'none' } : tab === 'sell' ? { background: 'var(--green)', color: '#fff', border: 'none' } : {}}
+              style={tab === 'buy' ? { background: 'var(--amber)', color: '#fff', border: 'none' } : tab === 'discount' ? { background: 'var(--blue)', color: '#fff', border: 'none' } : tab === 'sell' ? { background: 'var(--green)', color: '#fff', border: 'none' } : {}}
             >
               {tab === 'buy' ? 'เพิ่มรายการรับซื้อ' : tab === 'discount' ? (formData.type === 'addition' ? 'เพิ่มรายการเพิ่มเงินลงตะกร้า' : 'เพิ่มส่วนลดลงตะกร้า') : 'เพิ่มรายการขาย'}
             </button>

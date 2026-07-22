@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import { fullName, formatBaht, toBE } from '@/utils/thai.js'
 import { formatNumberInput, formatCurrency } from '@/utils/number.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPen, faCheck, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { faPen, faCheck, faXmark, faTag, faPenToSquare } from '@fortawesome/free-solid-svg-icons'
 import CustomerNoteSection from './CustomerNote.jsx'
 import GoldTypeSelectSection from '@/components/GoldTypeSelectSection.jsx'
 import { GetBuyingDifference } from 'wailsjs/go/settings_handler/SettingsHandler'
+import './Buy.css'
 
 export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
   const [negotiationMode, setNegotiationMode] = useState('off') // 'off' | 'editing' | 'confirmed'
@@ -75,26 +76,33 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
   const currentTotal = parseFloat(String(formData.total_amount).replace(/,/g, '') || 0)
   const priceDiff = formData.is_override ? currentTotal - calculatedTotal : 0
 
-  const handleApplyNegotiated = () => {
+  const baseTotal = calculatedTotal || 0
+  const cleanedPrice = parseFloat(String(negotiatedPrice).replace(/,/g, '') || 0)
+  const livePriceDiff = (cleanedPrice > 0 && baseTotal > 0) ? cleanedPrice - baseTotal : 0
+
+  // Synchronize live calculation in editing mode
+  useEffect(() => {
+    if (negotiationMode !== 'editing') return
     const cleaned = parseFloat(String(negotiatedPrice).replace(/,/g, '') || 0)
-    if (cleaned > 0 && cleaned !== calculatedTotal) {
+    const base = calculatedTotal || 0
+
+    if (cleaned > 0) {
+      const diff = base > 0 ? cleaned - base : 0
       setFormData(prev => ({
         ...prev,
         total_amount: String(cleaned),
-        is_override: true,
-        override_diff: cleaned - calculatedTotal
+        is_override: base > 0 && cleaned !== base,
+        override_diff: diff
       }))
-    } else {
-      setNegotiationMode('off')
-      setNegotiatedPrice('')
+    } else if (negotiatedPrice === '') {
       setFormData(prev => ({
         ...prev,
-        total_amount: calculatedTotal > 0 ? String(calculatedTotal) : '',
+        total_amount: base > 0 ? String(base) : '',
         is_override: false,
         override_diff: 0
       }))
     }
-  }
+  }, [negotiationMode, negotiatedPrice, calculatedTotal, setFormData])
 
   return (
     <>
@@ -149,8 +157,6 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
               updated.item_type = ''
               updated.item_subtype = ''
             }
-
-
 
             updateBuyCalculation(updated)
           }}
@@ -213,7 +219,6 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
         </>
       )}
 
-
       <>
         <div className="form-group nsf-buy-price-group">
           <label className="form-label form-label-required">ราคาทองแท่ง (บาท)</label>
@@ -234,116 +239,100 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
           )}
         </div>
 
-        {/* ─── Breakdown + Negotiation ── */}
+        {/* ─── Breakdown ── */}
         {calculatedTotal > 0 && (
-          <>
-            <div className="nsf-total-breakdown" style={{ marginTop: '14px' }}>
-              ราคาคำนวณ: {formatBaht(calculatedTotal)}
-              {formData.weight_grams && formData.purity && (
-                <span style={{ marginLeft: '6px', opacity: 0.8 }}>
-                  ({buyingDifference > 0 ? (
-                    `${formatNumberInput(formData.price_per_baht)} - ${formatNumberInput(buyingDifference)}`
-                  ) : (
-                    formatNumberInput(formData.price_per_baht)
-                  )} × {formData.purity}% × {formData.weight_grams} ก.)
-                </span>
-              )}
-            </div>
+          <div className="nsf-total-breakdown" style={{ marginTop: '14px' }}>
+            ราคาคำนวณ: {formatBaht(calculatedTotal)}
+            {formData.weight_grams && formData.purity && (
+              <span style={{ marginLeft: '6px', opacity: 0.8 }}>
+                ({buyingDifference > 0 ? (
+                  `${formatNumberInput(formData.price_per_baht)} - ${formatNumberInput(buyingDifference)}`
+                ) : (
+                  formatNumberInput(formData.price_per_baht)
+                )} × {formData.purity}% × {formData.weight_grams} ก.)
+              </span>
+            )}
+          </div>
+        )}
 
-            <div className="nsf-negotiate">
-              {negotiationMode === 'off' ? (
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm nsf-negotiate-trigger"
-                  onClick={() => {
-                    setNegotiationMode('editing')
-                    setNegotiatedPrice(String(calculatedTotal))
-                  }}
-                >
-                  <FontAwesomeIcon icon={faPen} style={{ fontSize: '12px' }} />
-                  ปรับปรุงราคารับซื้อ / กำหนดราคาเอง
-                </button>
+        {/* ─── Negotiation (always visible) ── */}
+        <div className="nsf-negotiate">
+          {negotiationMode === 'off' ? (
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm nsf-negotiate-trigger"
+              onClick={() => {
+                setNegotiationMode('editing')
+                setNegotiatedPrice(calculatedTotal > 0 ? String(calculatedTotal) : '')
+              }}
+            >
+              <FontAwesomeIcon icon={faPenToSquare} style={{ fontSize: '12px' }} />
+              แก้ไขราคา
+            </button>
 
-              ) : negotiationMode === 'editing' ? (
-                <div className="nsf-negotiate-bar">
-                  <FontAwesomeIcon icon={faPen} className="nsf-negotiate-tag" style={{ color: 'var(--amber)' }} />
+          ) : (
+            <div className="nsf-negotiate-bar nsf-negotiate-bar--panel">
+              <div className="nsf-negotiate-panel-header">
+                <FontAwesomeIcon icon={faPenToSquare} className="nsf-negotiate-tag" />
+                <span>แก้ไขราคา</span>
+              </div>
+
+              <div className="nsf-negotiate-exchange-fields">
+                <div className="nsf-negotiate-exchange-group">
+                  <label className="nsf-negotiate-field-label">ระบุราคาที่ตกลงใหม่</label>
                   <input
-                    className="input input-negotiated input-buy-override"
+                    className="input"
                     type="text"
                     inputMode="decimal"
-                    placeholder="ราคารับซื้อที่ต้องการ..."
+                    placeholder="ราคาที่ตกลงกับลูกค้า..."
                     value={formatNumberInput(negotiatedPrice)}
                     onChange={e => setNegotiatedPrice(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault()
-                        handleApplyNegotiated()
-                        setNegotiationMode(parseFloat(String(negotiatedPrice).replace(/,/g, '')) !== calculatedTotal ? 'confirmed' : 'off')
-                      }
-                    }}
-                    style={{ flex: 1 }}
                     autoFocus
                   />
-                  <button
-                    type="button"
-                    className="nsf-negotiate-confirm"
-                    style={{ background: 'var(--amber)' }}
-                    onClick={() => {
-                      handleApplyNegotiated()
-                      setNegotiationMode(parseFloat(String(negotiatedPrice).replace(/,/g, '')) !== calculatedTotal ? 'confirmed' : 'off')
-                    }}
-                    title="ยืนยันราคา"
-                  >
-                    <FontAwesomeIcon icon={faCheck} />
-                  </button>
-                  <button
-                    type="button"
-                    className="nsf-negotiate-cancel"
-                    onClick={() => {
-                      setNegotiationMode('off')
-                      setNegotiatedPrice('')
-                      setFormData(prev => ({
-                        ...prev,
-                        total_amount: calculatedTotal > 0 ? String(calculatedTotal) : '',
-                        is_override: false,
-                        override_diff: 0
-                      }))
-                    }}
-                    title="ยกเลิก"
-                  >
-                    <FontAwesomeIcon icon={faXmark} />
-                  </button>
+                  {cleanedPrice > 0 && (
+                    <div className="nsf-negotiate-bar nsf-negotiate-bar--confirmed" style={{ marginTop: '8px' }}>
+                      <div className="nsf-negotiate-info">
+                        <div className="nsf-negotiate-check">
+                          <FontAwesomeIcon icon={faCheck} />
+                        </div>
+                        <div>
+                          <div className="nsf-negotiate-discount">
+                            <FontAwesomeIcon icon={faTag} style={{ marginRight: '5px' }} />
+                            {baseTotal > 0 && livePriceDiff !== 0
+                              ? `ปรับราคา ${livePriceDiff > 0 ? '+' : ''}${formatBaht(livePriceDiff)}`
+                              : 'ราคาตกลง'}
+                          </div>
+                          <div className="nsf-negotiate-agreed">
+                            ราคารับซื้อจริง: {formatBaht(cleanedPrice)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
+              </div>
 
-              ) : (
-                <div className="nsf-negotiate-bar nsf-negotiate-bar--confirmed" style={{ borderColor: 'rgba(212, 140, 60, 0.25)', background: 'var(--amber-bg)' }}>
-                  <div className="nsf-negotiate-info">
-                    <div className="nsf-negotiate-check" style={{ background: 'var(--amber)' }}>
-                      <FontAwesomeIcon icon={faCheck} />
-                    </div>
-                    <div>
-                      <div className="nsf-negotiate-discount" style={{ color: 'var(--amber)' }}>
-                        ปรับราคา {priceDiff > 0 ? '+' : ''}{formatBaht(priceDiff)}
-                      </div>
-                      <div className="nsf-negotiate-agreed">
-                        ราคารับซื้อจริง: {formatBaht(currentTotal)}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm nsf-negotiate-edit"
-                    onClick={() => setNegotiationMode('editing')}
-                    title="แก้ไขราคา"
-                  >
-                    <FontAwesomeIcon icon={faPen} style={{ fontSize: '12px' }} />
-                    แก้ไข
-                  </button>
-                </div>
-              )}
+              <div className="nsf-negotiate-panel-actions">
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => {
+                    setNegotiationMode('off')
+                    setNegotiatedPrice('')
+                    setFormData(prev => ({
+                      ...prev,
+                      total_amount: calculatedTotal > 0 ? String(calculatedTotal) : '',
+                      is_override: false,
+                      override_diff: 0
+                    }))
+                  }}
+                >
+                  ยกเลิกการปรับราคา
+                </button>
+              </div>
             </div>
-          </>
-        )}
+          )}
+        </div>
       </>
 
       <CustomerNoteSection

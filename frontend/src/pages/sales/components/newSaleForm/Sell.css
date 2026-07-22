@@ -1,0 +1,284 @@
+/* ─── Sell Component Styles ─────────────────────────────────────────── */
+
+.nsf-stock-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--red-bg);
+  border: 1px solid rgba(212, 92, 92, 0.25);
+  border-radius: var(--radius-sm);
+  color: var(--red);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+/* ─── Red/White Negotiated Price Styles ───────────────────── */
+.input-negotiated {
+  background: var(--white) !important;
+  border: 1px solid var(--red) !important;
+  color: var(--red) !important;
+  font-weight: bold !important;
+}
+.input-negotiated::placeholder {
+  color: rgba(212, 92, 92, 0.5) !important;
+}
+.input-negotiated:focus {
+  border-color: var(--red) !important;
+  box-shadow: 0 0 0 2px var(--red-bg) !important;
+}
+
+/* ─── Negotiation Section ─────────────────────────────────── */
+.nsf-negotiate {
+  margin-top: 12px;
+}
+
+.nsf-negotiate-trigger {
+  color: var(--text-muted);
+  gap: 6px;
+}
+.nsf-negotiate-trigger:hover {
+  color: var(--red);
+  background: rgba(212, 92, 92, 0.08);
+}
+
+.nsf-negotiate-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--red-bg);
+  border-radius: var(--radius);
+  border: 2px solid var(--red);
+}
+.nsf-negotiate-bar--confirmed {
+  justify-content: space-between;
+  border-width: 1px;
+  border-color: rgba(212, 92, 92, 0.25);
+  background: var(--red-bg);
+}
+
+.nsf-negotiate-confirm {
+  height: 40px;
+  width: 40px;
+  background: var(--red);
+  border: none;
+  border-radius: var(--radius-sm);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+}
+.nsf-negotiate-confirm:hover { opacity: 0.85; }
+
+.nsf-negotiate-cancel {
+  height: 40px;
+  width: 40px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.nsf-negotiate-cancel:hover {
+  background: rgba(212, 92, 92, 0.12);
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.nsf-negotiate-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nsf-negotiate-check {
+  width: 24px;
+  height: 24px;
+  background: var(--green);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+  font-size: 11px;
+}
+
+.nsf-negotiate-discount {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--red);
+}
+
+.nsf-negotiate-agreed {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.nsf-negotiate-edit {
+  color: var(--text-muted);
+}
+.nsf-negotiate-edit:hover {
+  color: var(--red);
+  background: rgba(212, 92, 92, 0.08);
+}
+
+.nsf-negotiate-tag {
+  color: var(--red);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+/* ─── Panel mode (editing state) ─────────────────────────── */
+.nsf-negotiate-bar--panel {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+/* Input hover and focus inside panel */
+.nsf-negotiate-bar--panel .input:hover,
+.nsf-negotiate-bar--panel .input:focus {
+  border-color: var(--red) !important;
+  background: var(--white) !important;
+  box-shadow: 0 0 0 2px rgba(212, 92, 92, 0.15) !important;
+  outline: none;
+}
+
+/* Button hover inside panel */
+.nsf-negotiate-panel-actions .btn-ghost:hover {
+  background: rgba(212, 92, 92, 0.12) !important;
+  border-color: var(--red) !important;
+  color: var(--red) !important;
+}
+
+.nsf-negotiate-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--red);
+}
+
+/* ─── Sliding Toggle Switch ─────────────────────────────── */
+.nsf-toggle-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  width: fit-content;
+  padding: 2px 0;
+}
+
+.nsf-toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+  pointer-events: none;
+}
+
+.nsf-toggle-slider {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  background-color: var(--border-light);
+  border-radius: 20px;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  flex-shrink: 0;
+}
+
+.nsf-toggle-slider::before {
+  content: "";
+  position: absolute;
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.nsf-toggle-switch input:checked + .nsf-toggle-slider {
+  background-color: var(--red);
+}
+
+.nsf-toggle-switch input:checked + .nsf-toggle-slider::before {
+  transform: translateX(16px);
+}
+
+.nsf-toggle-switch:hover .nsf-toggle-slider {
+  box-shadow: 0 0 0 3px rgba(212, 92, 92, 0.15);
+}
+
+.nsf-toggle-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color 0.15s ease;
+}
+
+.nsf-toggle-switch:hover .nsf-toggle-text,
+.nsf-toggle-switch input:checked ~ .nsf-toggle-text {
+  color: var(--red);
+  font-weight: 600;
+}
+
+.nsf-negotiate-exchange-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nsf-negotiate-exchange-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.nsf-negotiate-exchange-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nsf-negotiate-field-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.nsf-negotiate-panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.nsf-negotiate-live-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  padding: 6px 10px;
+  background: var(--white);
+  border-radius: var(--radius-sm);
+  border: 1px dashed rgba(212, 92, 92, 0.35);
+  animation: fadeIn 0.15s ease;
+}

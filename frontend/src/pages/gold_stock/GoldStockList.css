@@ -192,3 +192,85 @@ tr:hover .gl-row-actions {
   border: 1px solid rgba(212, 92, 92, 0.25);
   white-space: nowrap;
 }
+
+/* ─── Type Export Toggle Switch ─────────────────────────── */
+.gl-type-export-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  transition: all 0.2s ease;
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.gl-type-export-toggle:hover {
+  border-color: var(--border-light);
+  background: var(--bg-hover);
+}
+
+.gl-type-export-toggle.is-disabled {
+  color: var(--text-muted);
+  opacity: 0.7;
+  background: var(--bg-base);
+}
+
+.gl-toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 32px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.gl-toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.gl-toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  inset: 0;
+  background: var(--border-light);
+  border-radius: 18px;
+  transition: background 0.2s ease;
+}
+
+.gl-toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: 2px;
+  top: 2px;
+  background: #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.gl-toggle-switch input:checked + .gl-toggle-slider {
+  background: var(--green, #2e7d32);
+}
+
+.gl-toggle-switch input:checked + .gl-toggle-slider::before {
+  transform: translateX(14px);
+}
+
+.gl-toggle-label {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

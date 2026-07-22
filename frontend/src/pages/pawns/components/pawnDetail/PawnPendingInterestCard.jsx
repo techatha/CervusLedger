@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { formatBaht } from '@/utils/thai'
 import { thaiMonthShort } from '@/utils/pawn'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faCartArrowDown, faCartPlus } from '@fortawesome/free-solid-svg-icons'
+import { faCartArrowDown, faCartPlus, faCheck } from '@fortawesome/free-solid-svg-icons'
 
 function IconXCircle() {
   return (
@@ -19,7 +19,7 @@ function IconXCircle() {
   )
 }
 
-export default function PawnPendingInterestCard({ pendingMonths, pawn, onPayPendingInterest, onAddToCart, cartItems }) {
+export default function PawnPendingInterestCard({ pendingMonths, pawn, onPayPendingInterest, onAddToCart, onMarkAsPaid, cartItems }) {
   const [selectedPending, setSelectedPending] = useState([])
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export default function PawnPendingInterestCard({ pendingMonths, pawn, onPayPend
   if (!pendingMonths || pendingMonths.length === 0) return null
 
   return (
-    <div className="card" style={{ marginTop: 20, borderLeft: '4px solid var(--red)' }}>
+    <div className="card" style={{ marginTop: 20, borderLeft: '4px solid var(--red)', background: '#ffffff' }}>
       <div className="card-header">
         <span className="card-title" style={{ color: 'var(--red)' }}>ค้างชำระดอกเบี้ย</span>
         <span className="badge badge-red">ค้างจ่าย {pendingMonths.length} เดือน</span>
@@ -122,6 +122,12 @@ export default function PawnPendingInterestCard({ pendingMonths, pawn, onPayPend
             </span>
           </div>
           <div className="pawn-detail-actions">
+            <button
+              className="btn btn-ghost"
+              onClick={() => onMarkAsPaid && onMarkAsPaid(selectedPending)}
+            >
+              <FontAwesomeIcon icon={faCheck} /> ทำรายการว่าชำระแล้ว
+            </button>
             <button
               className="btn btn-ghost"
               onClick={() => onAddToCart(selectedPending)}
