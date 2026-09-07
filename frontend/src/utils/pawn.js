@@ -31,10 +31,18 @@ export function getLatestPaidMonth(pawn, payments = []) {
   return { month: latestMonth, year: latestYear }
 }
 
+/**
+ * Gap-aware pending months: lists ALL unpaid months from pawn start to today.
+ *
+ * When a full payments array is provided, checks every month individually,
+ * supporting gaps (e.g., month 3 paid, month 4 cancelled/unpaid, month 5 paid).
+ *
+ * When only last_paid_month/year is available (list view), falls back to
+ * the sequential "everything after last paid" logic.
+ */
 export function getPendingMonths(pawn, payments = []) {
   if (!pawn || pawn.status !== 'active' || !pawn.pawned_date) return []
 
-  // 1. Get today's date and strip time to exactly 00:00:00
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
@@ -42,50 +50,51 @@ export function getPendingMonths(pawn, payments = []) {
   pawnDate.setHours(0, 0, 0, 0)
   const dueDay = pawnDate.getDate()
 
-  const latest = getLatestPaidMonth(pawn, payments)
-  if (!latest) return []
-  
-  let latestMonth = latest.month
-  let latestYear = latest.year
+  // Build a Set of paid months for O(1) lookup: "YYYY-M"
+  const paidSet = new Set()
+  const hasFullPayments = payments && payments.length > 0
 
-  const pending = []
+  if (hasFullPayments) {
+    payments.forEach(p => paidSet.add(`${p.year}-${p.month}`))
+  }
 
-  // Start checking from the month AFTER the latest paid month
-  let checkMonth = latestMonth + 1
-  let checkYear  = latestYear
+  // Step 1: List ALL months from next month after pawn date to today
+  const allMonths = []
+  let checkMonth = pawnDate.getMonth() + 1 // 0-indexed (starts from next month)
+  let checkYear = pawnDate.getFullYear()
 
-  // 3. Loop and calculate differences month-by-month
   while (true) {
-    // Handle December -> January rollover
-    if (checkMonth > 11) {
-      checkMonth = 0
-      checkYear++
-    }
+    if (checkMonth > 11) { checkMonth = 0; checkYear++ }
 
-    // Handle months that don't have enough days (e.g., pawned on 31st, checking Feb)
-    const maxDaysInCheckMonth = new Date(checkYear, checkMonth + 1, 0).getDate()
-    const actualDueDay = Math.min(dueDay, maxDaysInCheckMonth)
+    const maxDays = new Date(checkYear, checkMonth + 1, 0).getDate()
+    const actualDueDay = Math.min(dueDay, maxDays)
+    const dueDate = new Date(checkYear, checkMonth, actualDueDay)
+    dueDate.setHours(0, 0, 0, 0)
 
-    // Define this specific month's due date: [day of pawn]/[check month]/[check year]
-    const checkDueDate = new Date(checkYear, checkMonth, actualDueDay)
-    checkDueDate.setHours(0, 0, 0, 0)
+    if (today < dueDate) break
 
-    // If today is before this due date, stop. We only want unpaid months that have passed.
-    if (today < checkDueDate) {
-      break
-    }
-
-    // Push the unpaid month into the array
-    pending.push({
-      month: checkMonth + 1,  // Convert 0-11 back to 1-12 for UI
-      year: checkYear         // Returns CE year (UI handles `m.year + 543`)
-    })
-
-    // Move to the next month for the next loop iteration
+    allMonths.push({ month: checkMonth + 1, year: checkYear }) // 1-indexed month
     checkMonth++
   }
 
-  return pending
+  // Step 2: Remove paid months
+  if (hasFullPayments) {
+    // Gap-aware: filter out only the paid months
+    return allMonths.filter(m => !paidSet.has(`${m.year}-${m.month}`))
+  }
+
+  // Fallback for list view: use last_paid_month/year as cutoff (no gap detection)
+  if (pawn.last_paid_month != null && pawn.last_paid_year != null) {
+    return allMonths.filter(m => {
+      // Keep only months after the last paid month
+      if (m.year > pawn.last_paid_year) return true
+      if (m.year === pawn.last_paid_year && m.month > pawn.last_paid_month) return true
+      return false
+    })
+  }
+
+  // No payments at all — all months are pending
+  return allMonths
 }
 
 /**

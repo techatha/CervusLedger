@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, Fragment } from 'react'
 import { toBE, formatBaht } from '@/utils/thai'
 import { GetDailyCash, SaveDailyCash } from 'wailsjs/go/income_expense_handler/IncomeExpenseHandler.js'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faAngleLeft, faAngleRight, faPenToSquare, faCircleCheck, faCircleXmark, faPlus, faBuildingColumns, faRobot, faFilePen } from '@fortawesome/free-solid-svg-icons'
+import { faAngleLeft, faAngleRight, faPenToSquare, faCircleCheck, faCircleXmark, faPlus, faBuildingColumns, faRobot, faFilePen, faBan } from '@fortawesome/free-solid-svg-icons'
 import { faCalendarDays, faClipboard, faTrashCan } from '@fortawesome/free-regular-svg-icons'
 import './DailyView.css'
 
@@ -57,6 +57,7 @@ export default function DailyView({
   const [isSaving, setIsSaving] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [isReconciling, setIsReconciling] = useState(false)
+  const [showCancelled, setShowCancelled] = useState(false)
 
   const loadDailyCash = async (d) => {
     try {
@@ -126,9 +127,10 @@ export default function DailyView({
       const matchDate = e.date?.slice(0, 10) === date
       const matchType = !typeFilter || e.type === typeFilter
       const matchSource = !sourceFilter || e.source === sourceFilter
-      return matchDate && matchType && matchSource
+      const matchStatus = showCancelled || e.status !== 'cancelled'
+      return matchDate && matchType && matchSource && matchStatus
     })
-  }, [allEntries, date, typeFilter, sourceFilter])
+  }, [allEntries, date, typeFilter, sourceFilter, showCancelled])
 
   // Net total for the filtered entries
   const netTotal = useMemo(() => {
@@ -221,6 +223,10 @@ export default function DailyView({
         >
           <FontAwesomeIcon icon={faPlus} /> เพิ่มรายการ
         </button>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: 'var(--text-muted)', cursor: 'pointer', userSelect: 'none' }}>
+          <input type="checkbox" checked={showCancelled} onChange={e => setShowCancelled(e.target.checked)} />
+          แสดงรายการที่ยกเลิก
+        </label>
       </div>
 
       {/* Table */}
@@ -242,11 +248,21 @@ export default function DailyView({
               <tr className="loading-row"><td colSpan={5}>ไม่มีรายการในวันนี้</td></tr>
             ) : null}
           </tbody>
-          {entries.length > 0 && !loading && entries.map(e => (
+          {entries.length > 0 && !loading && entries.map(e => {
+            const isCancelled = e.status === 'cancelled'
+            return (
             <tbody key={e.id} className="dv-table-row-group">
-              <tr className={e.notes ? 'dv-row-has-notes' : ''} style={{ cursor: 'pointer' }} onClick={() => onEdit && onEdit(e, false)}>
+              <tr
+                className={e.notes ? 'dv-row-has-notes' : ''}
+                style={{
+                  cursor: 'pointer',
+                  opacity: isCancelled ? 0.5 : 1,
+                  background: isCancelled ? 'var(--bg-hover)' : undefined,
+                }}
+                onClick={() => onEdit && onEdit(e, false)}
+              >
                 <td>
-                  <span className={`badge ${e.type === 'income' ? 'badge-green' : 'badge-red'}`}>
+                  <span className={`badge ${e.type === 'income' ? 'badge-green' : 'badge-red'}`} style={isCancelled ? { textDecoration: 'line-through' } : {}}>
                     {e.type === 'income' ? 'รายรับ' : 'รายจ่าย'}
                   </span>
                   {e.is_bank_transfer && (
@@ -255,6 +271,11 @@ export default function DailyView({
                       className="dv-bank-icon"
                       title="โอนผ่านธนาคาร"
                     />
+                  )}
+                  {isCancelled && (
+                    <span className="badge" style={{ marginLeft: 4, background: 'transparent', border: '1px solid var(--red)', color: 'var(--red)', fontSize: 10 }}>
+                      <FontAwesomeIcon icon={faBan} style={{ marginRight: 3, fontSize: 9 }} />ยกเลิกแล้ว
+                    </span>
                   )}
                 </td>
                 <td className="ip-category">
@@ -279,7 +300,7 @@ export default function DailyView({
                     )}
                   </div>
                 </td>
-                <td className={`ip-amount ${e.type === 'income' ? 'ip-income' : 'ip-expense'}`}>
+                <td className={`ip-amount ${e.type === 'income' ? 'ip-income' : 'ip-expense'}`} style={isCancelled ? { textDecoration: 'line-through' } : {}}>
                   {e.type === 'income' ? '+' : '−'}{formatBaht(e.amount)}
                 </td>
                 <td>
@@ -289,14 +310,16 @@ export default function DailyView({
                   </span>
                 </td>
                 <td className="ip-del dv-actions-cell">
-                  <div className="dv-actions-wrap">
-                    <button className="btn btn-ghost btn-xs" onClick={(evt) => { evt.stopPropagation(); onEdit && onEdit(e, true); }} title="แก้ไข">
-                      <FontAwesomeIcon icon={faPenToSquare} />
-                    </button>
-                    <button className="btn btn-danger-ghost btn-xs dv-delete-btn" onClick={(evt) => { evt.stopPropagation(); onDelete(e); }} title="ลบ">
-                      <FontAwesomeIcon icon={faTrashCan} />
-                    </button>
-                  </div>
+                  {!isCancelled && (
+                    <div className="dv-actions-wrap">
+                      <button className="btn btn-ghost btn-xs" onClick={(evt) => { evt.stopPropagation(); onEdit && onEdit(e, true); }} title="แก้ไข">
+                        <FontAwesomeIcon icon={faPenToSquare} />
+                      </button>
+                      <button className="btn btn-danger-ghost btn-xs dv-delete-btn" onClick={(evt) => { evt.stopPropagation(); onDelete(e); }} title="ลบ">
+                        <FontAwesomeIcon icon={faTrashCan} />
+                      </button>
+                    </div>
+                  )}
                 </td>
               </tr>
               {e.notes && (
@@ -309,7 +332,7 @@ export default function DailyView({
                 </tr>
               )}
             </tbody>
-          ))}
+          )})}
         </table>
       </div>
 

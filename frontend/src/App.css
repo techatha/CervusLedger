@@ -492,6 +492,7 @@ textarea.input {
   max-height: 90vh;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .modal-header {
@@ -542,6 +543,9 @@ textarea.input {
   justify-content: flex-end;
   gap: 10px;
   flex-shrink: 0;
+  position: relative;
+  z-index: 5;
+  box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.06);
 }
 
 /* ─── Search Bar ──────────────────────────────────────────────────── */

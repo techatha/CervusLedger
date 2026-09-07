@@ -3,6 +3,8 @@
 import {models} from '../models';
 import {context} from '../models';
 
+export function CancelIncomeExpense(arg1:number):Promise<void>;
+
 export function CeDateToBE(arg1:string):Promise<string>;
 
 export function CreateIncomeExpense(arg1:models.IncomeExpenseInput):Promise<models.IncomeExpense>;
@@ -12,6 +14,8 @@ export function DeleteIncomeExpense(arg1:number):Promise<void>;
 export function ExportIncomeExpense(arg1:string,arg2:string):Promise<void>;
 
 export function ExportToXlsx(arg1:string,arg2:string,arg3:string):Promise<void>;
+
+export function GetCancelPreview(arg1:number):Promise<models.CancelPreview>;
 
 export function GetDailyCash(arg1:string):Promise<models.DailyCash>;
 

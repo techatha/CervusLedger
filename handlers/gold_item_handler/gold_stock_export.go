@@ -79,10 +79,10 @@ func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate string, exclu
 	}
 
 	logRows, err := db.DB.Query(`
-		SELECT gold_item_id, amount, log_date
+		SELECT gold_item_id, amount, created_at
 		FROM gold_stock_logs
-		WHERE date(log_date) >= ? AND date(log_date) <= ?
-		ORDER BY log_date ASC
+		WHERE date(created_at) >= ? AND date(created_at) <= ?
+		ORDER BY created_at ASC, id ASC
 	`, startDate, endDate)
 	if err != nil {
 		return fmt.Errorf("query stock logs for export: %w", err)
@@ -105,14 +105,14 @@ func (h *GoldItemHandler) ExportGoldStockToXlsx(startDate, endDate string, exclu
 
 	seedMap := make(map[int]int)
 	seedRows, err := db.DB.Query(`
-		SELECT l.gold_item_id, l.amount
-		FROM gold_stock_logs l
-		INNER JOIN (
-			SELECT gold_item_id, MAX(log_date) AS max_date
-			FROM gold_stock_logs
-			WHERE date(log_date) < ?
-			GROUP BY gold_item_id
-		) latest ON l.gold_item_id = latest.gold_item_id AND l.log_date = latest.max_date
+	SELECT l.gold_item_id, l.amount
+	FROM gold_stock_logs l
+	INNER JOIN (
+		SELECT gold_item_id, MAX(id) AS max_id
+		FROM gold_stock_logs
+		WHERE date(created_at) < ?
+		GROUP BY gold_item_id
+	) latest ON l.id = latest.max_id
 	`, startDate)
 	if err != nil {
 		return fmt.Errorf("query seed logs for export: %w", err)

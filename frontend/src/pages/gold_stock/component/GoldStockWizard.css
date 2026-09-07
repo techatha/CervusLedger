@@ -370,6 +370,9 @@
   background: var(--bg-surface);
   flex-shrink: 0;
   gap: 16px;
+  position: relative;
+  z-index: 5;
+  box-shadow: 0 -6px 16px rgba(0, 0, 0, 0.06);
 }
 
 .gsw-nav-btn {

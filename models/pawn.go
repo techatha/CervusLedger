@@ -37,12 +37,13 @@ type PawnRecord struct {
 
 // PawnPayment maps to pawn_payments table.
 type PawnPayment struct {
-	ID           int    `json:"id"`
-	PawnRecordID int    `json:"pawn_record_id"`
-	Month        int    `json:"month"`
-	Year         int    `json:"year"`
-	PaidDate     string `json:"paid_date"`
-	Notes        string `json:"notes"`
+	ID            int    `json:"id"`
+	PawnRecordID  int    `json:"pawn_record_id"`
+	Month         int    `json:"month"`
+	Year          int    `json:"year"`
+	PaidDate      string `json:"paid_date"`
+	Notes         string `json:"notes"`
+	TransactionID string `json:"transaction_id"`
 }
 
 // PawnPaymentInput is the payload for recording a payment.

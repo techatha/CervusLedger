@@ -2,7 +2,9 @@ package gold_item_handler
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"log"
 
 	"CervusLedger/db"
 	"CervusLedger/models"
@@ -47,6 +49,91 @@ func (h *GoldItemHandler) ListGoldItems(status string) ([]models.GoldItem, error
 		items = append(items, g)
 	}
 	return items, nil
+}
+
+// ListGoldItemsWithStock returns gold catalog items enriched with
+// latest_amount and a short recent_history (one entry per day, last 5 days).
+// This is the primary endpoint for the GoldStockList page.
+func (h *GoldItemHandler) ListGoldItemsWithStock() ([]models.GoldItemWithStock, error) {
+	// 1. Load catalog items
+	itemRows, err := db.DB.Query(`
+		SELECT id, type, subtype, purity, weight_grams, no_purity, no_weight, created_at
+		FROM gold_stock
+		ORDER BY type ASC, subtype ASC
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("list gold stock: %w", err)
+	}
+	defer itemRows.Close()
+
+	var results []models.GoldItemWithStock
+	var itemIDs []int
+	itemIndex := map[int]int{} // gold_item_id → index in results
+
+	for itemRows.Next() {
+		var g models.GoldItem
+		if err := itemRows.Scan(
+			&g.ID, &g.Type, &g.Subtype, &g.Purity, &g.WeightGrams, &g.NoPurity, &g.NoWeight, &g.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("scan gold stock: %w", err)
+		}
+		itemIndex[g.ID] = len(results)
+		itemIDs = append(itemIDs, g.ID)
+		results = append(results, models.GoldItemWithStock{
+			GoldItem:      g,
+			LatestAmount:  0,
+			RecentHistory: []models.GoldStockLog{},
+		})
+	}
+
+	if len(itemIDs) == 0 {
+		return results, nil
+	}
+
+	// 2. For each item, get the latest amount
+	for _, id := range itemIDs {
+		latestAmount, err := db.GetLatestStockAmount(db.DB, id)
+		if err == nil {
+			idx := itemIndex[id]
+			results[idx].LatestAmount = latestAmount
+		}
+	}
+
+	// 3. For each item, get the last 5 deduplicated daily entries
+	// (one per day = the entry with MAX(id) for that day)
+	for _, id := range itemIDs {
+		histRows, err := db.DB.Query(`
+			SELECT l.id, l.gold_item_id, g.type, g.subtype, l.amount, l.created_at
+			FROM gold_stock_logs l
+			JOIN gold_stock g ON l.gold_item_id = g.id
+			JOIN (
+				SELECT MAX(id) as max_id
+				FROM gold_stock_logs
+				WHERE gold_item_id = ?
+				GROUP BY date(created_at)
+				ORDER BY date(created_at) DESC
+				LIMIT 5
+			) latest ON l.id = latest.max_id
+			ORDER BY l.created_at ASC
+		`, id)
+		if err != nil {
+			continue
+		}
+
+		idx := itemIndex[id]
+		for histRows.Next() {
+			var l models.GoldStockLog
+			if err := histRows.Scan(
+				&l.ID, &l.GoldItemID, &l.Type, &l.Subtype, &l.Amount, &l.CreatedAt,
+			); err != nil {
+				continue
+			}
+			results[idx].RecentHistory = append(results[idx].RecentHistory, l)
+		}
+		histRows.Close()
+	}
+
+	return results, nil
 }
 
 func (h *GoldItemHandler) GetGoldItem(id int) (models.GoldItem, error) {
@@ -109,11 +196,10 @@ func (h *GoldItemHandler) ListStockLogs(logDate string) ([]models.GoldStockLog, 
 				g.type,
 				g.subtype,
 				l.amount,
-				l.log_date,
 				l.created_at
 			FROM gold_stock_logs l
 			JOIN gold_stock g ON l.gold_item_id = g.id
-			ORDER BY l.log_date DESC, g.type ASC, g.subtype ASC
+			ORDER BY l.created_at DESC, g.type ASC, g.subtype ASC
 		`
 	} else {
 		// Standardize the date input
@@ -130,11 +216,15 @@ func (h *GoldItemHandler) ListStockLogs(logDate string) ([]models.GoldStockLog, 
 				g.type,
 				g.subtype,
 				l.amount,
-				l.log_date,
 				l.created_at
 			FROM gold_stock_logs l
 			JOIN gold_stock g ON l.gold_item_id = g.id
-			WHERE date(l.log_date) = date(?)
+			JOIN (
+				SELECT gold_item_id, MAX(id) as max_id
+				FROM gold_stock_logs
+				WHERE date(created_at) = date(?)
+				GROUP BY gold_item_id
+			) latest ON l.id = latest.max_id
 			ORDER BY g.type ASC, g.subtype ASC
 		`
 		args = append(args, logDate)
@@ -151,7 +241,7 @@ func (h *GoldItemHandler) ListStockLogs(logDate string) ([]models.GoldStockLog, 
 		var l models.GoldStockLog
 		if err := rows.Scan(
 			&l.ID, &l.GoldItemID, &l.Type, &l.Subtype,
-			&l.Amount, &l.LogDate, &l.CreatedAt,
+			&l.Amount, &l.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan stock log: %w", err)
 		}
@@ -166,17 +256,10 @@ func (h *GoldItemHandler) ListStockLogs(logDate string) ([]models.GoldStockLog, 
 }
 
 func (h *GoldItemHandler) RecordStockLog(input models.GoldStockLogInput) error {
-	logDate := input.LogDate
-	if len(logDate) == 10 {
-		logDate = logDate + " 00:00:00"
-	} else if len(logDate) > 10 {
-		logDate = logDate[:10] + " 00:00:00"
-	}
 	_, err := db.DB.Exec(`
-		INSERT INTO gold_stock_logs (gold_item_id, amount, log_date)
-		VALUES (?, ?, ?)
-		ON CONFLICT(gold_item_id, log_date) DO UPDATE SET amount = excluded.amount
-	`, input.GoldItemID, input.Amount, logDate)
+		INSERT INTO gold_stock_logs (gold_item_id, amount)
+		VALUES (?, ?)
+	`, input.GoldItemID, input.Amount)
 	return err
 }
 
@@ -185,13 +268,13 @@ func (h *GoldItemHandler) GetStockLog(id int) (models.GoldStockLog, error) {
 	err := db.DB.QueryRow(`
 		SELECT 
 			l.id, l.gold_item_id, g.type, g.subtype,
-			l.amount, l.log_date, l.created_at
+			l.amount, l.created_at
 		FROM gold_stock_logs l
 		JOIN gold_stock g ON l.gold_item_id = g.id
 		WHERE l.id = ?
 	`, id).Scan(
 		&l.ID, &l.GoldItemID, &l.Type, &l.Subtype,
-		&l.Amount, &l.LogDate, &l.CreatedAt,
+		&l.Amount, &l.CreatedAt,
 	)
 	if err != nil {
 		return l, fmt.Errorf("get stock log %d: %w", id, err)
@@ -200,17 +283,11 @@ func (h *GoldItemHandler) GetStockLog(id int) (models.GoldStockLog, error) {
 }
 
 func (h *GoldItemHandler) UpdateStockLog(id int, input models.GoldStockLogInput) error {
-	logDate := input.LogDate
-	if len(logDate) == 10 {
-		logDate = logDate + " 00:00:00"
-	} else if len(logDate) > 10 {
-		logDate = logDate[:10] + " 00:00:00"
-	}
 	_, err := db.DB.Exec(`
 		UPDATE gold_stock_logs
-		SET gold_item_id = ?, amount = ?, log_date = ?
+		SET gold_item_id = ?, amount = ?
 		WHERE id = ?
-	`, input.GoldItemID, input.Amount, logDate, id)
+	`, input.GoldItemID, input.Amount, id)
 	if err != nil {
 		return fmt.Errorf("update stock log %d: %w", id, err)
 	}
@@ -295,4 +372,58 @@ func (h *GoldItemHandler) GetGoldSubtypes(mainType string) ([]string, error) {
 		return []string{}, nil
 	}
 	return subtypes, nil
+}
+
+func (h *GoldItemHandler) GetMonthlyStockHistory(year int, month int) (map[int]map[int][]models.GoldStockLog, error) {
+	monthPrefix := fmt.Sprintf("%04d-%02d", year, month)
+	log.Printf("[GetMonthlyStockHistory] Fetching history for year=%d, month=%d (prefix=%s)", year, month, monthPrefix)
+	
+	query := `
+		SELECT 
+			l.id, l.gold_item_id, g.type, g.subtype,
+			l.amount, l.created_at, l.transaction_id
+		FROM gold_stock_logs l
+		JOIN gold_stock g ON l.gold_item_id = g.id
+		WHERE l.created_at LIKE ?
+		ORDER BY l.created_at ASC, l.id ASC
+	`
+	rows, err := db.DB.Query(query, monthPrefix+"%")
+	if err != nil {
+		log.Printf("[GetMonthlyStockHistory] ERROR executing query: %v", err)
+		return nil, fmt.Errorf("query monthly stock history: %w", err)
+	}
+	defer rows.Close()
+
+	result := make(map[int]map[int][]models.GoldStockLog)
+	totalLogs := 0
+
+	for rows.Next() {
+		var l models.GoldStockLog
+		var txnID sql.NullString
+		if err := rows.Scan(
+			&l.ID, &l.GoldItemID, &l.Type, &l.Subtype,
+			&l.Amount, &l.CreatedAt, &txnID,
+		); err != nil {
+			log.Printf("[GetMonthlyStockHistory] ERROR scanning row: %v", err)
+			return nil, fmt.Errorf("scan history log: %w", err)
+		}
+		if txnID.Valid {
+			l.TransactionID = txnID.String
+		}
+
+		if len(l.CreatedAt) >= 10 {
+			dayStr := l.CreatedAt[8:10]
+			var day int
+			fmt.Sscanf(dayStr, "%d", &day)
+
+			if result[l.GoldItemID] == nil {
+				result[l.GoldItemID] = make(map[int][]models.GoldStockLog)
+			}
+			result[l.GoldItemID][day] = append(result[l.GoldItemID][day], l)
+			totalLogs++
+		}
+	}
+
+	log.Printf("[GetMonthlyStockHistory] Success: fetched %d logs across %d items for %s", totalLogs, len(result), monthPrefix)
+	return result, nil
 }

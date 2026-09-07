@@ -73,13 +73,12 @@ func createTables() {
 
 		// Gold monthly stock counts
 		`CREATE TABLE IF NOT EXISTS gold_stock_logs (
-			id           INTEGER PRIMARY KEY AUTOINCREMENT,
-			gold_item_id INTEGER NOT NULL,
-			amount       INTEGER NOT NULL DEFAULT 0,
-			log_date     DATE NOT NULL,
-			created_at   DATETIME DEFAULT CURRENT_TIMESTAMP,
-			FOREIGN KEY (gold_item_id) REFERENCES gold_stock(id),
-			UNIQUE(gold_item_id, log_date)
+			id             INTEGER PRIMARY KEY AUTOINCREMENT,
+			gold_item_id   INTEGER NOT NULL,
+			amount         INTEGER NOT NULL DEFAULT 0,
+			created_at     DATETIME DEFAULT CURRENT_TIMESTAMP,
+			transaction_id TEXT,
+			FOREIGN KEY (gold_item_id) REFERENCES gold_stock(id)
 		)`,
 
 		// Purchased gold ledger from customers (no purity, no price_per_baht)
@@ -214,7 +213,6 @@ func createTables() {
 		// Indexes for DATETIME and DATE columns
 		`CREATE INDEX IF NOT EXISTS idx_customers_created_at ON customers(created_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_gold_stock_created_at ON gold_stock(created_at)`,
-		`CREATE INDEX IF NOT EXISTS idx_gold_stock_logs_log_date ON gold_stock_logs(log_date)`,
 		`CREATE INDEX IF NOT EXISTS idx_gold_stock_logs_created_at ON gold_stock_logs(created_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_purchased_gold_date ON purchased_gold(date)`,
 		`CREATE INDEX IF NOT EXISTS idx_purchased_gold_created_at ON purchased_gold(created_at)`,
@@ -260,6 +258,28 @@ func runMigrations() {
 		)`, "Add ticket_number_logs table"},
 		{8, "ALTER TABLE pawn_records ADD COLUMN redeemed_at DATETIME", "Add redeemed_at to pawn_records"},
 		{9, "ALTER TABLE pawn_records ADD COLUMN forfeited_at DATETIME", "Add forfeited_at to pawn_records"},
+		{10, "ALTER TABLE income_expenses ADD COLUMN transaction_id TEXT", "Add transaction_id to income_expenses"},
+		{11, "ALTER TABLE pawn_payments ADD COLUMN transaction_id TEXT", "Add transaction_id to pawn_payments"},
+		{12, "ALTER TABLE income_expenses ADD COLUMN status TEXT DEFAULT 'active'", "Add status to income_expenses"},
+		{13, "ALTER TABLE gold_stock_logs ADD COLUMN transaction_id TEXT", "Add transaction_id to gold_stock_logs"},
+		{14, "CREATE INDEX IF NOT EXISTS idx_income_expenses_txn ON income_expenses(transaction_id)", "Add index on income_expenses.transaction_id"},
+		{15, "CREATE INDEX IF NOT EXISTS idx_pawn_payments_txn ON pawn_payments(transaction_id)", "Add index on pawn_payments.transaction_id"},
+		{16, "CREATE INDEX IF NOT EXISTS idx_gold_stock_logs_txn ON gold_stock_logs(transaction_id)", "Add index on gold_stock_logs.transaction_id"},
+		{17, "CREATE INDEX IF NOT EXISTS idx_income_expenses_status ON income_expenses(status)", "Add index on income_expenses.status"},
+		{18, "ALTER TABLE principal_changes ADD COLUMN transaction_id TEXT", "Add transaction_id to principal_changes"},
+		{19, "CREATE TABLE IF NOT EXISTS gold_stock_logs_new (id INTEGER PRIMARY KEY AUTOINCREMENT, gold_item_id INTEGER NOT NULL, amount INTEGER NOT NULL DEFAULT 0, log_date DATE NOT NULL, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, transaction_id TEXT, FOREIGN KEY (gold_item_id) REFERENCES gold_stock(id))", "Create new gold_stock_logs without unique constraint"},
+		{20, "INSERT INTO gold_stock_logs_new (id, gold_item_id, amount, log_date, created_at, transaction_id) SELECT id, gold_item_id, amount, log_date, created_at, transaction_id FROM gold_stock_logs", "Migrate data to new gold_stock_logs"},
+		{21, "DROP TABLE gold_stock_logs", "Drop old gold_stock_logs"},
+		{22, "ALTER TABLE gold_stock_logs_new RENAME TO gold_stock_logs", "Rename new gold_stock_logs to active table"},
+		{23, "CREATE INDEX IF NOT EXISTS idx_gold_stock_logs_log_date ON gold_stock_logs(log_date)", "Recreate log_date index"},
+		{24, "CREATE INDEX IF NOT EXISTS idx_gold_stock_logs_created_at ON gold_stock_logs(created_at)", "Recreate created_at index"},
+		{25, "CREATE INDEX IF NOT EXISTS idx_gold_stock_logs_txn ON gold_stock_logs(transaction_id)", "Recreate transaction_id index"},
+		{26, "CREATE TABLE IF NOT EXISTS gold_stock_logs_new_v26 (id INTEGER PRIMARY KEY AUTOINCREMENT, gold_item_id INTEGER NOT NULL, amount INTEGER NOT NULL DEFAULT 0, created_at DATETIME DEFAULT CURRENT_TIMESTAMP, transaction_id TEXT, FOREIGN KEY (gold_item_id) REFERENCES gold_stock(id))", "Create new gold_stock_logs without log_date"},
+		{27, "INSERT INTO gold_stock_logs_new_v26 (id, gold_item_id, amount, created_at, transaction_id) SELECT id, gold_item_id, amount, created_at, transaction_id FROM gold_stock_logs", "Migrate data to new gold_stock_logs without log_date"},
+		{28, "DROP TABLE gold_stock_logs", "Drop old gold_stock_logs before renaming"},
+		{29, "ALTER TABLE gold_stock_logs_new_v26 RENAME TO gold_stock_logs", "Rename new gold_stock_logs to active table (v26)"},
+		{30, "CREATE INDEX IF NOT EXISTS idx_gold_stock_logs_created_at ON gold_stock_logs(created_at)", "Recreate created_at index for v26"},
+		{31, "CREATE INDEX IF NOT EXISTS idx_gold_stock_logs_txn ON gold_stock_logs(transaction_id)", "Recreate transaction_id index for v26"},
 	}
 
 	for _, m := range migrations {
@@ -288,4 +308,24 @@ func runMigrations() {
 			}
 		}
 	}
+}
+
+type Queryer interface {
+	QueryRow(query string, args ...interface{}) *sql.Row
+}
+
+func GetLatestStockAmount(q Queryer, goldItemID int) (int, error) {
+	var latestAmount int
+	err := q.QueryRow(`
+		SELECT amount FROM gold_stock_logs 
+		WHERE gold_item_id = ? 
+		ORDER BY id DESC LIMIT 1
+	`, goldItemID).Scan(&latestAmount)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return 0, nil
+		}
+		return 0, err
+	}
+	return latestAmount, nil
 }

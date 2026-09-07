@@ -9,13 +9,16 @@ import {
   faLock,
   faCalendarDays,
   faRobot,
+  faBan,
+  faCircleInfo,
 } from '@fortawesome/free-solid-svg-icons'
 import { formatBaht } from '@/utils/thai'
 import './ManualEntryModal.css'
 import './EditIncomeExpenseModal.css'
 
-export default function EditIncomeExpenseModal({ entry, startEditable, onSaved, onClose }) {
-  const [isEditable, setIsEditable] = useState(startEditable || false)
+export default function EditIncomeExpenseModal({ entry, startEditable, onSaved, onClose, onRequestCancel }) {
+  const isCancelled = entry.status === 'cancelled'
+  const [isEditable, setIsEditable] = useState(isCancelled ? false : (startEditable || false))
   const [form, setForm] = useState({
     notes: entry.notes || '',
     isBankTransfer: entry.is_bank_transfer || false,
@@ -102,6 +105,13 @@ export default function EditIncomeExpenseModal({ entry, startEditable, onSaved, 
               >
                 <FontAwesomeIcon icon={faPenToSquare} /> แก้ไขข้อมูล
               </button>
+              {isCancelled && (
+                <div style={{ position: 'absolute', left: 0, top: 0, right: 0, bottom: 0, background: 'rgba(255,255,255,0.6)', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10 }}>
+                   <span className="badge" style={{ background: '#fff', border: '1px solid var(--red)', color: 'var(--red)', fontSize: 13, padding: '4px 10px', boxShadow: '0 2px 8px rgba(220, 38, 38, 0.2)' }}>
+                     <FontAwesomeIcon icon={faBan} style={{ marginRight: 6 }} />ยกเลิกแล้ว
+                   </span>
+                </div>
+              )}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--bg-hover)', padding: '14px', borderRadius: 'var(--radius)', border: '1.5px solid var(--border)', marginBottom: '14px' }}>
@@ -143,6 +153,11 @@ export default function EditIncomeExpenseModal({ entry, startEditable, onSaved, 
               <FontAwesomeIcon icon={entry.source === 'auto' ? faRobot : faPenToSquare} />
               {entry.source === 'auto' ? 'อัตโนมัติ' : 'บันทึกเอง'}
             </span>
+            {entry.transaction_id && (
+              <span className="eiem-meta-item" style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                Ref: {entry.transaction_id}
+              </span>
+            )}
           </div>
 
           {/* ── Bank transfer toggle (editable, boxed) ── */}
@@ -173,14 +188,31 @@ export default function EditIncomeExpenseModal({ entry, startEditable, onSaved, 
               placeholder="เพิ่มหมายเหตุ... (ไม่บังคับ)"
               value={form.notes}
               onChange={e => set('notes', e.target.value)}
+              disabled={isCancelled}
             />
           </div>
         </div>
 
-        <div className="modal-footer">
-          <button className="btn btn-ghost" onClick={onClose} disabled={saving}>
-            ยกเลิก
-          </button>
+        <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div>
+            {!isCancelled && entry.source === 'auto' && entry.transaction_id && (
+              <button
+                className="btn btn-ghost"
+                style={{ color: 'var(--red)' }}
+                onClick={() => {
+                  onRequestCancel(entry)
+                  onClose()
+                }}
+              >
+                <FontAwesomeIcon icon={faBan} style={{ marginRight: 4 }} />
+                ยกเลิกรายการ
+              </button>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button className="btn btn-ghost" onClick={onClose} disabled={saving}>
+              ยกเลิก
+            </button>
           <button
             className={`btn ${isIncome ? 'btn-primary' : 'mem-btn-expense'}`}
             onClick={handleSave}
@@ -192,6 +224,7 @@ export default function EditIncomeExpenseModal({ entry, startEditable, onSaved, 
               <><FontAwesomeIcon icon={faPenToSquare} /> บันทึกการแก้ไข</>
             )}
           </button>
+          </div>
         </div>
       </div>
     </div>

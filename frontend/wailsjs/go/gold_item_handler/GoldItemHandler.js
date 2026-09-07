@@ -34,12 +34,20 @@ export function GetGoldSubtypes(arg1) {
   return window['go']['gold_item_handler']['GoldItemHandler']['GetGoldSubtypes'](arg1);
 }
 
+export function GetMonthlyStockHistory(arg1, arg2) {
+  return window['go']['gold_item_handler']['GoldItemHandler']['GetMonthlyStockHistory'](arg1, arg2);
+}
+
 export function GetStockLog(arg1) {
   return window['go']['gold_item_handler']['GoldItemHandler']['GetStockLog'](arg1);
 }
 
 export function ListGoldItems(arg1) {
   return window['go']['gold_item_handler']['GoldItemHandler']['ListGoldItems'](arg1);
+}
+
+export function ListGoldItemsWithStock() {
+  return window['go']['gold_item_handler']['GoldItemHandler']['ListGoldItemsWithStock']();
 }
 
 export function ListStockLogs(arg1) {

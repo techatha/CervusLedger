@@ -24,9 +24,15 @@ function groupBy(arr, key) {
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
-export default function GoldStockWizard({ items, editedAmounts, onClose, onSaved }) {
+export default function GoldStockWizard({ items, onClose, onSaved }) {
   const [wizardStep, setWizardStep] = useState(0)
-  const [wizardAmounts, setWizardAmounts] = useState(() => ({ ...editedAmounts }))
+  const [wizardAmounts, setWizardAmounts] = useState(() => {
+    const amounts = {}
+    items.forEach(item => {
+      amounts[item.id] = String(item.latest_amount || 0)
+    })
+    return amounts
+  })
   const [savingAudit, setSavingAudit] = useState(false)
   const [error, setError] = useState(null)
 
@@ -59,7 +65,7 @@ export default function GoldStockWizard({ items, editedAmounts, onClose, onSaved
     try {
       for (const item of items) {
         const amount = getAmount(item.id)
-        await RecordStockLog({ gold_item_id: item.id, amount, log_date: today })
+        await RecordStockLog({ gold_item_id: item.id, amount })
       }
       onSaved(wizardAmounts)
     } catch (e) {

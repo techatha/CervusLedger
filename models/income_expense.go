@@ -10,6 +10,8 @@ type IncomeExpense struct {
 	IsBankTransfer bool    `json:"is_bank_transfer"`
 	Date           string  `json:"date"`
 	CreatedAt      string  `json:"created_at"`
+	TransactionID  string  `json:"transaction_id"`
+	Status         string  `json:"status"` // "active" | "cancelled"
 }
 
 type IncomeExpenseInput struct {
@@ -33,6 +35,7 @@ type IncomeExpenseFilter struct {
 	Source    string `json:"source"`     // "" | "manual" | "auto"
 	StartDate string `json:"start_date"` // YYYY-MM-DD
 	EndDate   string `json:"end_date"`   // YYYY-MM-DD
+	Status    string `json:"status"`     // "" | "active" | "cancelled" | "all"
 }
 
 type IncomeExpenseSummary struct {
@@ -41,4 +44,25 @@ type IncomeExpenseSummary struct {
 	Net          float64 `json:"net"`
 	StartDate    string  `json:"start_date"`
 	EndDate      string  `json:"end_date"`
+}
+
+// CancelPreview describes what will happen if an income/expense entry is cancelled.
+type CancelPreview struct {
+	EntryID             int               `json:"entry_id"`
+	Category            string            `json:"category"`
+	CanCancel           bool              `json:"can_cancel"`
+	Reason              string            `json:"reason,omitempty"`
+	WillRevertPayments  []PawnPaymentInfo `json:"will_revert_payments,omitempty"`
+	WillRevertStock     bool              `json:"will_revert_stock"`
+	WillRevertPrincipal bool              `json:"will_revert_principal"`
+	CascadeChanges      []PrincipalChange `json:"cascade_changes,omitempty"`
+	Notice              string            `json:"notice,omitempty"`
+}
+
+// PawnPaymentInfo provides display info about payments that will be reverted.
+type PawnPaymentInfo struct {
+	PawnRecordID int    `json:"pawn_record_id"`
+	TicketNumber int    `json:"ticket_number"`
+	Month        int    `json:"month"`
+	Year         int    `json:"year"`
 }

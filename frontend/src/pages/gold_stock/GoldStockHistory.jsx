@@ -1,8 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faXmark, faChevronLeft, faChevronRight } from '@fortawesome/free-solid-svg-icons'
+import { faXmark, faChevronLeft, faChevronRight, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import { amountDelta } from './component/HistoryMiniChart'
+import { GetMonthlyStockHistory } from 'wailsjs/go/gold_item_handler/GoldItemHandler'
 import './GoldStockHistory.css'
+
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const THAI_MONTHS = [
@@ -25,10 +27,9 @@ function padTwo(n) {
  * Props:
  *   typeName      {string}   — the gold type, e.g. "สร้อยคอ"
  *   items         {Array}    — catalog items whose type === typeName
- *   allStockLogs  {Array}    — all logs from the backend (unfiltered)
  *   onClose       {Function}
  */
-export default function GoldStockHistory({ typeName, items, allStockLogs, onClose }) {
+export default function GoldStockHistory({ typeName, items, onClose }) {
     const now = new Date()
 
     const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1) // 1–12
@@ -59,33 +60,25 @@ export default function GoldStockHistory({ typeName, items, allStockLogs, onClos
     const totalDays = daysInMonth(year, month)
     const days = Array.from({ length: totalDays }, (_, i) => i + 1)
 
-    // Build a lookup: gold_item_id → { day → amount }
-    // Only include logs that match year-month
-    const monthPrefix = `${year}-${padTwo(month)}`
+    const [logMap, setLogMap] = useState({})
+    const [loading, setLoading] = useState(false)
 
-    const logMap = useMemo(() => {
-        const map = {} // { [gold_item_id]: { [day]: amount } }
-        allStockLogs.forEach(log => {
-            if (!log.log_date.startsWith(monthPrefix)) return
-            const day = parseInt(log.log_date.split('-')[2])
-            if (!map[log.gold_item_id]) map[log.gold_item_id] = {}
-            map[log.gold_item_id][day] = log.amount
-        })
-        return map
-    }, [allStockLogs, monthPrefix])
-
-    // Build a lookup of all history per item, sorted chronologically
-    const itemHistoryMap = useMemo(() => {
-        const map = {}
-        allStockLogs.forEach(log => {
-            if (!map[log.gold_item_id]) map[log.gold_item_id] = []
-            map[log.gold_item_id].push(log)
-        })
-        Object.keys(map).forEach(id => {
-            map[id].sort((a, b) => a.log_date.localeCompare(b.log_date))
-        })
-        return map
-    }, [allStockLogs])
+    useEffect(() => {
+        const fetchHistory = async () => {
+            setLoading(true)
+            console.log(`[GoldStockHistory] Fetching history for year=${year}, month=${month}`)
+            try {
+                const data = await GetMonthlyStockHistory(year, month)
+                console.log(`[GoldStockHistory] Received monthly history data:`, data)
+                setLogMap(data || {})
+            } catch(e) {
+                console.error("[GoldStockHistory] Error fetching monthly stock history:", e)
+            } finally {
+                setLoading(false)
+            }
+        }
+        fetchHistory()
+    }, [year, month])
 
     // Sort items by subtype for consistent row order
     const sortedItems = [...items].sort((a, b) => a.subtype.localeCompare(b.subtype))
@@ -162,7 +155,11 @@ export default function GoldStockHistory({ typeName, items, allStockLogs, onClos
 
                 {/* ── Table (horizontal: items=rows, days=columns) ────── */}
                 <div className="gsh-body">
-                    {sortedItems.length === 0 ? (
+                    {loading ? (
+                        <div className="gsh-empty">
+                            <FontAwesomeIcon icon={faSpinner} spin className="me-2" /> กำลังโหลด...
+                        </div>
+                    ) : sortedItems.length === 0 ? (
                         <div className="gsh-empty">ไม่มีรายการในประเภทนี้</div>
                     ) : (
                         <div className="gsh-table-wrap">
@@ -201,23 +198,36 @@ export default function GoldStockHistory({ typeName, items, allStockLogs, onClos
                                                     )}
                                                 </td>
                                                 {days.map(day => {
-                                                    const amount = logMap[item.id]?.[day]
-                                                    const hasLog = amount != null
+                                                    const logsForDay = logMap[item.id]?.[day]
+                                                    const hasLog = logsForDay && logsForDay.length > 0
+                                                    const amount = hasLog ? logsForDay[logsForDay.length - 1].amount : null
 
                                                     let delta = 'neutral'
                                                     if (hasLog) {
-                                                        const dateStr = `${year}-${padTwo(month)}-${padTwo(day)}`
-                                                        const history = itemHistoryMap[item.id] || []
-                                                        const currentIdx = history.findIndex(l => l.log_date.startsWith(dateStr))
-                                                        if (currentIdx !== -1) {
-                                                            const prevLog = currentIdx > 0 ? history[currentIdx - 1] : null
-                                                            delta = amountDelta(amount, prevLog?.amount)
+                                                        let prevAmount = null
+                                                        for(let d = day - 1; d >= 1; d--) {
+                                                            if (logMap[item.id]?.[d]) {
+                                                                const prevLogs = logMap[item.id][d]
+                                                                prevAmount = prevLogs[prevLogs.length - 1].amount
+                                                                break
+                                                            }
                                                         }
+                                                        if (prevAmount !== null) {
+                                                            delta = amountDelta(amount, prevAmount)
+                                                        }
+                                                    }
+
+                                                    let tooltipText = ''
+                                                    if (hasLog && logsForDay.length > 1) {
+                                                        tooltipText = `มีการเปลี่ยนแปลง ${logsForDay.length} ครั้ง:\n` + logsForDay.map((l, i) => `${i+1}. คงเหลือ: ${l.amount} ${l.transaction_id ? `(${l.transaction_id})` : ''}`).join('\n')
+                                                    } else if (hasLog) {
+                                                        tooltipText = `ยอดคงเหลือ: ${amount} ${logsForDay[0].transaction_id ? `\nอ้างอิง: ${logsForDay[0].transaction_id}` : ''}`
                                                     }
 
                                                     return (
                                                         <td
                                                             key={day}
+                                                            title={tooltipText}
                                                             className={`gsh-td-cell ${hasLog ? `gsh-td-filled gsh-td-filled-${delta}` : 'gsh-td-blank'}`}
                                                         >
                                                             {hasLog ? (

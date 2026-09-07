@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"CervusLedger/db"
+	"CervusLedger/handlers"
 	"CervusLedger/models"
 )
 
@@ -29,6 +30,8 @@ func (h *PawnHandler) RecordPayment(input models.PawnPaymentInput) error {
 	}
 	defer tx.Rollback()
 
+	txnID := handlers.GenerateTransactionID("pawn_pay")
+
 	paidDateVal := input.PaidDate
 	if paidDateVal == "" {
 		paidDateVal = time.Now().Format("2006-01-02")
@@ -39,9 +42,9 @@ func (h *PawnHandler) RecordPayment(input models.PawnPaymentInput) error {
 
 	// 1. Insert payment record
 	_, err = tx.Exec(`
-		INSERT INTO pawn_payments (pawn_record_id, month, year, paid_date, notes)
-		VALUES (?, ?, ?, ?, ?)
-	`, input.PawnRecordID, input.Month, input.Year, paidDateVal, input.Notes)
+		INSERT INTO pawn_payments (pawn_record_id, month, year, paid_date, notes, transaction_id)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, input.PawnRecordID, input.Month, input.Year, paidDateVal, input.Notes, txnID)
 	if err != nil {
 		return fmt.Errorf("insert payment: %w", err)
 	}
@@ -51,9 +54,9 @@ func (h *PawnHandler) RecordPayment(input models.PawnPaymentInput) error {
 	desc := fmt.Sprintf("ดอกเบี้ยจำนำ ตั๋ว %04d (%s) %s %d",
 		input.TicketNumber, input.CustomerName, thaiMonth, input.Year+543)
 	_, err = tx.Exec(`
-		INSERT INTO income_expenses (type, category, amount, notes, source, date)
-		VALUES ('income', 'ดอกเบี้ยจำนำ', ?, ?, 'auto', ?)
-	`, input.InterestAmount, desc, paidDateVal)
+		INSERT INTO income_expenses (type, category, amount, notes, source, date, transaction_id)
+		VALUES ('income', 'ดอกเบี้ยจำนำ', ?, ?, 'auto', ?, ?)
+	`, input.InterestAmount, desc, paidDateVal, txnID)
 	if err != nil {
 		return fmt.Errorf("auto income: %w", err)
 	}
@@ -72,6 +75,8 @@ func (h *PawnHandler) RecordPaymentsGrouped(inputs []models.PawnPaymentInput, to
 		return err
 	}
 	defer tx.Rollback()
+
+	txnID := handlers.GenerateTransactionID("pawn_pay_group")
 
 	// 1. Loop through inputs and insert payment records
 	for _, input := range inputs {
@@ -97,33 +102,35 @@ func (h *PawnHandler) RecordPaymentsGrouped(inputs []models.PawnPaymentInput, to
 		}
 
 		_, err = tx.Exec(`
-			INSERT INTO pawn_payments (pawn_record_id, month, year, paid_date, notes)
-			VALUES (?, ?, ?, ?, ?)
-		`, input.PawnRecordID, input.Month, input.Year, paidDateVal, input.Notes)
+			INSERT INTO pawn_payments (pawn_record_id, month, year, paid_date, notes, transaction_id)
+			VALUES (?, ?, ?, ?, ?, ?)
+		`, input.PawnRecordID, input.Month, input.Year, paidDateVal, input.Notes, txnID)
 		if err != nil {
 			return fmt.Errorf("insert payment: %w", err)
 		}
 	}
 
-	// 2. Auto-log single grouped income entry
-	firstPaidDate := inputs[0].PaidDate
-	if firstPaidDate == "" {
-		firstPaidDate = time.Now().Format("2006-01-02")
-	}
-	if len(firstPaidDate) == 10 {
-		firstPaidDate = firstPaidDate + " " + time.Now().Format("15:04:05")
-	}
+	// 2. Auto-log single grouped income entry (only when totalAmount > 0)
+	if totalAmount > 0 {
+		firstPaidDate := inputs[0].PaidDate
+		if firstPaidDate == "" {
+			firstPaidDate = time.Now().Format("2006-01-02")
+		}
+		if len(firstPaidDate) == 10 {
+			firstPaidDate = firstPaidDate + " " + time.Now().Format("15:04:05")
+		}
 
-	isBankInt := 0
-	if isBankTransfer {
-		isBankInt = 1
-	}
-	_, err = tx.Exec(`
-		INSERT INTO income_expenses (type, category, amount, notes, source, is_bank_transfer, date)
-		VALUES ('income', 'ดอกเบี้ยจำนำ', ?, ?, 'auto', ?, ?)
-	`, totalAmount, groupNotes, isBankInt, firstPaidDate)
-	if err != nil {
-		return fmt.Errorf("auto income: %w", err)
+		isBankInt := 0
+		if isBankTransfer {
+			isBankInt = 1
+		}
+		_, err = tx.Exec(`
+			INSERT INTO income_expenses (type, category, amount, notes, source, is_bank_transfer, date, transaction_id)
+			VALUES ('income', 'ดอกเบี้ยจำนำ', ?, ?, 'auto', ?, ?, ?)
+		`, totalAmount, groupNotes, isBankInt, firstPaidDate, txnID)
+		if err != nil {
+			return fmt.Errorf("auto income: %w", err)
+		}
 	}
 
 	return tx.Commit()
@@ -132,7 +139,7 @@ func (h *PawnHandler) RecordPaymentsGrouped(inputs []models.PawnPaymentInput, to
 // GetPawnPayments returns all payments for a pawn, ordered by year/month.
 func (h *PawnHandler) GetPawnPayments(pawnRecordID int) ([]models.PawnPayment, error) {
 	rows, err := db.DB.Query(`
-		SELECT id, pawn_record_id, month, year, paid_date, notes
+		SELECT id, pawn_record_id, month, year, paid_date, notes, COALESCE(transaction_id, '')
 		FROM pawn_payments
 		WHERE pawn_record_id = ?
 		ORDER BY year ASC, month ASC
@@ -145,7 +152,7 @@ func (h *PawnHandler) GetPawnPayments(pawnRecordID int) ([]models.PawnPayment, e
 	var list []models.PawnPayment
 	for rows.Next() {
 		var p models.PawnPayment
-		if err := rows.Scan(&p.ID, &p.PawnRecordID, &p.Month, &p.Year, &p.PaidDate, &p.Notes); err != nil {
+		if err := rows.Scan(&p.ID, &p.PawnRecordID, &p.Month, &p.Year, &p.PaidDate, &p.Notes, &p.TransactionID); err != nil {
 			return nil, fmt.Errorf("scan payment: %w", err)
 		}
 		list = append(list, p)
@@ -160,27 +167,33 @@ func (h *PawnHandler) DeletePayment(paymentID int) error {
 	}
 	defer tx.Rollback()
 
-	// 1. Fetch payment info
+	// 1. Fetch payment info including transaction_id
 	var pawnRecordID int
 	var paidDate string
-	err = tx.QueryRow(`SELECT pawn_record_id, paid_date FROM pawn_payments WHERE id = ?`, paymentID).Scan(&pawnRecordID, &paidDate)
+	var txnID *string
+	err = tx.QueryRow(`SELECT pawn_record_id, paid_date, transaction_id FROM pawn_payments WHERE id = ?`, paymentID).Scan(&pawnRecordID, &paidDate, &txnID)
 	if err != nil {
 		return fmt.Errorf("payment not found: %w", err)
 	}
 
-	// 2. Fetch interest amount
-	var amount float64
-	err = tx.QueryRow(`SELECT interest_amount FROM pawn_records WHERE id = ?`, pawnRecordID).Scan(&amount)
-	if err == nil {
-		// Delete one matching auto-income entry
-		tx.Exec(`
-			DELETE FROM income_expenses 
-			WHERE id = (
-				SELECT id FROM income_expenses 
-				WHERE source = 'auto' AND category = 'ดอกเบี้ยจำนำ' AND amount = ? AND date = ? 
-				LIMIT 1
-			)
-		`, amount, paidDate)
+	// 2. Cancel the linked income entry
+	if txnID != nil && *txnID != "" {
+		// New: use transaction_id for reliable lookup
+		tx.Exec(`UPDATE income_expenses SET status = 'cancelled' WHERE transaction_id = ? AND status = 'active'`, *txnID)
+	} else {
+		// Legacy: fallback to amount+date matching for old records without transaction_id
+		var amount float64
+		err = tx.QueryRow(`SELECT interest_amount FROM pawn_records WHERE id = ?`, pawnRecordID).Scan(&amount)
+		if err == nil {
+			tx.Exec(`
+				DELETE FROM income_expenses 
+				WHERE id = (
+					SELECT id FROM income_expenses 
+					WHERE source = 'auto' AND category = 'ดอกเบี้ยจำนำ' AND amount = ? AND date = ? 
+					LIMIT 1
+				)
+			`, amount, paidDate)
+		}
 	}
 
 	// 3. Delete payment

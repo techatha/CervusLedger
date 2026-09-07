@@ -21,6 +21,94 @@ export namespace displayer_handler {
 
 export namespace models {
 	
+	export class PrincipalChange {
+	    id: number;
+	    pawn_record_id: number;
+	    date: string;
+	    change_type: string;
+	    amount: number;
+	    new_principal: number;
+	    notes: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new PrincipalChange(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.pawn_record_id = source["pawn_record_id"];
+	        this.date = source["date"];
+	        this.change_type = source["change_type"];
+	        this.amount = source["amount"];
+	        this.new_principal = source["new_principal"];
+	        this.notes = source["notes"];
+	    }
+	}
+	export class PawnPaymentInfo {
+	    pawn_record_id: number;
+	    ticket_number: number;
+	    month: number;
+	    year: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PawnPaymentInfo(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.pawn_record_id = source["pawn_record_id"];
+	        this.ticket_number = source["ticket_number"];
+	        this.month = source["month"];
+	        this.year = source["year"];
+	    }
+	}
+	export class CancelPreview {
+	    entry_id: number;
+	    category: string;
+	    can_cancel: boolean;
+	    reason?: string;
+	    will_revert_payments?: PawnPaymentInfo[];
+	    will_revert_stock: boolean;
+	    will_revert_principal: boolean;
+	    cascade_changes?: PrincipalChange[];
+	    notice?: string;
+	
+	    static createFrom(source: any = {}) {
+	        return new CancelPreview(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.entry_id = source["entry_id"];
+	        this.category = source["category"];
+	        this.can_cancel = source["can_cancel"];
+	        this.reason = source["reason"];
+	        this.will_revert_payments = this.convertValues(source["will_revert_payments"], PawnPaymentInfo);
+	        this.will_revert_stock = source["will_revert_stock"];
+	        this.will_revert_principal = source["will_revert_principal"];
+	        this.cascade_changes = this.convertValues(source["cascade_changes"], PrincipalChange);
+	        this.notice = source["notice"];
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Customer {
 	    id: number;
 	    prefix: string;
@@ -111,6 +199,8 @@ export namespace models {
 	    is_bank_transfer: boolean;
 	    date: string;
 	    created_at: string;
+	    transaction_id: string;
+	    status: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new IncomeExpense(source);
@@ -127,6 +217,8 @@ export namespace models {
 	        this.is_bank_transfer = source["is_bank_transfer"];
 	        this.date = source["date"];
 	        this.created_at = source["created_at"];
+	        this.transaction_id = source["transaction_id"];
+	        this.status = source["status"];
 	    }
 	}
 	export class PawnRecord {
@@ -303,15 +395,14 @@ export namespace models {
 	        this.no_weight = source["no_weight"];
 	    }
 	}
-	
 	export class GoldStockLog {
 	    id: number;
 	    gold_item_id: number;
 	    type: string;
 	    subtype: string;
 	    amount: number;
-	    log_date: string;
 	    created_at: string;
+	    transaction_id: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new GoldStockLog(source);
@@ -324,14 +415,63 @@ export namespace models {
 	        this.type = source["type"];
 	        this.subtype = source["subtype"];
 	        this.amount = source["amount"];
-	        this.log_date = source["log_date"];
 	        this.created_at = source["created_at"];
+	        this.transaction_id = source["transaction_id"];
 	    }
 	}
+	export class GoldItemWithStock {
+	    id: number;
+	    type: string;
+	    subtype: string;
+	    purity: string;
+	    weight_grams: number;
+	    no_purity: number;
+	    no_weight: number;
+	    created_at: string;
+	    latest_amount: number;
+	    recent_history: GoldStockLog[];
+	
+	    static createFrom(source: any = {}) {
+	        return new GoldItemWithStock(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.type = source["type"];
+	        this.subtype = source["subtype"];
+	        this.purity = source["purity"];
+	        this.weight_grams = source["weight_grams"];
+	        this.no_purity = source["no_purity"];
+	        this.no_weight = source["no_weight"];
+	        this.created_at = source["created_at"];
+	        this.latest_amount = source["latest_amount"];
+	        this.recent_history = this.convertValues(source["recent_history"], GoldStockLog);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	
+	
 	export class GoldStockLogInput {
 	    gold_item_id: number;
 	    amount: number;
-	    log_date: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new GoldStockLogInput(source);
@@ -341,7 +481,6 @@ export namespace models {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.gold_item_id = source["gold_item_id"];
 	        this.amount = source["amount"];
-	        this.log_date = source["log_date"];
 	    }
 	}
 	
@@ -350,6 +489,7 @@ export namespace models {
 	    source: string;
 	    start_date: string;
 	    end_date: string;
+	    status: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new IncomeExpenseFilter(source);
@@ -361,6 +501,7 @@ export namespace models {
 	        this.source = source["source"];
 	        this.start_date = source["start_date"];
 	        this.end_date = source["end_date"];
+	        this.status = source["status"];
 	    }
 	}
 	export class IncomeExpenseInput {
@@ -456,6 +597,7 @@ export namespace models {
 	    year: number;
 	    paid_date: string;
 	    notes: string;
+	    transaction_id: string;
 	
 	    static createFrom(source: any = {}) {
 	        return new PawnPayment(source);
@@ -469,8 +611,10 @@ export namespace models {
 	        this.year = source["year"];
 	        this.paid_date = source["paid_date"];
 	        this.notes = source["notes"];
+	        this.transaction_id = source["transaction_id"];
 	    }
 	}
+	
 	export class PawnPaymentInput {
 	    pawn_record_id: number;
 	    month: number;
@@ -518,30 +662,7 @@ export namespace models {
 	        this.LastTicket = source["LastTicket"];
 	    }
 	}
-	export class PrincipalChange {
-	    id: number;
-	    pawn_record_id: number;
-	    date: string;
-	    change_type: string;
-	    amount: number;
-	    new_principal: number;
-	    notes: string;
 	
-	    static createFrom(source: any = {}) {
-	        return new PrincipalChange(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.pawn_record_id = source["pawn_record_id"];
-	        this.date = source["date"];
-	        this.change_type = source["change_type"];
-	        this.amount = source["amount"];
-	        this.new_principal = source["new_principal"];
-	        this.notes = source["notes"];
-	    }
-	}
 	export class PrincipalChangeInput {
 	    pawn_record_id: number;
 	    date: string;

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"CervusLedger/db"
+	"CervusLedger/handlers"
 	"CervusLedger/models"
 )
 
@@ -31,6 +32,7 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 	}
 	defer tx.Rollback()
 
+	txnID := handlers.GenerateTransactionID("sale")
 	goldItemID := input.GoldItemID
 
 	switch input.Type {
@@ -45,38 +47,14 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 		}
 
 		// Decrement stock log for the sold item
-		var logDate string
-		if len(input.Date) >= 10 {
-			logDate = input.Date[:10] + " 00:00:00"
-		} else {
-			logDate = time.Now().Format(time.DateOnly) + " 00:00:00"
+		latestAmount, err := db.GetLatestStockAmount(tx, goldItemID)
+		if err != nil {
+			latestAmount = 0
 		}
-
-		var currentAmount int
-		err = tx.QueryRow(`
-			SELECT amount FROM gold_stock_logs 
-			WHERE gold_item_id = ? AND log_date = ?
-		`, goldItemID, logDate).Scan(&currentAmount)
-		if err == nil {
-			_, err = tx.Exec(`
-				UPDATE gold_stock_logs SET amount = amount - 1
-				WHERE gold_item_id = ? AND log_date = ?
-			`, goldItemID, logDate)
-		} else {
-			var latestAmount int
-			err = tx.QueryRow(`
-				SELECT amount FROM gold_stock_logs 
-				WHERE gold_item_id = ? 
-				ORDER BY log_date DESC LIMIT 1
-			`, goldItemID).Scan(&latestAmount)
-			if err != nil {
-				latestAmount = 0
-			}
-			_, err = tx.Exec(`
-				INSERT INTO gold_stock_logs (gold_item_id, amount, log_date)
-				VALUES (?, ?, ?)
-			`, goldItemID, latestAmount - 1, logDate)
-		}
+		_, err = tx.Exec(`
+			INSERT INTO gold_stock_logs (gold_item_id, amount, transaction_id)
+			VALUES (?, ?, ?)
+		`, goldItemID, latestAmount - 1, txnID)
 		if err != nil {
 			return models.Sale{}, fmt.Errorf("decrement stock log from sell: %w", err)
 		}
@@ -129,38 +107,14 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 			}
 
 			if goldItemID > 0 {
-				var logDate string
-				if len(input.Date) >= 10 {
-					logDate = input.Date[:10] + " 00:00:00"
-				} else {
-					logDate = time.Now().Format(time.RFC3339)[:10] + " 00:00:00"
+				latestAmount, err := db.GetLatestStockAmount(tx, goldItemID)
+				if err != nil {
+					latestAmount = 0
 				}
-
-				var currentAmount int
-				err = tx.QueryRow(`
-					SELECT amount FROM gold_stock_logs 
-					WHERE gold_item_id = ? AND log_date = ?
-				`, goldItemID, logDate).Scan(&currentAmount)
-				if err == nil {
-					_, err = tx.Exec(`
-						UPDATE gold_stock_logs SET amount = amount + 1
-						WHERE gold_item_id = ? AND log_date = ?
-					`, goldItemID, logDate)
-				} else {
-					var latestAmount int
-					err = tx.QueryRow(`
-						SELECT amount FROM gold_stock_logs 
-						WHERE gold_item_id = ? 
-						ORDER BY log_date DESC LIMIT 1
-					`, goldItemID).Scan(&latestAmount)
-					if err != nil {
-						latestAmount = 0
-					}
-					_, err = tx.Exec(`
-						INSERT INTO gold_stock_logs (gold_item_id, amount, log_date)
-						VALUES (?, ?, ?)
-					`, goldItemID, latestAmount + 1, logDate)
-				}
+				_, err = tx.Exec(`
+					INSERT INTO gold_stock_logs (gold_item_id, amount, transaction_id)
+					VALUES (?, ?, ?)
+				`, goldItemID, latestAmount + 1, txnID)
 				if err != nil {
 					return models.Sale{}, fmt.Errorf("increment stock log from buy: %w", err)
 				}
@@ -196,9 +150,9 @@ func (h *SaleHandler) CreateSale(input models.SaleInput) (models.Sale, error) {
 		isBankInt = 1
 	}
 	_, err = tx.Exec(`
-		INSERT INTO income_expenses (type, category, amount, notes, source, is_bank_transfer, date)
-		VALUES (?, ?, ?, ?, 'auto', ?, ?)
-	`, incType, incCat, input.TotalAmount, input.Notes, isBankInt, dateVal)
+		INSERT INTO income_expenses (type, category, amount, notes, source, is_bank_transfer, date, transaction_id)
+		VALUES (?, ?, ?, ?, 'auto', ?, ?, ?)
+	`, incType, incCat, input.TotalAmount, input.Notes, isBankInt, dateVal, txnID)
 	if err != nil {
 		return models.Sale{}, fmt.Errorf("auto income_expenses: %w", err)
 	}

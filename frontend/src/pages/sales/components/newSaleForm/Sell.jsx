@@ -109,7 +109,7 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
         .then(logs => {
           const itemLogs = (logs || []).filter(log => log.gold_item_id === formData.gold_item_id)
           if (itemLogs.length > 0) {
-            itemLogs.sort((a, b) => b.log_date.localeCompare(a.log_date))
+            itemLogs.sort((a, b) => b.id - a.id)
             const latestAmount = itemLogs[0].amount
             setFormData(prev => ({ ...prev, stock_quantity: latestAmount }))
           } else {

@@ -19,9 +19,13 @@ export function GetGoldMainTypes():Promise<Array<string>>;
 
 export function GetGoldSubtypes(arg1:string):Promise<Array<string>>;
 
+export function GetMonthlyStockHistory(arg1:number,arg2:number):Promise<Record<number, Record<number, Array<models.GoldStockLog>>>>;
+
 export function GetStockLog(arg1:number):Promise<models.GoldStockLog>;
 
 export function ListGoldItems(arg1:string):Promise<Array<models.GoldItem>>;
+
+export function ListGoldItemsWithStock():Promise<Array<models.GoldItemWithStock>>;
 
 export function ListStockLogs(arg1:string):Promise<Array<models.GoldStockLog>>;
 

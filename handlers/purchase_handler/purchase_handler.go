@@ -3,7 +3,6 @@ package purchase_handler
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"CervusLedger/db"
 	"CervusLedger/models"
@@ -147,33 +146,14 @@ func (h *PurchaseHandler) CastToInventory(purchaseID int, goldItemID int) error 
 	}
 
 	// 2. Increment stock log for today's date
-	logDate := time.Now().Format("2006-01-02") + " 00:00:00"
-
-	var currentAmount int
-	err = tx.QueryRow(`
-		SELECT amount FROM gold_stock_logs 
-		WHERE gold_item_id = ? AND log_date = ?
-	`, goldItemID, logDate).Scan(&currentAmount)
-	if err == nil {
-		_, err = tx.Exec(`
-			UPDATE gold_stock_logs SET amount = amount + 1
-			WHERE gold_item_id = ? AND log_date = ?
-		`, goldItemID, logDate)
-	} else {
-		var latestAmount int
-		err = tx.QueryRow(`
-			SELECT amount FROM gold_stock_logs 
-			WHERE gold_item_id = ? 
-			ORDER BY log_date DESC LIMIT 1
-		`, goldItemID).Scan(&latestAmount)
-		if err != nil {
-			latestAmount = 0
-		}
-		_, err = tx.Exec(`
-			INSERT INTO gold_stock_logs (gold_item_id, amount, log_date)
-			VALUES (?, ?, ?)
-		`, goldItemID, latestAmount + 1, logDate)
+	latestAmount, err := db.GetLatestStockAmount(tx, goldItemID)
+	if err != nil {
+		latestAmount = 0
 	}
+	_, err = tx.Exec(`
+		INSERT INTO gold_stock_logs (gold_item_id, amount)
+		VALUES (?, ?)
+	`, goldItemID, latestAmount + 1)
 	if err != nil {
 		return fmt.Errorf("increment stock log: %w", err)
 	}

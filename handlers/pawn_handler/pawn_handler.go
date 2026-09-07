@@ -2,6 +2,7 @@ package pawn_handler
 
 import (
 	"CervusLedger/db"
+	"CervusLedger/handlers"
 	"CervusLedger/models"
 	"context"
 	"fmt"
@@ -250,11 +251,12 @@ func (h *PawnHandler) CreatePawn(input models.PawnInput) (models.PawnRecord, err
 	customerName += firstname + " " + lastname
 
 	// 4. Auto-log as expense
+	txnID := handlers.GenerateTransactionID("pawn_create")
 	notes := fmt.Sprintf("รับจำนำ ตั๋ว %04d (%s) - %s", ticket, customerName, input.ItemType)
 	_, err = tx.Exec(`
-		INSERT INTO income_expenses (type, category, amount, notes, source, date)
-		VALUES ('expense', 'รับจำนำ', ?, ?, 'auto', ?)
-	`, input.InitialPrincipal, notes, pawnedDateVal)
+		INSERT INTO income_expenses (type, category, amount, notes, source, date, transaction_id)
+		VALUES ('expense', 'รับจำนำ', ?, ?, 'auto', ?, ?)
+	`, input.InitialPrincipal, notes, pawnedDateVal, txnID)
 	if err != nil {
 		return models.PawnRecord{}, fmt.Errorf("auto expense entry: %w", err)
 	}
@@ -387,11 +389,13 @@ func (h *PawnHandler) AddPrincipalChange(input models.PrincipalChangeInput) erro
 		dateVal = dateVal + " " + time.Now().Format("15:04:05")
 	}
 
+	txnID := handlers.GenerateTransactionID("principal")
+
 	// 1. Insert the change record
 	_, err = tx.Exec(`
 		INSERT INTO principal_changes
-		  (pawn_record_id, date, change_type, amount, new_principal, notes)
-		VALUES (?, ?, ?, ?, ?, ?)
+		  (pawn_record_id, date, change_type, amount, new_principal, notes, transaction_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`,
 		input.PawnRecordID,
 		dateVal,
@@ -399,6 +403,7 @@ func (h *PawnHandler) AddPrincipalChange(input models.PrincipalChangeInput) erro
 		input.Amount,
 		input.NewPrincipal,
 		input.Notes,
+		txnID,
 	)
 	if err != nil {
 		return fmt.Errorf("insert principal change: %w", err)
@@ -442,9 +447,9 @@ func (h *PawnHandler) AddPrincipalChange(input models.PrincipalChangeInput) erro
 			isBankInt = 1
 		}
 		_, err = tx.Exec(`
-			INSERT INTO income_expenses (type, category, amount, notes, source, is_bank_transfer, date)
-			VALUES (?, ?, ?, ?, 'auto', ?, ?)
-		`, ieType, category, input.Amount, desc, isBankInt, dateVal)
+			INSERT INTO income_expenses (type, category, amount, notes, source, is_bank_transfer, date, transaction_id)
+			VALUES (?, ?, ?, ?, 'auto', ?, ?, ?)
+		`, ieType, category, input.Amount, desc, isBankInt, dateVal, txnID)
 		if err != nil {
 			return fmt.Errorf("auto income/expense: %w", err)
 		}

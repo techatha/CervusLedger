@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  ListGoldItems,
+  ListGoldItemsWithStock,
   DeleteGoldItem,
-  ListStockLogs,
   ExportGoldStock,
 } from 'wailsjs/go/gold_item_handler/GoldItemHandler'
 import GoldStockForm from './GoldStockForm'
@@ -39,13 +38,6 @@ export default function GoldStockList() {
   // History overlay state — which type is open
   const [historyType, setHistoryType] = useState(null) // null = closed, string = type name
 
-  // All stock logs (unfiltered) — passed to history overlay
-  const [allStockLogs, setAllStockLogs] = useState([])
-  // Edited amounts keyed by item.id (for current display only)
-  const [editedAmounts, setEditedAmounts] = useState({})
-
-  const [auditLoading, setAuditLoading] = useState(false)
-
   const handleToggleExport = (mainType) => {
     setExportToggleState(prev => ({
       ...prev,
@@ -53,69 +45,34 @@ export default function GoldStockList() {
     }))
   }
 
-  // ── Load catalog ────────────────────────────────────────────────────────────
-  const loadCatalog = useCallback(async () => {
-    try {
-      const data = await ListGoldItems('')
-      setItems(data || [])
-    } catch (e) {
-      setError('โหลดรายการสินค้าไม่สำเร็จ: ' + e)
-    }
-  }, [])
-
-  // ── Load ALL stock logs (no month filter — overlay handles filtering) ────────
-  const loadAllStockLogs = useCallback(async () => {
-    setAuditLoading(true)
+  // ── Load all data (catalog + stock) in one call ─────────────────────────────
+  const loadData = useCallback(async () => {
+    setLoading(true)
     setError(null)
     try {
-      const data = await ListStockLogs('')
-      setAllStockLogs(data || [])
-
-      // Build latest-amount map: for each item, use the most recent log
-      const latestByItem = {}
-        ; (data || []).forEach(log => {
-          const existing = latestByItem[log.gold_item_id]
-          if (!existing || log.log_date > existing.log_date) {
-            latestByItem[log.gold_item_id] = log
-          }
-        })
-      const amounts = {}
-      Object.entries(latestByItem).forEach(([id, log]) => {
-        amounts[id] = String(log.amount)
-      })
-      setEditedAmounts(amounts)
+      const data = await ListGoldItemsWithStock()
+      setItems(data || [])
     } catch (e) {
       setError('โหลดข้อมูลสต็อกไม่สำเร็จ: ' + e)
     } finally {
-      setAuditLoading(false)
+      setLoading(false)
     }
   }, [])
 
   // ── Mount ───────────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const loadAll = async () => {
-      setLoading(true)
-      await Promise.all([loadCatalog(), loadAllStockLogs()])
-      setLoading(false)
-    }
-    loadAll()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { loadData() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDelete = async () => {
     if (!confirmDelete) return
     try {
       await DeleteGoldItem(confirmDelete.id)
       setConfirmDelete(null)
-      await Promise.all([loadCatalog(), loadAllStockLogs()])
+      await loadData()
     } catch (e) {
       setError(String(e))
       setConfirmDelete(null)
     }
   }
-
-  // ── Grouping & computation ──────────────────────────────────────────────────
-  const auditGroups = groupBy(items, 'type')
-  const typeKeys = Object.keys(auditGroups)
 
   const handleExport = async () => {
     try {
@@ -143,20 +100,19 @@ export default function GoldStockList() {
     }
   }
 
+  // ── Grouping & computation ──────────────────────────────────────────────────
+  const auditGroups = groupBy(items, 'type')
+  const typeKeys = Object.keys(auditGroups)
+
   const computedGroups = typeKeys.map(mainType => {
     const groupItems = auditGroups[mainType]
 
-    const groupQty = groupItems.reduce((s, item) => s + (parseInt(editedAmounts[item.id]) || 0), 0)
+    const groupQty = groupItems.reduce((s, item) => s + (item.latest_amount || 0), 0)
     const groupWeight = groupItems.reduce((s, item) => {
-      return s + ((item.weight_grams || 0) * (parseInt(editedAmounts[item.id]) || 0))
+      return s + ((item.weight_grams || 0) * (item.latest_amount || 0))
     }, 0)
 
     const rows = groupItems.map((item, index) => {
-      const amtStr = editedAmounts[item.id] || ''
-      const history = allStockLogs
-        .filter(l => l.gold_item_id === item.id)
-        .sort((a, b) => a.log_date.localeCompare(b.log_date))
-
       return {
         gold_item_id: item.id,
         index: index + 1,
@@ -165,8 +121,8 @@ export default function GoldStockList() {
         purity: item.purity || '—',
         no_purity: item.no_purity || 0,
         no_weight: item.no_weight || 0,
-        amtStr,
-        history,
+        amtStr: String(item.latest_amount || 0),
+        history: item.recent_history || [],
         catalogItem: item,
       }
     })
@@ -196,7 +152,7 @@ export default function GoldStockList() {
           <button
             className="btn btn-primary"
             onClick={() => setWizardOpen(true)}
-            disabled={auditLoading || items.length === 0}
+            disabled={loading || items.length === 0}
           >
             <FontAwesomeIcon icon={faFilePen} />
             เริ่มตรวจนับสต็อก
@@ -207,7 +163,7 @@ export default function GoldStockList() {
       {error && <div className="alert alert-error">{error}</div>}
 
       {/* ── Per-Type Sections ────────────────────────────────────── */}
-      {(loading || auditLoading) ? (
+      {loading ? (
         <div className="card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
           กำลังโหลดข้อมูลสต็อก...
         </div>
@@ -251,7 +207,7 @@ export default function GoldStockList() {
                 <button
                   className="btn btn-ghost btn-sm"
                   onClick={() => setWizardOpen(group.mainType)}
-                  disabled={auditLoading || group.rows.length === 0}
+                  disabled={loading || group.rows.length === 0}
                   title={`ตรวจนับสต็อก ${group.mainType}`}
                 >
                   <FontAwesomeIcon icon={faFilePen} />
@@ -339,7 +295,6 @@ export default function GoldStockList() {
         <GoldStockHistory
           typeName={historyType}
           items={items.filter(i => i.type === historyType)}
-          allStockLogs={allStockLogs}
           onClose={() => setHistoryType(null)}
         />
       )}
@@ -348,12 +303,10 @@ export default function GoldStockList() {
       {wizardOpen && (
         <GoldStockWizard
           items={wizardOpen === true ? items : items.filter(i => i.type === wizardOpen)}
-          editedAmounts={editedAmounts}
           onClose={() => setWizardOpen(null)}
-          onSaved={(newAmounts) => {
-            setEditedAmounts(prev => ({ ...prev, ...newAmounts }))
+          onSaved={() => {
             setWizardOpen(null)
-            loadAllStockLogs()
+            loadData()
           }}
         />
       )}
@@ -364,7 +317,7 @@ export default function GoldStockList() {
           item={modal === 'new' ? null : modal}
           onSaved={async () => {
             setModal(null)
-            await Promise.all([loadCatalog(), loadAllStockLogs()])
+            await loadData()
           }}
           onClose={() => setModal(null)}
         />

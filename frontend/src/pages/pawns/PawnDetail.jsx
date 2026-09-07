@@ -31,6 +31,7 @@ import ForfeitModal from './modals/ForfeitModal'
 import EditPawnInfoModal from './modals/EditPawnInfoModal'
 import RecordPaymentModal from './modals/RecordPaymentModal'
 import PrincipalChangeModal from './modals/PrincipalChangeModal'
+import MarkAsPaidModal from './modals/MarkAsPaidModal'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faPrint, faHandshakeSlash, faMoneyBills } from '@fortawesome/free-solid-svg-icons'
 import './PawnDetail.css'
@@ -48,7 +49,8 @@ export default function PawnDetail({ cartItems, setCartItems }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const [modal, setModal] = useState(null) // 'payment' | 'principal' | 'redeem' | 'forfeit'
+  const [modal, setModal] = useState(null) // 'payment' | 'principal' | 'redeem' | 'forfeit' | 'mark_paid'
+  const [markPaidItems, setMarkPaidItems] = useState([])
 
   // Receipt state
   const [showTicket, setShowTicket] = useState(false)
@@ -280,18 +282,21 @@ export default function PawnDetail({ cartItems, setCartItems }) {
     alert(`เพิ่มดอกเบี้ยค้างชำระ ${itemsToProcess.length} งวดลงในตะกร้าแล้ว (รวมเป็น 1 รายการ)`)
   }
 
-  const handleMarkAsPaidPendingInterest = async (selectedIndexes) => {
+  const handleMarkAsPaidPendingInterest = (selectedIndexes) => {
     if (selectedIndexes.length === 0) return
     const itemsToProcess = selectedIndexes.map(idx => pendingMonths[idx])
-    const totalAmount = pawn.interest_amount * itemsToProcess.length
-    const monthLabels = formatMonthRange(itemsToProcess)
+    setMarkPaidItems(itemsToProcess)
+    setModal('mark_paid')
+  }
 
-    if (!window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการทำรายการว่าชำระแล้วสำหรับดอกเบี้ย ${selectedIndexes.length} งวด (${monthLabels})?`)) {
-      return
-    }
+  const handleMarkGapAsPaid = (item) => {
+    setMarkPaidItems([item])
+    setModal('mark_paid')
+  }
 
+  const handleConfirmMarkAsPaid = async () => {
     try {
-      const inputs = itemsToProcess.map(m => ({
+      const inputs = markPaidItems.map(m => ({
         pawn_record_id: pawn.id,
         month: m.month,
         year: m.year,
@@ -302,12 +307,16 @@ export default function PawnDetail({ cartItems, setCartItems }) {
         ticket_number: pawn.ticket_number
       }))
 
+      const monthLabels = formatMonthRange(markPaidItems)
       const notes = `ตั๋ว #${formatTicket(pawn.ticket_number)} (${pawn.customer_name_display || pawn.customer_name}) - งวด ${monthLabels}`
 
-      await RecordPaymentsGrouped(inputs, totalAmount, notes, false)
+      await RecordPaymentsGrouped(inputs, 0, notes, false)
+      setModal(null)
+      setMarkPaidItems([])
       await load()
       reloadAll()
     } catch (e) {
+      alert('บันทึกการชำระดอกเบี้ยไม่สำเร็จ: ' + e)
       setError('บันทึกการชำระดอกเบี้ยไม่สำเร็จ: ' + e)
     }
   }
@@ -442,7 +451,13 @@ export default function PawnDetail({ cartItems, setCartItems }) {
               </div>
             </div>
           )}
-          <PawnPaymentHistoryCard payments={payments} onDeletePayment={handleDeletePayment} isActive={isActive} />
+          <PawnPaymentHistoryCard
+            pawn={pawn}
+            payments={payments}
+            onDeletePayment={handleDeletePayment}
+            onMarkAsPaid={handleMarkGapAsPaid}
+            isActive={isActive}
+          />
 
           <PawnPendingInterestCard
             pendingMonths={pendingMonths}
@@ -516,6 +531,16 @@ export default function PawnDetail({ cartItems, setCartItems }) {
             pawn={pawn}
             onSaved={() => { setModal(null); load(); reloadAll() }}
             onClose={() => setModal(null)}
+          />
+        )
+      }
+      {
+        modal === 'mark_paid' && markPaidItems.length > 0 && (
+          <MarkAsPaidModal
+            pawn={pawn}
+            items={markPaidItems}
+            onConfirm={handleConfirmMarkAsPaid}
+            onClose={() => { setModal(null); setMarkPaidItems([]) }}
           />
         )
       }

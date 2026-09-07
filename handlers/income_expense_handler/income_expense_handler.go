@@ -28,11 +28,22 @@ func (h *IncomeExpenseHandler) Startup(ctx context.Context) {
 
 func (h *IncomeExpenseHandler) ListIncomeExpense(f models.IncomeExpenseFilter) ([]models.IncomeExpense, error) {
 	query := `
-		SELECT id, type, category, amount, notes, source, is_bank_transfer, date, created_at
+		SELECT id, type, category, amount, notes, source, is_bank_transfer, date, created_at,
+		       COALESCE(transaction_id, ''), COALESCE(status, 'active')
 		FROM income_expenses
 		WHERE 1=1
 	`
 	args := []interface{}{}
+
+	// Status filter: default to active (including old rows with NULL status)
+	if f.Status == "all" {
+		// show everything
+	} else if f.Status == "cancelled" {
+		query += ` AND status = 'cancelled'`
+	} else {
+		// default: active only
+		query += ` AND (status = 'active' OR status IS NULL)`
+	}
 
 	if f.Type != "" {
 		query += ` AND type = ?`
@@ -64,6 +75,7 @@ func (h *IncomeExpenseHandler) ListIncomeExpense(f models.IncomeExpenseFilter) (
 		if err := rows.Scan(
 			&e.ID, &e.Type, &e.Category, &e.Amount,
 			&e.Notes, &e.Source, &e.IsBankTransfer, &e.Date, &e.CreatedAt,
+			&e.TransactionID, &e.Status,
 		); err != nil {
 			return nil, fmt.Errorf("scan income_expenses: %w", err)
 		}
@@ -135,7 +147,7 @@ func (h *IncomeExpenseHandler) GetIncomeExpenseSummary(startDate, endDate string
 			COALESCE(SUM(CASE WHEN type='income'  THEN amount ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0)
 		FROM income_expenses
-		WHERE 1=1
+		WHERE (status = 'active' OR status IS NULL)
 	`
 	args := []interface{}{}
 	if startDate != "" {
@@ -226,7 +238,7 @@ func (h *IncomeExpenseHandler) GetDailyCash(date string) (models.DailyCash, erro
 		SELECT
 			COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0)
-		FROM income_expenses WHERE date(date) = ? AND (is_bank_transfer = 0 OR is_bank_transfer IS NULL)
+		FROM income_expenses WHERE date(date) = ? AND (is_bank_transfer = 0 OR is_bank_transfer IS NULL) AND (status = 'active' OR status IS NULL)
 	`, date).Scan(&totalIncome, &totalExpense)
 	if err != nil {
 		totalIncome, totalExpense = 0.0, 0.0
@@ -265,7 +277,7 @@ func (h *IncomeExpenseHandler) SaveDailyCash(input models.DailyCashInput) (model
 		SELECT
 			COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END), 0),
 			COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0)
-		FROM income_expenses WHERE date(date) = ? AND (is_bank_transfer = 0 OR is_bank_transfer IS NULL)
+		FROM income_expenses WHERE date(date) = ? AND (is_bank_transfer = 0 OR is_bank_transfer IS NULL) AND (status = 'active' OR status IS NULL)
 	`, input.Date).Scan(&totalIncome, &totalExpense)
 	if err != nil {
 		totalIncome, totalExpense = 0.0, 0.0
@@ -310,7 +322,7 @@ func (h *IncomeExpenseHandler) SaveDailyCash(input models.DailyCashInput) (model
 			SELECT
 				COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END), 0),
 				COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0)
-			FROM income_expenses WHERE date(date) = ? AND (is_bank_transfer = 0 OR is_bank_transfer IS NULL)
+			FROM income_expenses WHERE date(date) = ? AND (is_bank_transfer = 0 OR is_bank_transfer IS NULL) AND (status = 'active' OR status IS NULL)
 		`, successorDate).Scan(&inc, &exp)
 		if err != nil {
 			inc, exp = 0.0, 0.0
@@ -355,7 +367,7 @@ func (h *IncomeExpenseHandler) SaveDailyCash(input models.DailyCashInput) (model
 				SELECT
 					COALESCE(SUM(CASE WHEN type='income' THEN amount ELSE 0 END), 0),
 					COALESCE(SUM(CASE WHEN type='expense' THEN amount ELSE 0 END), 0)
-				FROM income_expenses WHERE date(date) = ? AND (is_bank_transfer = 0 OR is_bank_transfer IS NULL)
+				FROM income_expenses WHERE date(date) = ? AND (is_bank_transfer = 0 OR is_bank_transfer IS NULL) AND (status = 'active' OR status IS NULL)
 			`, nextDate).Scan(&nInc, &nExp)
 			if err != nil {
 				nInc, nExp = 0.0, 0.0
@@ -409,4 +421,253 @@ func (h *IncomeExpenseHandler) ListDailyCash(startDate, endDate string) ([]model
 		list = append(list, c)
 	}
 	return list, nil
+}
+
+// ─── Cancel Transaction ────────────────────────────────────────────────────
+
+// GetCancelPreview returns a preview of what will happen if an income/expense entry is cancelled.
+func (h *IncomeExpenseHandler) GetCancelPreview(id int) (models.CancelPreview, error) {
+	preview := models.CancelPreview{EntryID: id}
+
+	var txnID sql.NullString
+	var status sql.NullString
+	var category, source string
+	err := db.DB.QueryRow(`
+		SELECT category, source, COALESCE(transaction_id, ''), COALESCE(status, 'active')
+		FROM income_expenses WHERE id = ?
+	`, id).Scan(&category, &source, &txnID, &status)
+	if err != nil {
+		return preview, fmt.Errorf("entry not found: %w", err)
+	}
+
+	preview.Category = category
+
+	if status.String == "cancelled" {
+		preview.CanCancel = false
+		preview.Reason = "รายการนี้ถูกยกเลิกไปแล้ว"
+		return preview, nil
+	}
+
+	if !txnID.Valid || txnID.String == "" {
+		preview.CanCancel = false
+		preview.Reason = "รายการเก่าไม่สามารถยกเลิกได้ (ไม่มีรหัสอ้างอิง)"
+		return preview, nil
+	}
+
+	preview.CanCancel = true
+	tid := txnID.String
+
+	switch category {
+	case "ดอกเบี้ยจำนำ":
+		// Find linked pawn payments
+		rows, err := db.DB.Query(`
+			SELECT pp.pawn_record_id, COALESCE(pr.ticket_number, 0), pp.month, pp.year
+			FROM pawn_payments pp
+			LEFT JOIN pawn_records pr ON pr.id = pp.pawn_record_id
+			WHERE pp.transaction_id = ?
+		`, tid)
+		if err == nil {
+			defer rows.Close()
+			for rows.Next() {
+				var info models.PawnPaymentInfo
+				rows.Scan(&info.PawnRecordID, &info.TicketNumber, &info.Month, &info.Year)
+				preview.WillRevertPayments = append(preview.WillRevertPayments, info)
+			}
+		}
+
+	case "ขายทอง", "รับซื้อทอง":
+		// Check if there are linked stock logs
+		var count int
+		db.DB.QueryRow(`SELECT COUNT(*) FROM gold_stock_logs WHERE transaction_id = ?`, tid).Scan(&count)
+		preview.WillRevertStock = count > 0
+
+	case "ลดต้นจำนำ", "เพิ่มต้นจำนำ", "ไถ่ถอน":
+		// Check if this is a principal change and find cascade effects
+		var pcID int
+		var pawnRecordID int
+		err := db.DB.QueryRow(`
+			SELECT id, pawn_record_id FROM principal_changes WHERE transaction_id = ?
+		`, tid).Scan(&pcID, &pawnRecordID)
+		if err == nil {
+			preview.WillRevertPrincipal = true
+			// Find newer changes that would also need to be reverted
+			rows, err := db.DB.Query(`
+				SELECT id, pawn_record_id, date, change_type, amount, new_principal, notes
+				FROM principal_changes
+				WHERE pawn_record_id = ? AND id > ?
+				ORDER BY id ASC
+			`, pawnRecordID, pcID)
+			if err == nil {
+				defer rows.Close()
+				for rows.Next() {
+					var c models.PrincipalChange
+					rows.Scan(&c.ID, &c.PawnRecordID, &c.Date, &c.ChangeType, &c.Amount, &c.NewPrincipal, &c.Notes)
+					preview.CascadeChanges = append(preview.CascadeChanges, c)
+				}
+			}
+		}
+
+	case "รับจำนำ":
+		preview.Notice = "ยกเลิกเฉพาะรายการรายรับ-รายจ่าย ตั๋วจำนำจะไม่ถูกลบ"
+	}
+
+	return preview, nil
+}
+
+// CancelIncomeExpense cancels an income/expense entry and reverts linked records.
+func (h *IncomeExpenseHandler) CancelIncomeExpense(id int) error {
+	tx, err := db.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// 1. Fetch the entry
+	var txnID sql.NullString
+	var status sql.NullString
+	var category string
+	err = tx.QueryRow(`
+		SELECT category, COALESCE(transaction_id, ''), COALESCE(status, 'active')
+		FROM income_expenses WHERE id = ?
+	`, id).Scan(&category, &txnID, &status)
+	if err != nil {
+		return fmt.Errorf("entry not found: %w", err)
+	}
+
+	if status.String == "cancelled" {
+		return fmt.Errorf("รายการนี้ถูกยกเลิกไปแล้ว")
+	}
+
+	if !txnID.Valid || txnID.String == "" {
+		return fmt.Errorf("รายการเก่าไม่สามารถยกเลิกได้ (ไม่มีรหัสอ้างอิง)")
+	}
+
+	tid := txnID.String
+
+	// 2. Mark as cancelled
+	_, err = tx.Exec(`UPDATE income_expenses SET status = 'cancelled' WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("cancel entry: %w", err)
+	}
+
+	// 3. Revert linked records based on category
+	switch category {
+	case "ดอกเบี้ยจำนำ":
+		// Delete linked pawn payments
+		_, err = tx.Exec(`DELETE FROM pawn_payments WHERE transaction_id = ?`, tid)
+		if err != nil {
+			return fmt.Errorf("revert pawn payments: %w", err)
+		}
+
+	case "ขายทอง", "รับซื้อทอง":
+		// Add compensating stock log entries
+		rows, err := tx.Query(`
+			SELECT gold_item_id, amount FROM gold_stock_logs WHERE transaction_id = ?
+		`, tid)
+		if err != nil {
+			return fmt.Errorf("query stock logs: %w", err)
+		}
+
+		type stockRevert struct {
+			goldItemID int
+			amount     int
+		}
+		var reverts []stockRevert
+		for rows.Next() {
+			var goldItemID, amount int
+			rows.Scan(&goldItemID, &amount)
+			reverts = append(reverts, stockRevert{goldItemID: goldItemID, amount: amount})
+		}
+		rows.Close()
+
+		cancelTxnID := tid + "_cancel"
+		for _, r := range reverts {
+			// Find latest amount for this gold item
+			latestAmount, err := db.GetLatestStockAmount(tx, r.goldItemID)
+			if err != nil {
+				latestAmount = 0
+			}
+
+			// Determine the compensation direction from the original log's context
+			// For sells (category=ขายทอง): original decremented, so we add back
+			// For buys (category=รับซื้อทอง): original incremented, so we subtract
+			var compensation int
+			if category == "ขายทอง" {
+				compensation = latestAmount + 1 // Restore the sold item
+			} else {
+				compensation = latestAmount - 1 // Remove the bought item
+			}
+
+			_, err = tx.Exec(`
+				INSERT INTO gold_stock_logs (gold_item_id, amount, transaction_id)
+				VALUES (?, ?, ?)
+			`, r.goldItemID, compensation, cancelTxnID)
+			if err != nil {
+				return fmt.Errorf("compensating stock log: %w", err)
+			}
+		}
+
+	case "ลดต้นจำนำ", "เพิ่มต้นจำนำ", "ไถ่ถอน":
+		// Revert principal changes with cascade
+		var pcID int
+		var pawnRecordID int
+		err := tx.QueryRow(`
+			SELECT id, pawn_record_id FROM principal_changes WHERE transaction_id = ?
+		`, tid).Scan(&pcID, &pawnRecordID)
+		if err == nil {
+			// Cancel all income_expenses linked to this and all newer principal changes
+			newerRows, err := tx.Query(`
+				SELECT transaction_id FROM principal_changes
+				WHERE pawn_record_id = ? AND id >= ?
+				ORDER BY id ASC
+			`, pawnRecordID, pcID)
+			if err == nil {
+				var newerTxnIDs []string
+				for newerRows.Next() {
+					var nTid sql.NullString
+					newerRows.Scan(&nTid)
+					if nTid.Valid && nTid.String != "" {
+						newerTxnIDs = append(newerTxnIDs, nTid.String)
+					}
+				}
+				newerRows.Close()
+
+				// Cancel all linked income_expenses for cascaded changes
+				for _, nTid := range newerTxnIDs {
+					if nTid != tid { // Don't double-cancel the original
+						tx.Exec(`UPDATE income_expenses SET status = 'cancelled' WHERE transaction_id = ? AND status = 'active'`, nTid)
+					}
+				}
+			}
+
+			// Delete all principal changes from this one onwards
+			_, _ = tx.Exec(`DELETE FROM principal_changes WHERE pawn_record_id = ? AND id >= ?`, pawnRecordID, pcID)
+
+			// Recalculate pawn's interest from the now-latest principal change (or original)
+			var newPrincipal float64
+			err = tx.QueryRow(`
+				SELECT new_principal FROM principal_changes
+				WHERE pawn_record_id = ?
+				ORDER BY id DESC LIMIT 1
+			`, pawnRecordID).Scan(&newPrincipal)
+			if err != nil {
+				// No more changes, revert to original principal
+				tx.QueryRow(`SELECT principal_amount FROM pawn_records WHERE id = ?`, pawnRecordID).Scan(&newPrincipal)
+			}
+
+			// Get interest rate to recalculate interest amount
+			var rate float64
+			tx.QueryRow(`SELECT monthly_interest_rate FROM pawn_records WHERE id = ?`, pawnRecordID).Scan(&rate)
+			newInterest := newPrincipal * rate / 100
+			if newInterest < 0 {
+				newInterest = 0
+			}
+
+			_, _ = tx.Exec(`
+				UPDATE pawn_records SET interest_amount = ? WHERE id = ?
+			`, newInterest, pawnRecordID)
+		}
+	}
+
+	return tx.Commit()
 }

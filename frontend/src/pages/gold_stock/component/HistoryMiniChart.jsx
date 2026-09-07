@@ -27,9 +27,9 @@ export default function HistoryMiniChart({ history }) {
           <div
             key={i}
             className={`gl-history-chip gl-history-chip-${delta}`}
-            title={entry.log_date}
+            title={entry.created_at}
           >
-            <span className="gl-history-chip-date">{formatShortThaiDate(entry.log_date)}</span>
+            <span className="gl-history-chip-date">{formatShortThaiDate(entry.created_at)}</span>
             <span className="gl-history-chip-val">{entry.amount} ชิ้น</span>
           </div>
         )

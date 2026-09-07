@@ -51,13 +51,13 @@ func TestListIncomeExpense(t *testing.T) {
 	now := time.Now()
 
 	// 2. Set up the expected rows we want the mock DB to return
-	mockRows := sqlmock.NewRows([]string{"id", "type", "category", "amount", "notes", "source", "is_bank_transfer", "date", "created_at"}).
-		AddRow(1, "income", "Sales", 1500.50, "Sold goods", "manual", 0, "2023-10-01", now).
-		AddRow(2, "expense", "Rent", 500.00, "Shop rent", "auto", 0, "2023-10-02", now)
+	mockRows := sqlmock.NewRows([]string{"id", "type", "category", "amount", "notes", "source", "is_bank_transfer", "date", "created_at", "transaction_id", "status"}).
+		AddRow(1, "income", "Sales", 1500.50, "Sold goods", "manual", 0, "2023-10-01", now, "", "active").
+		AddRow(2, "expense", "Rent", 500.00, "Shop rent", "auto", 0, "2023-10-02", now, "txn-123", "active")
 
 	// 3. Tell the mock what query to expect (using regex matching)
 	// Because your query builds dynamically, we match the core SELECT statement
-	mock.ExpectQuery(`SELECT id, type, category, amount, notes, source, is_bank_transfer, date, created_at FROM income_expenses`).
+	mock.ExpectQuery(`SELECT id, type, category, amount, notes, source, is_bank_transfer, date, created_at, COALESCE\(transaction_id, ''\), COALESCE\(status, 'active'\) FROM income_expenses`).
 		WillReturnRows(mockRows)
 
 	// 4. Call the actual function
@@ -156,7 +156,7 @@ func TestGetIncomeExpenseSummary(t *testing.T) {
 
 		// 2. We expect the query to include the 'AND date(date) >= ? AND date(date) <= ?' clauses
 		// Note: We use .* in the regex to account for the spaces and newlines in your raw SQL string
-		mock.ExpectQuery(`SELECT(.*)FROM income_expenses WHERE 1=1 AND date\(date\) >= \? AND date\(date\) <= \?`).
+		mock.ExpectQuery(`SELECT(.*)FROM income_expenses WHERE \(status = 'active' OR status IS NULL\) AND date\(date\) >= \? AND date\(date\) <= \?`).
 			WithArgs(startDate, endDate).
 			WillReturnRows(mockRow)
 
@@ -185,7 +185,7 @@ func TestGetIncomeExpenseSummary(t *testing.T) {
 			AddRow(0.0, 0.0)
 
 		// 2. We expect the base query ONLY. No date arguments should be passed.
-		mock.ExpectQuery(`SELECT(.*)FROM income_expenses WHERE 1=1`).
+		mock.ExpectQuery(`SELECT(.*)FROM income_expenses WHERE \(status = 'active' OR status IS NULL\)`).
 			WillReturnRows(mockRow)
 
 		// 3. Execute function with empty strings
