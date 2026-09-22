@@ -2,23 +2,18 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { usePawnCache } from '@/context/PawnCacheContext'
 import {
-  GetPawn,
-  GetPawnPayments,
-  GetPrincipalChanges,
+  GetPawnDetail,
   RedeemPawn,
   ForfeitPawn,
-  UpdateTicketStatus,
   DeletePayment,
-  GetTicketNumberLogs,
+  DeletePawn,
   UpdatePawnInfo,
   RecordPaymentsGrouped,
 } from 'wailsjs/go/pawn_handler/PawnHandler'
-import { GetCustomer } from 'wailsjs/go/customer_handler/CustomerHandler'
 import { GetAllSettings } from 'wailsjs/go/settings_handler/SettingsHandler'
 import PawnTicket from './PawnTicket'
 import PawnInfoCard from './components/pawnDetail/PawnInfoCard'
 import PawnFinancialCard from './components/pawnDetail/PawnFinancialCard'
-import PawnStatusCard from './components/pawnDetail/PawnStatusCard'
 import PawnPaymentHistoryCard from './components/pawnDetail/PawnPaymentHistoryCard'
 import PawnPendingInterestCard from './components/pawnDetail/PawnPendingInterestCard'
 import PawnPrincipalChangesCard from './components/pawnDetail/PawnPrincipalChangesCard'
@@ -33,7 +28,7 @@ import RecordPaymentModal from './modals/RecordPaymentModal'
 import PrincipalChangeModal from './modals/PrincipalChangeModal'
 import MarkAsPaidModal from './modals/MarkAsPaidModal'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faPrint, faHandshakeSlash, faMoneyBills } from '@fortawesome/free-solid-svg-icons'
+import { faPrint, faHandshakeSlash, faMoneyBills, faTrashCan } from '@fortawesome/free-solid-svg-icons'
 import './PawnDetail.css'
 
 export default function PawnDetail({ cartItems, setCartItems }) {
@@ -62,16 +57,12 @@ export default function PawnDetail({ cartItems, setCartItems }) {
     setLoading(true)
     setError(null)
     try {
-      const [p, pays, chgs, logs] = await Promise.all([
-        GetPawn(pawnId),
-        GetPawnPayments(pawnId),
-        GetPrincipalChanges(pawnId),
-        GetTicketNumberLogs(pawnId),
-      ])
-      setPawn(p)
-      setPayments(pays || [])
-      setChanges(chgs || [])
-      setTicketLogs(logs || [])
+      const detail = await GetPawnDetail(pawnId)
+      setPawn(detail.pawn)
+      setCustomer(detail.customer)
+      setPayments(detail.payments || [])
+      setChanges(detail.principal_changes || [])
+      setTicketLogs(detail.ticket_logs || [])
     } catch (e) {
       setError('โหลดข้อมูลไม่สำเร็จ: ' + e)
     } finally {
@@ -85,11 +76,7 @@ export default function PawnDetail({ cartItems, setCartItems }) {
   const handlePrintTicket = async () => {
     setLoadingPrint(true)
     try {
-      const [cust, shopInfo] = await Promise.all([
-        pawn.customer_id ? GetCustomer(pawn.customer_id) : Promise.resolve(null),
-        GetAllSettings(),
-      ])
-      setCustomer(cust)
+      const shopInfo = await GetAllSettings()
       setShop(shopInfo)
       setShowTicket(true)
     } catch (e) {
@@ -195,12 +182,16 @@ export default function PawnDetail({ cartItems, setCartItems }) {
     } catch (e) { setError(String(e)) }
   }
 
-  const handleTicketStatus = async (ts) => {
+  const handleDeletePawn = async () => {
+    if (!window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบตั๋ว #${formatTicket(pawn.ticket_number)}?\n(ข้อมูลการจ่ายดอกเบี้ยและการเปลี่ยนแปลงเงินต้นของตั๋วนี้จะถูกลบทั้งหมด)`)) return;
     try {
-      await UpdateTicketStatus(pawnId, ts)
-      load()
+      await DeletePawn(pawnId)
       reloadAll()
-    } catch (e) { setError(String(e)) }
+      navigate('/pawns')
+    } catch (e) {
+      alert('ลบตั๋วจำนำไม่สำเร็จ: ' + e)
+      setError(String(e))
+    }
   }
 
   const handleDeletePayment = async (paymentId) => {
@@ -353,11 +344,6 @@ export default function PawnDetail({ cartItems, setCartItems }) {
                 # {formatTicket(pawn.ticket_number)} {pawn.customer_name}
               </div>
               <span className={`badge ${statusCls}`}>{statusLabel}</span>
-              {pawn.ticket_status !== 'active' && (
-                <span className="badge badge-amber">
-                  {pawn.ticket_status === 'lost' ? 'ตั๋วทำหาย' : 'ตั๋วชำรุด'}
-                </span>
-              )}
               {pendingMonths.length > 1 && (
                 <span className="badge badge-red">ค้างจ่าย {pendingMonths.length} เดือน</span>
               )}
@@ -368,7 +354,6 @@ export default function PawnDetail({ cartItems, setCartItems }) {
         {/* Action buttons */}
         {isActive && (
           <div style={{ display: 'flex', gap: 8 }}>
-
             <button className="btn btn-ghost" onClick={() => setModal('payment')}>
               <FontAwesomeIcon icon={faMoneyBills} /> จ่ายดอกเบี้ยล่วงหน้า
             </button>
@@ -378,6 +363,13 @@ export default function PawnDetail({ cartItems, setCartItems }) {
               disabled={loadingPrint}
             >
               <FontAwesomeIcon icon={faPrint} /> {loadingPrint ? '...' : 'พิมพ์ตั๋วจำนำ'}
+            </button>
+            <button
+              className="btn btn-danger-ghost"
+              onClick={handleDeletePawn}
+              title="ลบตั๋วจำนำนี้"
+            >
+              <FontAwesomeIcon icon={faTrashCan} /> ลบตั๋ว
             </button>
           </div>
         )}
@@ -404,11 +396,6 @@ export default function PawnDetail({ cartItems, setCartItems }) {
             onError={setError}
           />
 
-          <PawnStatusCard
-            pawn={pawn}
-            isActive={isActive}
-            onStatusChange={handleTicketStatus}
-          />
           {isActive && (
             <>
               <button className="btn btn-ghost" onClick={() => setModal('principal')}>

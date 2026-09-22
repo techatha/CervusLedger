@@ -14,6 +14,10 @@ export function CreatePawn(arg1) {
   return window['go']['pawn_handler']['PawnHandler']['CreatePawn'](arg1);
 }
 
+export function DeletePawn(arg1) {
+  return window['go']['pawn_handler']['PawnHandler']['DeletePawn'](arg1);
+}
+
 export function DeletePayment(arg1) {
   return window['go']['pawn_handler']['PawnHandler']['DeletePayment'](arg1);
 }
@@ -22,12 +26,20 @@ export function ForfeitPawn(arg1) {
   return window['go']['pawn_handler']['PawnHandler']['ForfeitPawn'](arg1);
 }
 
+export function GetCategorizedPawns(arg1) {
+  return window['go']['pawn_handler']['PawnHandler']['GetCategorizedPawns'](arg1);
+}
+
 export function GetCustomerPawnRecords(arg1) {
   return window['go']['pawn_handler']['PawnHandler']['GetCustomerPawnRecords'](arg1);
 }
 
 export function GetPawn(arg1) {
   return window['go']['pawn_handler']['PawnHandler']['GetPawn'](arg1);
+}
+
+export function GetPawnDetail(arg1) {
+  return window['go']['pawn_handler']['PawnHandler']['GetPawnDetail'](arg1);
 }
 
 export function GetPawnPayments(arg1) {
@@ -44,10 +56,6 @@ export function GetPrincipalChanges(arg1) {
 
 export function GetTicketNumberLogs(arg1) {
   return window['go']['pawn_handler']['PawnHandler']['GetTicketNumberLogs'](arg1);
-}
-
-export function ListPawns(arg1, arg2) {
-  return window['go']['pawn_handler']['PawnHandler']['ListPawns'](arg1, arg2);
 }
 
 export function ListPawnsSorted(arg1, arg2, arg3) {
@@ -70,22 +78,10 @@ export function Startup(arg1) {
   return window['go']['pawn_handler']['PawnHandler']['Startup'](arg1);
 }
 
-export function UpdatePawnDescription(arg1, arg2) {
-  return window['go']['pawn_handler']['PawnHandler']['UpdatePawnDescription'](arg1, arg2);
-}
-
 export function UpdatePawnInfo(arg1, arg2, arg3, arg4, arg5, arg6) {
   return window['go']['pawn_handler']['PawnHandler']['UpdatePawnInfo'](arg1, arg2, arg3, arg4, arg5, arg6);
 }
 
 export function UpdatePawnInterest(arg1, arg2, arg3) {
   return window['go']['pawn_handler']['PawnHandler']['UpdatePawnInterest'](arg1, arg2, arg3);
-}
-
-export function UpdateTicketNumber(arg1, arg2) {
-  return window['go']['pawn_handler']['PawnHandler']['UpdateTicketNumber'](arg1, arg2);
-}
-
-export function UpdateTicketStatus(arg1, arg2) {
-  return window['go']['pawn_handler']['PawnHandler']['UpdateTicketStatus'](arg1, arg2);
 }

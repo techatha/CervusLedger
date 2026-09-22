@@ -1,8 +1,8 @@
 import { toBE } from '@/utils/thai'
 import { thaiMonthShort } from '@/utils/pawn'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
-import { faTrashCan, faXmark, faCheck } from '@fortawesome/free-solid-svg-icons'
-import { useMemo } from 'react'
+import { faTrashCan, faXmark, faCheck, faChevronDown, faChevronUp } from '@fortawesome/free-solid-svg-icons'
+import { useMemo, useState } from 'react'
 
 function IconCheckCircle() {
   return (
@@ -31,6 +31,8 @@ function IconCrossCircle() {
 }
 
 export default function PawnPaymentHistoryCard({ pawn, payments, onDeletePayment, onMarkAsPaid, isActive }) {
+  const [expanded, setExpanded] = useState(false)
+
   // Build a timeline from pawn start to the last paid month
   const timeline = useMemo(() => {
     if (!payments || payments.length === 0 || !pawn || !pawn.pawned_date) return []
@@ -76,10 +78,21 @@ export default function PawnPaymentHistoryCard({ pawn, payments, onDeletePayment
     
     return fullTimeline
   }, [pawn, payments])
+
+  const visibleTimeline = useMemo(() => {
+    if (expanded || timeline.length <= 5) return timeline
+    return timeline.slice(timeline.length - 5)
+  }, [timeline, expanded])
+
   return (
     <div className="card">
-      <div className="card-header">
+      <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span className="card-title">ประวัติการจ่ายดอกเบี้ย</span>
+        {timeline.length > 5 && (
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+            {expanded ? `ทั้งหมด ${timeline.length} รายการ` : `แสดง 5 จาก ${timeline.length} รายการ`}
+          </span>
+        )}
       </div>
       <div className="table-wrap">
         {!payments || payments.length === 0 ? (
@@ -98,7 +111,24 @@ export default function PawnPaymentHistoryCard({ pawn, payments, onDeletePayment
               </tr>
             </thead>
             <tbody>
-              {timeline.map((item, index) => {
+              {!expanded && timeline.length > 5 && (
+                <tr
+                  className="payment-history-more-row"
+                  onClick={() => setExpanded(true)}
+                  style={{
+                    cursor: 'pointer',
+                    backgroundColor: 'var(--bg-hover, rgba(0, 0, 0, 0.02))',
+                    borderBottom: '1px dashed var(--border-color, #e5e7eb)',
+                  }}
+                  title="คลิกเพื่อดูประวัติก่อนหน้านี้ทั้งหมด"
+                >
+                  <td colSpan={5} style={{ textAlign: 'center', padding: '8px 12px', color: 'var(--text-secondary)', fontSize: 13 }}>
+                    <span style={{ fontWeight: 700, letterSpacing: '3px', marginRight: 8, color: 'var(--text-muted)' }}>...</span>
+                    <span>(มีอีก {timeline.length - 5} รายการก่อนหน้านี้ — คลิกเพื่อดูทั้งหมด)</span>
+                  </td>
+                </tr>
+              )}
+              {visibleTimeline.map((item, index) => {
                 if (item.paid) {
                   const p = item.payment
                   return (
@@ -152,6 +182,19 @@ export default function PawnPaymentHistoryCard({ pawn, payments, onDeletePayment
           </table>
         )}
       </div>
+      {timeline.length > 5 && (
+        <div style={{ padding: '10px 16px', textAlign: 'center', borderTop: '1px solid var(--border-color, #e5e7eb)' }}>
+          <button
+            className="btn btn-ghost btn-xs"
+            onClick={() => setExpanded(!expanded)}
+            style={{ color: 'var(--text-secondary)', fontSize: 13 }}
+          >
+            <FontAwesomeIcon icon={expanded ? faChevronUp : faChevronDown} style={{ marginRight: 6 }} />
+            {expanded ? 'ย่อเหลือ 5 รายการล่าสุด' : `แสดงประวัติทั้งหมด (${timeline.length} รายการ)`}
+          </button>
+        </div>
+      )}
     </div>
   )
 }
+

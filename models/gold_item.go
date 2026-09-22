@@ -21,21 +21,6 @@ type GoldItemInput struct {
 	NoWeight    int     `json:"no_weight"`
 }
 
-type GoldStockLog struct {
-	ID            int    `json:"id"`
-	GoldItemID    int    `json:"gold_item_id"`
-	Type          string `json:"type"`
-	Subtype       string `json:"subtype"`
-	Amount        int    `json:"amount"`
-	CreatedAt     string `json:"created_at"`
-	TransactionID string `json:"transaction_id"`
-}
-
-type GoldStockLogInput struct {
-	GoldItemID int `json:"gold_item_id"`
-	Amount     int `json:"amount"`
-}
-
 // GoldItemWithStock combines catalog info with latest stock amount
 // and a short recent history (one entry per day, last N days).
 type GoldItemWithStock struct {

@@ -31,8 +31,6 @@ export function ListStockLogs(arg1:string):Promise<Array<models.GoldStockLog>>;
 
 export function RecordStockLog(arg1:models.GoldStockLogInput):Promise<void>;
 
-export function SetGoldItemStatus(arg1:number,arg2:string):Promise<void>;
-
 export function Startup(arg1:context.Context):Promise<void>;
 
 export function UpdateGoldItem(arg1:models.GoldItemInput):Promise<void>;

@@ -100,3 +100,30 @@ type TicketNumberLog struct {
 	NewTicketNumber int    `json:"new_ticket_number"`
 	ChangedAt       string `json:"changed_at"`
 }
+
+// PawnCounts contains totals for each status category.
+type PawnCounts struct {
+	Active    int `json:"active"`
+	Forfeited int `json:"forfeited"`
+	Redeemed  int `json:"redeemed"`
+	Total     int `json:"total"`
+}
+
+// CategorizedPawns holds all pawns partitioned by status along with category counts.
+type CategorizedPawns struct {
+	Counts    PawnCounts   `json:"counts"`
+	Active    []PawnRecord `json:"active"`
+	Forfeited []PawnRecord `json:"forfeited"`
+	Redeemed  []PawnRecord `json:"redeemed"`
+}
+
+// PawnDetail bundles a pawn record with its customer, payments, principal changes, and ticket logs.
+type PawnDetail struct {
+	Pawn             PawnRecord        `json:"pawn"`
+	Customer         Customer          `json:"customer"`
+	Payments         []PawnPayment     `json:"payments"`
+	PrincipalChanges []PrincipalChange `json:"principal_changes"`
+	TicketLogs       []TicketNumberLog `json:"ticket_logs"`
+}
+
+

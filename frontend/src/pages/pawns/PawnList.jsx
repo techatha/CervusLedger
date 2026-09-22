@@ -21,6 +21,7 @@ export default function PawnList() {
     activePawns,
     inactivePawns,
     forfeitedPawns,
+    counts,
     loading,
     error,
     reloadAll
@@ -56,11 +57,11 @@ export default function PawnList() {
     setStatus(s)
   }
 
-  // Get count for each status
-  const activeCount = activePawns.length
-  const forfeitedCount = forfeitedPawns.length
-  const inactiveCount = inactivePawns.length
-  const totalCount = activeCount + forfeitedCount + inactiveCount
+  // Get count for each status from backend metadata or fallback to array lengths
+  const activeCount = counts?.active ?? activePawns.length
+  const forfeitedCount = counts?.forfeited ?? forfeitedPawns.length
+  const inactiveCount = counts?.redeemed ?? inactivePawns.length
+  const totalCount = counts?.total ?? (activeCount + forfeitedCount + inactiveCount)
 
   // In-memory search results across all statuses
   const searchActive = sortPawns(filterPawns(activePawns, search), sortOrder)
@@ -271,6 +272,21 @@ export default function PawnList() {
               <div style={{ fontSize: '2rem', marginBottom: 12 }}>🔍</div>
               <div style={{ color: 'var(--text-secondary)' }}>ไม่พบรายการที่ค้นหาสำหรับ "{search}"</div>
             </div>
+          )}
+        </div>
+      ) : status === '' ? (
+        /* "ทั้งหมด" (All) tab showing categorized sections */
+        <div>
+          {totalCount === 0 ? (
+            <div className="card" style={{ padding: '48px 24px', textAlign: 'center' }}>
+              <div className="empty-state-text">ยังไม่มีรายการจำนำ</div>
+            </div>
+          ) : (
+            <>
+              {renderSectionTable('ยังอยู่ (Active)', sortPawns(activePawns, sortOrder))}
+              {renderSectionTable('ขาด (Forfeited)', sortPawns(forfeitedPawns, sortOrder))}
+              {renderSectionTable('ถอนแล้ว (Redeemed/Inactive)', sortPawns(inactivePawns, sortOrder))}
+            </>
           )}
         </div>
       ) : (

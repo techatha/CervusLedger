@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"sort"
 
 	"CervusLedger/db"
 	"CervusLedger/models"
@@ -26,6 +27,40 @@ func (h *GoldItemHandler) Startup(ctx context.Context) {
 // gold_stock CRUD
 // ---------------------------------------------------------------------------
 
+// Create
+
+// CreateGoldItem creates a new gold stock item.
+func (h *GoldItemHandler) CreateGoldItem(input models.GoldItemInput) (models.GoldItem, error) {
+	res, err := db.DB.Exec(`
+		INSERT INTO gold_stock (type, subtype, purity, weight_grams, no_purity, no_weight)
+		VALUES (?, ?, ?, ?, ?, ?)
+	`, input.Type, input.Subtype, input.Purity, input.WeightGrams, input.NoPurity, input.NoWeight)
+	if err != nil {
+		return models.GoldItem{}, fmt.Errorf("create gold stock: %w", err)
+	}
+	id, _ := res.LastInsertId()
+	return h.GetGoldItem(int(id))
+}
+
+
+// Read 
+
+// GetGoldItem returns a single gold stock item by ID.
+func (h *GoldItemHandler) GetGoldItem(id int) (models.GoldItem, error) {
+	var g models.GoldItem
+	err := db.DB.QueryRow(`
+		SELECT id, type, subtype, purity, weight_grams, no_purity, no_weight, created_at
+		FROM gold_stock WHERE id = ?
+	`, id).Scan(
+		&g.ID, &g.Type, &g.Subtype, &g.Purity, &g.WeightGrams, &g.NoPurity, &g.NoWeight, &g.CreatedAt,
+	)
+	if err != nil {
+		return g, fmt.Errorf("get gold stock %d: %w", id, err)
+	}
+	return g, nil
+}
+
+// ListGoldItems returns a slice of gold stock items sorted by type and subtype.
 func (h *GoldItemHandler) ListGoldItems(status string) ([]models.GoldItem, error) {
 	query := `
 		SELECT id, type, subtype, purity, weight_grams, no_purity, no_weight, created_at
@@ -48,6 +83,14 @@ func (h *GoldItemHandler) ListGoldItems(status string) ([]models.GoldItem, error
 		}
 		items = append(items, g)
 	}
+
+	sort.SliceStable(items, func(i, j int) bool {
+		if items[i].Type != items[j].Type {
+			return items[i].Type < items[j].Type
+		}
+		return naturalLess(items[i].Subtype, items[j].Subtype)
+	})
+	
 	return items, nil
 }
 
@@ -136,31 +179,7 @@ func (h *GoldItemHandler) ListGoldItemsWithStock() ([]models.GoldItemWithStock, 
 	return results, nil
 }
 
-func (h *GoldItemHandler) GetGoldItem(id int) (models.GoldItem, error) {
-	var g models.GoldItem
-	err := db.DB.QueryRow(`
-		SELECT id, type, subtype, purity, weight_grams, no_purity, no_weight, created_at
-		FROM gold_stock WHERE id = ?
-	`, id).Scan(
-		&g.ID, &g.Type, &g.Subtype, &g.Purity, &g.WeightGrams, &g.NoPurity, &g.NoWeight, &g.CreatedAt,
-	)
-	if err != nil {
-		return g, fmt.Errorf("get gold stock %d: %w", id, err)
-	}
-	return g, nil
-}
-
-func (h *GoldItemHandler) CreateGoldItem(input models.GoldItemInput) (models.GoldItem, error) {
-	res, err := db.DB.Exec(`
-		INSERT INTO gold_stock (type, subtype, purity, weight_grams, no_purity, no_weight)
-		VALUES (?, ?, ?, ?, ?, ?)
-	`, input.Type, input.Subtype, input.Purity, input.WeightGrams, input.NoPurity, input.NoWeight)
-	if err != nil {
-		return models.GoldItem{}, fmt.Errorf("create gold stock: %w", err)
-	}
-	id, _ := res.LastInsertId()
-	return h.GetGoldItem(int(id))
-}
+// Update
 
 func (h *GoldItemHandler) UpdateGoldItem(input models.GoldItemInput) error {
 	_, err := db.DB.Exec(`
@@ -170,6 +189,8 @@ func (h *GoldItemHandler) UpdateGoldItem(input models.GoldItemInput) error {
 	`, input.Type, input.Subtype, input.Purity, input.WeightGrams, input.NoPurity, input.NoWeight, input.ID)
 	return err
 }
+
+// Delete
 
 func (h *GoldItemHandler) DeleteGoldItem(id int) error {
 	_, err := db.DB.Exec(`DELETE FROM gold_stock_logs WHERE gold_item_id = ?`, id)
@@ -184,6 +205,40 @@ func (h *GoldItemHandler) DeleteGoldItem(id int) error {
 // gold_stock_logs CRUD
 // ---------------------------------------------------------------------------
 
+// Create
+
+// Crete a stock log 
+func (h *GoldItemHandler) RecordStockLog(input models.GoldStockLogInput) error {
+	_, err := db.DB.Exec(`
+		INSERT INTO gold_stock_logs (gold_item_id, amount)
+		VALUES (?, ?)
+	`, input.GoldItemID, input.Amount)
+	return err
+}
+
+// Read
+
+// GetStockLog returns a single stock log by ID.
+func (h *GoldItemHandler) GetStockLog(id int) (models.GoldStockLog, error) {
+	var l models.GoldStockLog
+	err := db.DB.QueryRow(`
+		SELECT 
+			l.id, l.gold_item_id, g.type, g.subtype,
+			l.amount, l.created_at
+		FROM gold_stock_logs l
+		JOIN gold_stock g ON l.gold_item_id = g.id
+		WHERE l.id = ?
+	`, id).Scan(
+		&l.ID, &l.GoldItemID, &l.Type, &l.Subtype,
+		&l.Amount, &l.CreatedAt,
+	)
+	if err != nil {
+		return l, fmt.Errorf("get stock log %d: %w", id, err)
+	}
+	return l, nil
+}
+
+// ListStockLogs lists all stock logs for a specific date or all if no date is provided.
 func (h *GoldItemHandler) ListStockLogs(logDate string) ([]models.GoldStockLog, error) {
 	var query string
 	var args []interface{}
@@ -255,32 +310,7 @@ func (h *GoldItemHandler) ListStockLogs(logDate string) ([]models.GoldStockLog, 
 	return logs, nil
 }
 
-func (h *GoldItemHandler) RecordStockLog(input models.GoldStockLogInput) error {
-	_, err := db.DB.Exec(`
-		INSERT INTO gold_stock_logs (gold_item_id, amount)
-		VALUES (?, ?)
-	`, input.GoldItemID, input.Amount)
-	return err
-}
-
-func (h *GoldItemHandler) GetStockLog(id int) (models.GoldStockLog, error) {
-	var l models.GoldStockLog
-	err := db.DB.QueryRow(`
-		SELECT 
-			l.id, l.gold_item_id, g.type, g.subtype,
-			l.amount, l.created_at
-		FROM gold_stock_logs l
-		JOIN gold_stock g ON l.gold_item_id = g.id
-		WHERE l.id = ?
-	`, id).Scan(
-		&l.ID, &l.GoldItemID, &l.Type, &l.Subtype,
-		&l.Amount, &l.CreatedAt,
-	)
-	if err != nil {
-		return l, fmt.Errorf("get stock log %d: %w", id, err)
-	}
-	return l, nil
-}
+// Update
 
 func (h *GoldItemHandler) UpdateStockLog(id int, input models.GoldStockLogInput) error {
 	_, err := db.DB.Exec(`
@@ -294,6 +324,8 @@ func (h *GoldItemHandler) UpdateStockLog(id int, input models.GoldStockLogInput)
 	return nil
 }
 
+// Delete
+
 func (h *GoldItemHandler) DeleteStockLog(id int) error {
 	_, err := db.DB.Exec(`DELETE FROM gold_stock_logs WHERE id = ?`, id)
 	if err != nil {
@@ -302,10 +334,6 @@ func (h *GoldItemHandler) DeleteStockLog(id int) error {
 	return nil
 }
 
-// SetGoldItemStatus is deprecated but kept for backwards compatibility.
-func (h *GoldItemHandler) SetGoldItemStatus(id int, status string) error {
-	return nil
-}
 
 func (h *GoldItemHandler) GetGoldMainTypes() ([]string, error) {
 	query := `

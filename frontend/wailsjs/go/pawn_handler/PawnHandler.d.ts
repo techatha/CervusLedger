@@ -9,13 +9,19 @@ export function CheckTicketNumberExists(arg1:number):Promise<boolean>;
 
 export function CreatePawn(arg1:models.PawnInput):Promise<models.PawnRecord>;
 
+export function DeletePawn(arg1:number):Promise<void>;
+
 export function DeletePayment(arg1:number):Promise<void>;
 
 export function ForfeitPawn(arg1:number):Promise<void>;
 
+export function GetCategorizedPawns(arg1:string):Promise<models.CategorizedPawns>;
+
 export function GetCustomerPawnRecords(arg1:number):Promise<Array<models.PawnRecord>>;
 
 export function GetPawn(arg1:number):Promise<models.PawnRecord>;
+
+export function GetPawnDetail(arg1:number):Promise<models.PawnDetail>;
 
 export function GetPawnPayments(arg1:number):Promise<Array<models.PawnPayment>>;
 
@@ -24,8 +30,6 @@ export function GetPawnSettings():Promise<models.PawnSettings>;
 export function GetPrincipalChanges(arg1:number):Promise<Array<models.PrincipalChange>>;
 
 export function GetTicketNumberLogs(arg1:number):Promise<Array<models.TicketNumberLog>>;
-
-export function ListPawns(arg1:string,arg2:string):Promise<Array<models.PawnRecord>>;
 
 export function ListPawnsSorted(arg1:string,arg2:string,arg3:string):Promise<Array<models.PawnRecord>>;
 
@@ -37,12 +41,6 @@ export function RedeemPawn(arg1:number,arg2:string):Promise<void>;
 
 export function Startup(arg1:context.Context):Promise<void>;
 
-export function UpdatePawnDescription(arg1:number,arg2:string):Promise<void>;
-
 export function UpdatePawnInfo(arg1:number,arg2:number,arg3:string,arg4:string,arg5:number,arg6:string):Promise<void>;
 
 export function UpdatePawnInterest(arg1:number,arg2:number,arg3:number):Promise<void>;
-
-export function UpdateTicketNumber(arg1:number,arg2:number):Promise<void>;
-
-export function UpdateTicketStatus(arg1:number,arg2:string):Promise<void>;

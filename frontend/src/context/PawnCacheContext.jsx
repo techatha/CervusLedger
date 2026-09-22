@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { ListPawnsSorted } from 'wailsjs/go/pawn_handler/PawnHandler'
+import { GetCategorizedPawns } from 'wailsjs/go/pawn_handler/PawnHandler'
 
 const PawnCacheContext = createContext(null)
 
@@ -7,20 +7,18 @@ export function PawnCacheProvider({ children }) {
   const [activePawns, setActivePawns] = useState([])
   const [inactivePawns, setInactivePawns] = useState([])
   const [forfeitedPawns, setForfeitedPawns] = useState([])
+  const [counts, setCounts] = useState({ active: 0, forfeited: 0, redeemed: 0, total: 0 })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   const reloadAll = useCallback(async () => {
     setLoading(true)
     try {
-      const [active, inactive, forfeited] = await Promise.all([
-        ListPawnsSorted('active', '', 'desc'),
-        ListPawnsSorted('ถอน', '', 'desc'),
-        ListPawnsSorted('ขาด', '', 'desc'),
-      ])
-      setActivePawns(active || [])
-      setInactivePawns(inactive || [])
-      setForfeitedPawns(forfeited || [])
+      const data = await GetCategorizedPawns('desc')
+      setActivePawns(data.active || [])
+      setInactivePawns(data.redeemed || [])
+      setForfeitedPawns(data.forfeited || [])
+      setCounts(data.counts || { active: 0, forfeited: 0, redeemed: 0, total: 0 })
       setError(null)
     } catch (e) {
       console.error('Failed to reload pawn cache:', e)
@@ -39,6 +37,7 @@ export function PawnCacheProvider({ children }) {
       activePawns,
       inactivePawns,
       forfeitedPawns,
+      counts,
       loading,
       error,
       reloadAll

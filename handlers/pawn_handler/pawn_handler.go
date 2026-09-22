@@ -22,10 +22,8 @@ func (h *PawnHandler) Startup(ctx context.Context) {
 	h.ctx = ctx
 }
 
-// ListPawnsSorted returns all pawns with joined customer name, sorted by ticket number.
-// status = "" means all; search matches ticket number, customer name, or item type.
-// sortOrder = "asc" or "desc".
-func (h *PawnHandler) ListPawnsSorted(status, search, sortOrder string) ([]models.PawnRecord, error) {
+// fetchPawns is an internal query helper for retrieving pawn records with joined customer details.
+func (h *PawnHandler) fetchPawns(status, search, orderBy string) ([]models.PawnRecord, error) {
 	query := `
 		SELECT
 			pr.id, pr.ticket_number, pr.customer_id,
@@ -67,15 +65,11 @@ func (h *PawnHandler) ListPawnsSorted(status, search, sortOrder string) ([]model
 		args = append(args, like, like, like, like)
 	}
 
-	if sortOrder == "asc" {
-		query += ` ORDER BY pr.ticket_number ASC`
-	} else {
-		query += ` ORDER BY pr.ticket_number DESC`
-	}
+	query += ` ORDER BY ` + orderBy
 
 	rows, err := db.DB.Query(query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("list pawns sorted: %w", err)
+		return nil, fmt.Errorf("fetch pawns: %w", err)
 	}
 	defer rows.Close()
 
@@ -98,6 +92,57 @@ func (h *PawnHandler) ListPawnsSorted(status, search, sortOrder string) ([]model
 	}
 	return list, nil
 }
+
+// ListPawnsSorted returns all pawns with joined customer name, sorted by ticket number.
+// status = "" means all; search matches ticket number, customer name, or item type.
+// sortOrder = "asc" or "desc".
+func (h *PawnHandler) ListPawnsSorted(status, search, sortOrder string) ([]models.PawnRecord, error) {
+	orderBy := "pr.ticket_number DESC"
+	if sortOrder == "asc" {
+		orderBy = "pr.ticket_number ASC"
+	}
+	return h.fetchPawns(status, search, orderBy)
+}
+
+// GetCategorizedPawns returns all pawns partitioned by status (active, forfeited, redeemed) along with counts.
+func (h *PawnHandler) GetCategorizedPawns(sortOrder string) (models.CategorizedPawns, error) {
+	orderBy := "pr.ticket_number DESC"
+	if sortOrder == "asc" {
+		orderBy = "pr.ticket_number ASC"
+	}
+
+	allPawns, err := h.fetchPawns("", "", orderBy)
+	if err != nil {
+		return models.CategorizedPawns{}, fmt.Errorf("get categorized pawns: %w", err)
+	}
+
+	res := models.CategorizedPawns{
+		Active:    make([]models.PawnRecord, 0),
+		Forfeited: make([]models.PawnRecord, 0),
+		Redeemed:  make([]models.PawnRecord, 0),
+	}
+
+	for _, p := range allPawns {
+		switch p.Status {
+		case "active":
+			res.Active = append(res.Active, p)
+		case "ขาด", "forfeited":
+			res.Forfeited = append(res.Forfeited, p)
+		case "ถอน", "redeemed":
+			res.Redeemed = append(res.Redeemed, p)
+		default:
+			res.Active = append(res.Active, p)
+		}
+	}
+
+	res.Counts.Active = len(res.Active)
+	res.Counts.Forfeited = len(res.Forfeited)
+	res.Counts.Redeemed = len(res.Redeemed)
+	res.Counts.Total = len(allPawns)
+
+	return res, nil
+}
+
 
 func (h *PawnHandler) GetCustomerPawnRecords(id int) ([]models.PawnRecord, error) {
 	rows, err := db.DB.Query(`
@@ -301,76 +346,89 @@ func (h *PawnHandler) GetPawn(id int) (models.PawnRecord, error) {
 	return r, nil
 }
 
-// ListPawns returns all pawns with joined customer name.
-// status = "" means all; search matches ticket number, customer name, or item type.
-func (h *PawnHandler) ListPawns(status, search string) ([]models.PawnRecord, error) {
-	query := `
-		SELECT
-			pr.id, pr.ticket_number, pr.customer_id,
-			COALESCE(c.prefix || ' ' || c.firstname || ' ' || c.lastname, 'ไม่พบข้อมูลลูกค้า') AS customer_name,
-			pr.item_type, pr.weight_grams, pr.description,
-			pr.pawned_date, pr.principal_amount AS initial_principal,
-			COALESCE(
-				(SELECT pc.new_principal FROM principal_changes pc
-				 WHERE pc.pawn_record_id = pr.id
-				 ORDER BY pc.date DESC, pc.id DESC LIMIT 1),
-				pr.principal_amount
-			) AS current_principal,
-			pr.monthly_interest_rate, pr.interest_amount,
-			pr.status, pr.ticket_status, pr.redeemed_at, pr.forfeited_at, pr.created_at,
-			(SELECT pp.month FROM pawn_payments pp
-			 WHERE pp.pawn_record_id = pr.id
-			 ORDER BY pp.year DESC, pp.month DESC LIMIT 1) AS last_paid_month,
-			(SELECT pp.year FROM pawn_payments pp
-			 WHERE pp.pawn_record_id = pr.id
-			 ORDER BY pp.year DESC, pp.month DESC LIMIT 1) AS last_paid_year
-		FROM pawn_records pr
-		LEFT JOIN customers c ON c.id = pr.customer_id
-		WHERE 1=1
-	`
-	args := []interface{}{}
-
-	if status != "" {
-		query += ` AND pr.status = ?`
-		args = append(args, status)
-	}
-	if search != "" {
-		like := "%" + search + "%"
-		query += ` AND (
-			CAST(pr.ticket_number AS TEXT) LIKE ?
-			OR c.firstname LIKE ?
-			OR c.lastname  LIKE ?
-			OR pr.item_type LIKE ?
-		)`
-		args = append(args, like, like, like, like)
-	}
-	query += ` ORDER BY pr.id DESC`
-
-	rows, err := db.DB.Query(query, args...)
+// GetPawnDetail retrieves a complete pawn bundle including pawn record, customer, payment history,
+// principal changes, and ticket number logs in a single call.
+func (h *PawnHandler) GetPawnDetail(id int) (models.PawnDetail, error) {
+	pawn, err := h.GetPawn(id)
 	if err != nil {
-		return nil, fmt.Errorf("list pawns: %w", err)
+		return models.PawnDetail{}, err
 	}
-	defer rows.Close()
 
-	var list []models.PawnRecord
-	for rows.Next() {
-		var item models.PawnRecord
-		err := rows.Scan(
-			&item.ID, &item.TicketNumber, &item.CustomerID,
-			&item.CustomerName, &item.ItemType, &item.WeightGrams,
-			&item.Description, &item.PawnedDate, &item.InitialPrincipal,
-			&item.CurrentPrincipal, &item.MonthlyInterestRate,
-			&item.InterestAmount, &item.Status, &item.TicketStatus,
-			&item.RedeemedAt, &item.ForfeitedAt, &item.CreatedAt,
-			&item.LastPaidMonth, &item.LastPaidYear,
+	var cust models.Customer
+	if pawn.CustomerID > 0 {
+		query := `SELECT id, COALESCE(prefix, ''), firstname, lastname, COALESCE(phone, ''), 
+                  COALESCE(id_card, ''), COALESCE(address_no, ''), COALESCE(address_line, ''), 
+                  COALESCE(moo, ''), COALESCE(road, ''), COALESCE(tambon, ''), 
+                  COALESCE(amphoe, ''), COALESCE(province, ''), COALESCE(created_at, '') 
+                  FROM customers WHERE id = ?`
+		_ = db.DB.QueryRow(query, pawn.CustomerID).Scan(
+			&cust.ID, &cust.Prefix, &cust.FirstName, &cust.LastName, &cust.Phone, &cust.IDCard,
+			&cust.AddressNo, &cust.AddressLine, &cust.Moo, &cust.Road, &cust.Tambon, &cust.Amphoe,
+			&cust.Province, &cust.CreatedAt,
 		)
-		if err != nil {
-			return nil, fmt.Errorf("scan pawn list: %w", err)
-		}
-		list = append(list, item)
 	}
-	return list, nil
+
+	payments, err := h.GetPawnPayments(id)
+	if err != nil {
+		payments = []models.PawnPayment{}
+	}
+
+	changes, err := h.GetPrincipalChanges(id)
+	if err != nil {
+		changes = []models.PrincipalChange{}
+	}
+
+	logs, err := h.GetTicketNumberLogs(id)
+	if err != nil {
+		logs = []models.TicketNumberLog{}
+	}
+
+	return models.PawnDetail{
+		Pawn:             pawn,
+		Customer:         cust,
+		Payments:         payments,
+		PrincipalChanges: changes,
+		TicketLogs:       logs,
+	}, nil
 }
+
+// DeletePawn removes a pawn record and cascades deletions for its logs, changes, and payments.
+func (h *PawnHandler) DeletePawn(id int) error {
+	tx, err := db.DB.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	// 1. Delete ticket number logs
+	if _, err := tx.Exec(`DELETE FROM ticket_number_logs WHERE pawn_record_id = ?`, id); err != nil {
+		return fmt.Errorf("delete ticket number logs: %w", err)
+	}
+
+	// 2. Delete principal changes
+	if _, err := tx.Exec(`DELETE FROM principal_changes WHERE pawn_record_id = ?`, id); err != nil {
+		return fmt.Errorf("delete principal changes: %w", err)
+	}
+
+	// 3. Delete payments
+	if _, err := tx.Exec(`DELETE FROM pawn_payments WHERE pawn_record_id = ?`, id); err != nil {
+		return fmt.Errorf("delete pawn payments: %w", err)
+	}
+
+	// 4. Delete pawn record
+	res, err := tx.Exec(`DELETE FROM pawn_records WHERE id = ?`, id)
+	if err != nil {
+		return fmt.Errorf("delete pawn record: %w", err)
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("pawn record %d not found", id)
+	}
+
+	return tx.Commit()
+}
+
+
 
 // AddPrincipalChange logs a reduction or increase and updates the pawn's
 // stored interest_amount to reflect the new principal.
@@ -432,7 +490,7 @@ func (h *PawnHandler) AddPrincipalChange(input models.PrincipalChangeInput) erro
 		ieType := "income"
 		category := "ลดต้นจำนำ"
 		desc := fmt.Sprintf("ลดต้นจำนำ ตั๋ว %04d (%s)", ticketNumber, customerName)
-		
+
 		if input.ChangeType == "increase" {
 			ieType = "expense"
 			category = "เพิ่มต้นจำนำ"
@@ -441,7 +499,7 @@ func (h *PawnHandler) AddPrincipalChange(input models.PrincipalChangeInput) erro
 			category = "ไถ่ถอน"
 			desc = fmt.Sprintf("ไถ่ถอน ตั๋ว %04d (%s)", ticketNumber, customerName)
 		}
-		
+
 		isBankInt := 0
 		if input.IsBankTransfer {
 			isBankInt = 1
@@ -485,11 +543,6 @@ func (h *PawnHandler) GetPrincipalChanges(pawnRecordID int) ([]models.PrincipalC
 	return list, nil
 }
 
-// UpdatePawnDescription updates only the description note of a pawn record
-func (h *PawnHandler) UpdatePawnDescription(id int, description string) error {
-	_, err := db.DB.Exec(`UPDATE pawn_records SET description = ? WHERE id = ?`, description, id)
-	return err
-}
 
 // UpdatePawnInterest updates the monthly interest rate and interest amount for a pawn record.
 func (h *PawnHandler) UpdatePawnInterest(id int, rate float64, amount float64) error {
@@ -514,60 +567,6 @@ func (h *PawnHandler) CheckTicketNumberExists(ticketNumber int) (bool, error) {
 	return count > 0, nil
 }
 
-// UpdateTicketNumber changes a pawn's ticket number and logs the change.
-func (h *PawnHandler) UpdateTicketNumber(pawnRecordID int, newTicketNumber int) error {
-	tx, err := db.DB.Begin()
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback()
-
-	// Validate if ticket number is already taken by an active pawn
-	var count int
-	err = tx.QueryRow(`
-		SELECT COUNT(*) FROM pawn_records 
-		WHERE ticket_number = ? AND status = 'active' AND id != ?
-	`, newTicketNumber, pawnRecordID).Scan(&count)
-	if err != nil {
-		return fmt.Errorf("check active ticket number: %w", err)
-	}
-	if count > 0 {
-		return fmt.Errorf("ไม่สามารถใช้เลขตั๋ว %d ได้เนื่องจากมีรายการที่ยังไม่ไถ่ถอนใช้เลขนี้อยู่", newTicketNumber)
-	}
-
-	// Fetch old ticket number
-	var oldTicketNumber int
-	err = tx.QueryRow(`SELECT ticket_number FROM pawn_records WHERE id = ?`, pawnRecordID).Scan(&oldTicketNumber)
-	if err != nil {
-		return fmt.Errorf("get old ticket number: %w", err)
-	}
-
-	// Update the ticket number
-	_, err = tx.Exec(`UPDATE pawn_records SET ticket_number = ? WHERE id = ?`, newTicketNumber, pawnRecordID)
-	if err != nil {
-		return fmt.Errorf("update ticket number: %w", err)
-	}
-
-	// Log the change
-	_, err = tx.Exec(`
-		INSERT INTO ticket_number_logs (pawn_record_id, old_ticket_number, new_ticket_number)
-		VALUES (?, ?, ?)
-	`, pawnRecordID, oldTicketNumber, newTicketNumber)
-	if err != nil {
-		return fmt.Errorf("insert ticket number log: %w", err)
-	}
-
-	// Optionally update the global last_ticket_number if the new one is greater
-	var raw string
-	err = tx.QueryRow(`SELECT value FROM settings WHERE key = 'last_ticket_number'`).Scan(&raw)
-	if err == nil {
-		lastTicket, _ := strconv.Atoi(raw)
-		if newTicketNumber > lastTicket {
-			_, _ = tx.Exec(`UPDATE settings SET value = ? WHERE key = 'last_ticket_number'`, strconv.Itoa(newTicketNumber))
-		}
-	}
-	return tx.Commit()
-}
 
 // UpdatePawnInfo updates the core pawn information including ticket number, date, type, weight, and description.
 func (h *PawnHandler) UpdatePawnInfo(id int, ticketNumber int, pawnedDate string, itemType string, weightGrams float64, description string) error {
@@ -654,4 +653,3 @@ func (h *PawnHandler) GetTicketNumberLogs(pawnRecordID int) ([]models.TicketNumb
 	}
 	return logs, nil
 }
-

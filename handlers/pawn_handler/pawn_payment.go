@@ -274,8 +274,3 @@ func (h *PawnHandler) ForfeitPawn(id int) error {
 	return tx.Commit()
 }
 
-// UpdateTicketStatus marks a pawn ticket as lost or damaged.
-func (h *PawnHandler) UpdateTicketStatus(id int, ticketStatus string) error {
-	_, err := db.DB.Exec(`UPDATE pawn_records SET ticket_status = ? WHERE id = ?`, ticketStatus, id)
-	return err
-}

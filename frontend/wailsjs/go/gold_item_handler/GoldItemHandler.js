@@ -58,10 +58,6 @@ export function RecordStockLog(arg1) {
   return window['go']['gold_item_handler']['GoldItemHandler']['RecordStockLog'](arg1);
 }
 
-export function SetGoldItemStatus(arg1, arg2) {
-  return window['go']['gold_item_handler']['GoldItemHandler']['SetGoldItemStatus'](arg1, arg2);
-}
-
 export function Startup(arg1) {
   return window['go']['gold_item_handler']['GoldItemHandler']['Startup'](arg1);
 }

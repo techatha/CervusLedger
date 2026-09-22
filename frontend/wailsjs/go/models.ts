@@ -109,6 +109,108 @@ export namespace models {
 		    return a;
 		}
 	}
+	export class PawnRecord {
+	    id: number;
+	    ticket_number: number;
+	    customer_id: number;
+	    customer_name?: string;
+	    item_type: string;
+	    weight_grams: number;
+	    description: string;
+	    pawned_date: string;
+	    initial_principal: number;
+	    current_principal: number;
+	    monthly_interest_rate: number;
+	    interest_amount: number;
+	    status: string;
+	    ticket_status: string;
+	    redeemed_at?: string;
+	    forfeited_at?: string;
+	    created_at: string;
+	    last_paid_month?: number;
+	    last_paid_year?: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PawnRecord(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.id = source["id"];
+	        this.ticket_number = source["ticket_number"];
+	        this.customer_id = source["customer_id"];
+	        this.customer_name = source["customer_name"];
+	        this.item_type = source["item_type"];
+	        this.weight_grams = source["weight_grams"];
+	        this.description = source["description"];
+	        this.pawned_date = source["pawned_date"];
+	        this.initial_principal = source["initial_principal"];
+	        this.current_principal = source["current_principal"];
+	        this.monthly_interest_rate = source["monthly_interest_rate"];
+	        this.interest_amount = source["interest_amount"];
+	        this.status = source["status"];
+	        this.ticket_status = source["ticket_status"];
+	        this.redeemed_at = source["redeemed_at"];
+	        this.forfeited_at = source["forfeited_at"];
+	        this.created_at = source["created_at"];
+	        this.last_paid_month = source["last_paid_month"];
+	        this.last_paid_year = source["last_paid_year"];
+	    }
+	}
+	export class PawnCounts {
+	    active: number;
+	    forfeited: number;
+	    redeemed: number;
+	    total: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PawnCounts(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.active = source["active"];
+	        this.forfeited = source["forfeited"];
+	        this.redeemed = source["redeemed"];
+	        this.total = source["total"];
+	    }
+	}
+	export class CategorizedPawns {
+	    counts: PawnCounts;
+	    active: PawnRecord[];
+	    forfeited: PawnRecord[];
+	    redeemed: PawnRecord[];
+	
+	    static createFrom(source: any = {}) {
+	        return new CategorizedPawns(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.counts = this.convertValues(source["counts"], PawnCounts);
+	        this.active = this.convertValues(source["active"], PawnRecord);
+	        this.forfeited = this.convertValues(source["forfeited"], PawnRecord);
+	        this.redeemed = this.convertValues(source["redeemed"], PawnRecord);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
 	export class Customer {
 	    id: number;
 	    prefix: string;
@@ -219,54 +321,6 @@ export namespace models {
 	        this.created_at = source["created_at"];
 	        this.transaction_id = source["transaction_id"];
 	        this.status = source["status"];
-	    }
-	}
-	export class PawnRecord {
-	    id: number;
-	    ticket_number: number;
-	    customer_id: number;
-	    customer_name?: string;
-	    item_type: string;
-	    weight_grams: number;
-	    description: string;
-	    pawned_date: string;
-	    initial_principal: number;
-	    current_principal: number;
-	    monthly_interest_rate: number;
-	    interest_amount: number;
-	    status: string;
-	    ticket_status: string;
-	    redeemed_at?: string;
-	    forfeited_at?: string;
-	    created_at: string;
-	    last_paid_month?: number;
-	    last_paid_year?: number;
-	
-	    static createFrom(source: any = {}) {
-	        return new PawnRecord(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.ticket_number = source["ticket_number"];
-	        this.customer_id = source["customer_id"];
-	        this.customer_name = source["customer_name"];
-	        this.item_type = source["item_type"];
-	        this.weight_grams = source["weight_grams"];
-	        this.description = source["description"];
-	        this.pawned_date = source["pawned_date"];
-	        this.initial_principal = source["initial_principal"];
-	        this.current_principal = source["current_principal"];
-	        this.monthly_interest_rate = source["monthly_interest_rate"];
-	        this.interest_amount = source["interest_amount"];
-	        this.status = source["status"];
-	        this.ticket_status = source["ticket_status"];
-	        this.redeemed_at = source["redeemed_at"];
-	        this.forfeited_at = source["forfeited_at"];
-	        this.created_at = source["created_at"];
-	        this.last_paid_month = source["last_paid_month"];
-	        this.last_paid_year = source["last_paid_year"];
 	    }
 	}
 	export class GoldPrice {
@@ -564,30 +618,25 @@ export namespace models {
 	        this.category = source["category"];
 	    }
 	}
-	export class PawnInput {
-	    customer_id: number;
-	    item_type: string;
-	    weight_grams: number;
-	    description: string;
-	    pawned_date: string;
-	    initial_principal: number;
-	    monthly_interest_rate: number;
-	    interest_amount: number;
+	
+	export class TicketNumberLog {
+	    id: number;
+	    pawn_record_id: number;
+	    old_ticket_number: number;
+	    new_ticket_number: number;
+	    changed_at: string;
 	
 	    static createFrom(source: any = {}) {
-	        return new PawnInput(source);
+	        return new TicketNumberLog(source);
 	    }
 	
 	    constructor(source: any = {}) {
 	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.customer_id = source["customer_id"];
-	        this.item_type = source["item_type"];
-	        this.weight_grams = source["weight_grams"];
-	        this.description = source["description"];
-	        this.pawned_date = source["pawned_date"];
-	        this.initial_principal = source["initial_principal"];
-	        this.monthly_interest_rate = source["monthly_interest_rate"];
-	        this.interest_amount = source["interest_amount"];
+	        this.id = source["id"];
+	        this.pawn_record_id = source["pawn_record_id"];
+	        this.old_ticket_number = source["old_ticket_number"];
+	        this.new_ticket_number = source["new_ticket_number"];
+	        this.changed_at = source["changed_at"];
 	    }
 	}
 	export class PawnPayment {
@@ -614,6 +663,71 @@ export namespace models {
 	        this.transaction_id = source["transaction_id"];
 	    }
 	}
+	export class PawnDetail {
+	    pawn: PawnRecord;
+	    customer: Customer;
+	    payments: PawnPayment[];
+	    principal_changes: PrincipalChange[];
+	    ticket_logs: TicketNumberLog[];
+	
+	    static createFrom(source: any = {}) {
+	        return new PawnDetail(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.pawn = this.convertValues(source["pawn"], PawnRecord);
+	        this.customer = this.convertValues(source["customer"], Customer);
+	        this.payments = this.convertValues(source["payments"], PawnPayment);
+	        this.principal_changes = this.convertValues(source["principal_changes"], PrincipalChange);
+	        this.ticket_logs = this.convertValues(source["ticket_logs"], TicketNumberLog);
+	    }
+	
+		convertValues(a: any, classs: any, asMap: boolean = false): any {
+		    if (!a) {
+		        return a;
+		    }
+		    if (a.slice && a.map) {
+		        return (a as any[]).map(elem => this.convertValues(elem, classs));
+		    } else if ("object" === typeof a) {
+		        if (asMap) {
+		            for (const key of Object.keys(a)) {
+		                a[key] = new classs(a[key]);
+		            }
+		            return a;
+		        }
+		        return new classs(a);
+		    }
+		    return a;
+		}
+	}
+	export class PawnInput {
+	    customer_id: number;
+	    item_type: string;
+	    weight_grams: number;
+	    description: string;
+	    pawned_date: string;
+	    initial_principal: number;
+	    monthly_interest_rate: number;
+	    interest_amount: number;
+	
+	    static createFrom(source: any = {}) {
+	        return new PawnInput(source);
+	    }
+	
+	    constructor(source: any = {}) {
+	        if ('string' === typeof source) source = JSON.parse(source);
+	        this.customer_id = source["customer_id"];
+	        this.item_type = source["item_type"];
+	        this.weight_grams = source["weight_grams"];
+	        this.description = source["description"];
+	        this.pawned_date = source["pawned_date"];
+	        this.initial_principal = source["initial_principal"];
+	        this.monthly_interest_rate = source["monthly_interest_rate"];
+	        this.interest_amount = source["interest_amount"];
+	    }
+	}
+	
 	
 	export class PawnPaymentInput {
 	    pawn_record_id: number;
@@ -799,26 +913,6 @@ export namespace models {
 	        this.item_subtype = source["item_subtype"];
 	        this.is_inventory = source["is_inventory"];
 	        this.is_bank_transfer = source["is_bank_transfer"];
-	    }
-	}
-	export class TicketNumberLog {
-	    id: number;
-	    pawn_record_id: number;
-	    old_ticket_number: number;
-	    new_ticket_number: number;
-	    changed_at: string;
-	
-	    static createFrom(source: any = {}) {
-	        return new TicketNumberLog(source);
-	    }
-	
-	    constructor(source: any = {}) {
-	        if ('string' === typeof source) source = JSON.parse(source);
-	        this.id = source["id"];
-	        this.pawn_record_id = source["pawn_record_id"];
-	        this.old_ticket_number = source["old_ticket_number"];
-	        this.new_ticket_number = source["new_ticket_number"];
-	        this.changed_at = source["changed_at"];
 	    }
 	}
 
