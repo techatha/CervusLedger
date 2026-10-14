@@ -2,6 +2,12 @@ import { useState } from 'react'
 import { toBE } from '@/utils/thai'
 
 export default function CustomerInfoCard({ customer }) {
+  const trimmedId = (customer?.id_card || '').trim()
+  const cleanDigits = trimmedId.replace(/\D/g, '')
+  const hasLetters = /[a-zA-Z]/.test(trimmedId)
+  const isThaiId = cleanDigits.length === 13 && !hasLetters
+  const idLabel = trimmedId && !isThaiId ? 'เลข Passport/บัตรต่างด้าว' : 'เลขบัตรประชาชน'
+
   return (
     <div className="card cp-info-card" style={{ flex: 1 }}>
       <div className="card-header">
@@ -12,7 +18,7 @@ export default function CustomerInfoCard({ customer }) {
         <InfoRow label="ชื่อ-นามสกุล" value={[customer.prefix, customer.firstname, customer.lastname].join(' ')} />
         <InfoRow label="เบอร์โทร" value={customer.phone} mono />
         <InfoRow
-          label="เลขบัตรประชาชน"
+          label={idLabel}
           value={customer.id_card || null}
           render={v => <MaskedIdCard idCard={v} />}
         />

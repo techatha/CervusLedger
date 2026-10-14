@@ -39,6 +39,8 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
   const [cardReading,  setCardReading]  = useState(false)
   const [cardSuccess,  setCardSuccess]  = useState(false)
 
+  const [idFocused,    setIdFocused]    = useState(false)
+
   const formRef = useRef(form)
   formRef.current = form
 
@@ -105,11 +107,16 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
     }
   }
 
+  const trimmedId = (form.id_card || '').trim()
+  const cleanDigits = trimmedId.replace(/\D/g, '')
+  const hasLetters = /[a-zA-Z]/.test(trimmedId)
+  const isThaiId = cleanDigits.length === 13 && !hasLetters
+
   const validate = () => {
     if (!form.firstname.trim()) return 'กรุณากรอกชื่อ'
     if (!form.lastname.trim())  return 'กรุณากรอกนามสกุล'
-    if (form.id_card && !/^\d{13}$/.test(form.id_card.replace(/\D/g, '')))
-      return 'เลขบัตรประชาชนต้องมี 13 หลัก'
+    if (trimmedId && trimmedId.length < 4)
+      return 'เลขบัตรประชาชนหรือพาสปอร์ตต้องมีอย่างน้อย 4 หลัก'
     return null
   }
 
@@ -119,9 +126,14 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
     setSaving(true)
     setError(null)
     try {
+      let finalId = null
+      if (trimmedId) {
+        finalId = isThaiId ? cleanDigits : trimmedId.toUpperCase()
+      }
+
       const payload = {
         ...form,
-        id_card: form.id_card.replace(/\D/g, '') || null,
+        id_card: finalId,
       }
       if (isEdit) {
         await UpdateCustomer(payload)
@@ -244,15 +256,52 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">เลขบัตรประชาชน</label>
+                  <label className="form-label">เลขบัตรประชาชน / Passport</label>
                   <input
                     name="id_card"
                     className="input"
                     value={form.id_card}
                     onChange={handleInput}
-                    placeholder="1 xxxx xxxxx xx x"
-                    maxLength={17}
+                    onFocus={() => setIdFocused(true)}
+                    onBlur={() => setIdFocused(false)}
+                    placeholder="13 หลัก หรือ เลขพาสปอร์ต"
+                    maxLength={25}
                   />
+                  {!idFocused && trimmedId.length > 0 && (
+                    <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {isThaiId ? (
+                        <div>
+                          <span
+                            className="badge badge-green"
+                            style={{ fontSize: '11.5px', padding: '3px 8px', fontWeight: 500 }}
+                          >
+                            ✓ บัตรประชาชนไทย (13 หลัก)
+                          </span>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                          <div>
+                            <span
+                              className="badge badge-amber"
+                              style={{ fontSize: '11.5px', padding: '2px 8px', fontWeight: 500 }}
+                            >
+                              ไม่ใช่บัตรประชาชนไทย (Passport / ต่างด้าว)
+                            </span>
+                          </div>
+                          <span
+                            style={{
+                              fontSize: '11.5px',
+                              color: 'var(--red)',
+                              fontWeight: 500,
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            * โปรดตรวจสอบความถูกต้องของหมายเลขพาสปอร์ต / บัตรต่างด้าว  *
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
