@@ -76,13 +76,13 @@ const GoldPriceDashboard = forwardRef(({ onPriceLoaded }, ref) => {
   }))
 
   useEffect(() => {
-    loadPrice()
+    void loadPrice()
   }, [loadPrice])
 
   // Listen for real-time gold price updates from the backend scraper
   useEffect(() => {
     const unsubscribe = EventsOn("gold-price:updated", () => {
-      loadPrice()
+      void loadPrice()
     })
     return () => {
       if (typeof unsubscribe === 'function') {

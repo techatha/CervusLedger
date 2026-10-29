@@ -89,7 +89,7 @@ export default function PurchaseDetailModal({ item, onClose, onUpdate }) {
   // ── Navigation ─────────────────────────────────────────────────────────────
   const handleCustomerClick = (e) => {
     e.preventDefault()
-    if (item.customer_id > 0) { onClose(); navigate(`/customers/${item.customer_id}`) }
+    if (item.customer_id > 0) { onClose(); void navigate(`/customers/${item.customer_id}`) }
   }
 
   // ── Weight helpers ─────────────────────────────────────────────────────────
@@ -106,8 +106,8 @@ export default function PurchaseDetailModal({ item, onClose, onUpdate }) {
 
   return (
     <>
-      <div className="modal-backdrop" onClick={onClose}>
-        <div className="modal pdm-modal" onClick={e => e.stopPropagation()}>
+      <div className="modal-backdrop" role="dialog" aria-modal="true" tabIndex={-1} onClick={(e) => { if (e.target === e.currentTarget) onClose() }} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
+        <div className="modal pdm-modal">
 
           <div className="modal-header">
             <div className="modal-title">รายละเอียดการรับซื้อทอง</div>
@@ -242,7 +242,7 @@ export default function PurchaseDetailModal({ item, onClose, onUpdate }) {
               <div className="pdm-notes-header">
                 <span className="pdm-notes-label">หมายเหตุ</span>
                 {!isEditing && (
-                  <button className="btn btn-ghost btn-xs" onClick={() => { setEditedNotes(item.notes || ''); setIsEditing(true) }}>
+                  <button className="btn btn-ghost btn-xs" aria-label="แก้ไขหมายเหตุ" onClick={() => { setEditedNotes(item.notes || ''); setIsEditing(true) }}>
                     <FontAwesomeIcon icon={faPenToSquare} /> แก้ไข
                   </button>
                 )}
@@ -255,7 +255,7 @@ export default function PurchaseDetailModal({ item, onClose, onUpdate }) {
                     value={editedNotes}
                     onChange={e => setEditedNotes(e.target.value)}
                     disabled={saving}
-                    autoFocus
+            
                     placeholder="พิมพ์หมายเหตุ..."
                   />
                   <div className="pdm-notes-actions">
@@ -269,10 +269,10 @@ export default function PurchaseDetailModal({ item, onClose, onUpdate }) {
                   </div>
                 </div>
               ) : (
-                <div className="pdm-notes-body" onClick={() => { setEditedNotes(item.notes || ''); setIsEditing(true) }}>
+                <div className="pdm-notes-body">
                   {item.notes
                     ? <span style={{ whiteSpace: 'pre-wrap' }}>{item.notes}</span>
-                    : <span className="pdm-notes-empty">ไม่มีหมายเหตุ — คลิกเพื่อเพิ่ม</span>
+                    : <span className="pdm-notes-empty">ไม่มีหมายเหตุ</span>
                   }
                 </div>
               )}
@@ -291,8 +291,8 @@ export default function PurchaseDetailModal({ item, onClose, onUpdate }) {
 
       {/* ── Inventory confirm dialog ───────────────────────────────────────── */}
       {showInventoryConfirm && (
-        <div className="modal-backdrop pdm-confirm-backdrop" onClick={handleInventoryConfirmCancel}>
-          <div className="modal pdm-confirm-modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-backdrop pdm-confirm-backdrop" role="dialog" aria-modal="true" tabIndex={-1} onClick={(e) => { if (e.target === e.currentTarget) handleInventoryConfirmCancel()}} onKeyDown={(e) => { if (e.key === 'Escape') handleInventoryConfirmCancel()}}>
+          <div className="modal pdm-confirm-modal" role="dialog" aria-modal="true">
 
             <div className="pdm-confirm-icon-wrap">
               <FontAwesomeIcon icon={faTriangleExclamation} className="pdm-confirm-icon" />

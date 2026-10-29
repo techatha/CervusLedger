@@ -60,7 +60,7 @@ export default function GoldStockList() {
   }, [])
 
   // ── Mount ───────────────────────────────────────────────────────────────────
-  useEffect(() => { loadData() }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { void loadData() }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDelete = async () => {
     if (!confirmDelete) return
@@ -306,7 +306,7 @@ export default function GoldStockList() {
           onClose={() => setWizardOpen(null)}
           onSaved={() => {
             setWizardOpen(null)
-            loadData()
+            void loadData()
           }}
         />
       )}
@@ -325,8 +325,8 @@ export default function GoldStockList() {
 
       {/* ── Confirm Delete ───────────────────────────────────────── */}
       {confirmDelete && (
-        <div className="modal-backdrop" onClick={() => setConfirmDelete(null)}>
-          <div className="modal" style={{ width: 400 }} onClick={e => e.stopPropagation()}>
+        <div className="modal-backdrop" role="dialog" aria-modal="true" tabIndex={-1} onClick={(e) => { if (e.target === e.currentTarget) setConfirmDelete(null) }} onKeyDown={(e) => { if (e.key === 'Escape') setConfirmDelete(null) }}>
+          <div className="modal" style={{ width: 400 }}>
             <div className="modal-header">
               <div className="modal-title">ยืนยันการลบ</div>
               <button className="modal-close" onClick={() => setConfirmDelete(null)}>×</button>

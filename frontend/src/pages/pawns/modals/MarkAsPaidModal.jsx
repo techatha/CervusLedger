@@ -28,8 +28,8 @@ export default function MarkAsPaidModal({ pawn, items, onConfirm, onClose }) {
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" style={{ width: 440 }} onClick={e => e.stopPropagation()}>
+    <div className="modal-backdrop" role="dialog" aria-modal={true} aria-labelledby="modal-title" tabIndex={-1} onClick={(e) => { if (e.target === e.currentTarget) onClose() }} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
+      <div className="modal" style={{ width: 440 }}>
         <div className="modal-header">
           <div className="modal-title">ยืนยันทำรายการว่าชำระแล้ว</div>
           <button className="modal-close" onClick={onClose} disabled={saving}>×</button>

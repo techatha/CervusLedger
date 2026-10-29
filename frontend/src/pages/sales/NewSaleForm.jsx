@@ -69,7 +69,7 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
       }
 
       const priceID = todayPrice?.id || 0
-      const finalWeightBaht = parseFloat(formData.weight_grams || 0) * 656 / 10000
+      const finalWeightBaht = Number.parseFloat(formData.weight_grams || 0) * 656 / 10000
       const displayNotes = formData.notes
         ? `${formData.notes} [ชั่งจริง: ${formData.weight_grams} ก. (ความบริสุทธิ์: ${formData.purity}%)]`
         : `ชั่งจริง: ${formData.weight_grams} ก. (ความบริสุทธิ์: ${formData.purity}%)`
@@ -81,8 +81,8 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
         gold_item_id: formData.gold_item_id,
         weight_baht: finalWeightBaht,
         gold_price_id: priceID,
-        price_per_baht: parseFloat(String(formData.price_per_baht).replace(/,/g, '')),
-        total_amount: parseFloat(String(formData.total_amount).replace(/,/g, '') || 0),
+        price_per_baht: Number.parseFloat(String(formData.price_per_baht).replace(/,/g, '')),
+        total_amount: Number.parseFloat(String(formData.total_amount).replace(/,/g, '') || 0),
         notes: displayNotes,
         date: formData.date,
         item_type: '', purity: '', description: '',
@@ -140,11 +140,11 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
         type: 'buy',
         customer_id: formData.customer_id,
         gold_item_id: formData.gold_item_id || 0,
-        weight_baht: parseFloat(formData.weight_baht || 0),
-        weight_grams: parseFloat(formData.weight_grams || 0),
+        weight_baht: Number.parseFloat(formData.weight_baht || 0),
+        weight_grams: Number.parseFloat(formData.weight_grams || 0),
         gold_price_id: priceID,
-        price_per_baht: parseFloat(String(formData.price_per_baht).replace(/,/g, '') || 0),
-        total_amount: parseFloat(String(formData.total_amount).replace(/,/g, '') || 0),
+        price_per_baht: Number.parseFloat(String(formData.price_per_baht).replace(/,/g, '') || 0),
+        total_amount: Number.parseFloat(String(formData.total_amount).replace(/,/g, '') || 0),
         notes: formData.notes,
         date: formData.date,
         item_type: formData.item_type,
@@ -178,7 +178,7 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
   }
 
   // ─── Pinned footer total ───────────────────────────────────────────
-  const parseNum = (v) => parseFloat(String(v ?? '').replace(/,/g, '')) || 0
+  const parseNum = (v) => Number.parseFloat(String(v ?? '').replace(/,/g, '')) || 0
   const exchangeVal = formData.exchange_data?.is_exchange ? parseNum(formData.exchange_data.total_amount) : 0
 
   const footerTotal = tab === 'sell'
@@ -213,8 +213,8 @@ export default function NewSaleForm({ defaultType, todayPrice, onClose, onAdd })
     && formData.stock_quantity <= 0
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal nsf-modal" onClick={e => e.stopPropagation()}>
+    <div className="modal-backdrop" role="dialog" aria-modal="true" tabIndex={-1} onClick={() => {if (e.target === e.currentTarget) onClose()}} onKeyDown={(e) => { if(e.key === 'Escape') onClose()}}>
+      <div className="modal nsf-modal">
         <div className="nsf-tab-header" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)' }}>
           <button className={`nsf-tab ${tab === 'sell' ? 'nsf-tab-active nsf-tab-sell' : ''}`} onClick={() => handleTabChange('sell')}>
             <FontAwesomeIcon icon={faArrowUp} /> ขายทอง

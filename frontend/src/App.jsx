@@ -42,7 +42,7 @@ function AppContent() {
 
   useEffect(() => {
     // 1. Sync device webhook on application start
-    syncDevice();
+    void syncDevice();
 
     // Seed the initial gold price state from database on startup
     GetPriceHistory(1).then((history) => {

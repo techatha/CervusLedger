@@ -30,10 +30,10 @@ export default function PawnTicket({ pawn, customer, shop, onClose }) {
   return (
     <>
       {/* ── Screen modal ── */}
-      <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal-backdrop" role="dialog" aria-modal="true" tabIndex={-1} onClick={(e) => {if (e.target.className === "modal-backdrop") onClose();}} onKeyDown={(e) => { if (e.key === "Escape") onClose();}}>
         <div
           className="modal receipt-preview-modal"
-          onClick={e => e.stopPropagation()}
+          
         >
           <div className="modal-header">
             <div className="modal-title">ตัวอย่างตั๋วจำนำ</div>

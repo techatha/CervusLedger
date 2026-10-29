@@ -27,7 +27,7 @@ export default function PrincipalChangeModal({ pawn, onSaved, onClose }) {
 
   useEffect(() => {
     if (!settings || !form.amount) { setPreview({ newPrincipal: 0, newRate: 0, newAmount: 0 }); return }
-    const amt = parseFloat(form.amount)
+    const amt = Number.parseFloat(form.amount)
     if (!amt || amt <= 0) return
     const current = pawn.current_principal ?? pawn.initial_principal
     const np = form.change_type === 'reduction' ? current - amt : current + amt
@@ -40,7 +40,7 @@ export default function PrincipalChangeModal({ pawn, onSaved, onClose }) {
   const navigate = useNavigate()
 
   const handleSave = () => {
-    const amt = parseFloat(form.amount)
+    const amt = Number.parseFloat(form.amount)
     if (!amt || amt <= 0) { setError('กรุณากรอกจำนวนเงิน'); return }
     if (preview.newPrincipal < 0) { setError('ต้นเงินติดลบ'); return }
     
@@ -68,15 +68,15 @@ export default function PrincipalChangeModal({ pawn, onSaved, onClose }) {
     }
 
     onClose()
-    navigate('/sales', { state: { addItems: [combinedItem] } })
+    void navigate('/sales', { state: { addItems: [combinedItem] } })
   }
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
   const current = pawn.current_principal ?? pawn.initial_principal
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal pm-change-modal" onClick={e => e.stopPropagation()}>
+    <div className="modal-backdrop" role="dialog" aria-modal="true" tabIndex={ -1 } onClick={(e) => { if (e.target === e.currentTarget) onClose() } } onKeyDown={(e) => { if (e.key === 'Escape') onClose() } }>
+      <div className="modal pm-change-modal">
         <div className="modal-header">
           <div className="modal-title">เปลี่ยนแปลงต้นเงิน</div>
           <button className="modal-close" onClick={onClose}>×</button>
@@ -93,29 +93,29 @@ export default function PrincipalChangeModal({ pawn, onSaved, onClose }) {
 
           <div className="form-row form-row-2 pm-mt-16">
             <div className="form-group">
-              <label className="form-label">ประเภท</label>
-              <select className="input" value={form.change_type} onChange={e => set('change_type', e.target.value)}>
+              <label className="form-label" htmlFor="type-selector">ประเภท</label>
+              <select id="type-selector" className="input" value={form.change_type} onChange={e => set('change_type', e.target.value)}>
                 <option value="reduction">ลดต้น</option>
                 <option value="increase">เพิ่มต้น</option>
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label form-label-required">จำนวนเงิน (บาท)</label>
+              <label className="form-label form-label-required" htmlFor="amount-input">จำนวนเงิน (บาท)</label>
               <input
-                className="input"
+                id="amount-input" className="input"
                 type="number"
                 placeholder="0"
                 min="1"
                 value={form.amount}
                 onChange={e => set('amount', e.target.value)}
-                autoFocus
+                
               />
             </div>
           </div>
           <div className="form-row form-row-1">
             <div className="form-group">
-              <label className="form-label">หมายเหตุ</label>
-              <input className="input" placeholder="(ไม่บังคับ)" value={form.notes} onChange={e => set('notes', e.target.value)} />
+              <label className="form-label" htmlFor="notes-input">หมายเหตุ</label>
+              <input id="notes-input" className="input" placeholder="(ไม่บังคับ)" value={form.notes} onChange={e => set('notes', e.target.value)} />
             </div>
           </div>
 

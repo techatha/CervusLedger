@@ -34,11 +34,11 @@ function monthStart() {
 }
 
 // ─── Thai helpers ─────────────────────────────────────────────────────
-const THAI_DAYS = ['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัสบดี','ศุกร์','เสาร์']
-const THAI_MONTHS = ['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
-                     'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม']
-const THAI_MONTHS_SHORT = ['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.',
-                            'ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.']
+const THAI_DAYS = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์']
+const THAI_MONTHS = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
+const THAI_MONTHS_SHORT = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+  'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.']
 
 function nowBE() {
   const d = new Date()
@@ -84,7 +84,7 @@ const AVATAR_CLASSES = ['av0', 'av1', 'av2', 'av3', 'av4']
 function getCustomerInitials(name) {
   if (!name) return '?'
   const parts = name.trim().split(/\s+/)
-  const prefixes = ['นาย','นาง','นางสาว','เด็กชาย','เด็กหญิง','คุณ','ด.ช.','ด.ญ.']
+  const prefixes = ['นาย', 'นาง', 'นางสาว', 'เด็กชาย', 'เด็กหญิง', 'คุณ', 'ด.ช.', 'ด.ญ.']
   let nameParts = parts
   if (parts.length > 1 && prefixes.includes(parts[0])) nameParts = parts.slice(1)
   const f = nameParts[0]?.charAt(0) ?? '?'
@@ -98,12 +98,12 @@ function getCustomerInitials(name) {
 export default function Dashboard() {
   const navigate = useNavigate()
 
-  const [stats,        setStats]        = useState(null)
-  const [loading,      setLoading]      = useState(true)
-  const [error,        setError]        = useState(null)
-  const [monthlyData,  setMonthlyData]  = useState([])
-  const [unpaidPawns,  setUnpaidPawns]  = useState([])
-  const [goldHistory,  setGoldHistory]  = useState([])
+  const [stats, setStats] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+  const [monthlyData, setMonthlyData] = useState([])
+  const [unpaidPawns, setUnpaidPawns] = useState([])
+  const [goldHistory, setGoldHistory] = useState([])
   const [todaySummary, setTodaySummary] = useState({
     income: 0,
     expense: 0,
@@ -135,7 +135,7 @@ export default function Dashboard() {
       monthlyRaw?.forEach(tx => {
         const key = tx.date?.slice(0, 10)
         if (byDate[key]) {
-          if (tx.type === 'income')  byDate[key].income  += tx.amount
+          if (tx.type === 'income') byDate[key].income += tx.amount
           if (tx.type === 'expense') byDate[key].expense += tx.amount
         }
       })
@@ -192,7 +192,9 @@ export default function Dashboard() {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    void load()
+  }, [load])
 
   // Listen for real-time gold price updates to refresh the chart
   useEffect(() => {
@@ -298,15 +300,15 @@ export default function Dashboard() {
               </div>
               <div className="db-pawn-meter">
                 {stats.active_pawn_count > 0 ? (() => {
-                  const paidPct   = (stats.paid_this_month   / stats.active_pawn_count) * 100
+                  const paidPct = (stats.paid_this_month / stats.active_pawn_count) * 100
                   const unpaidPct = (stats.unpaid_this_month / stats.active_pawn_count) * 100
                   return <>
                     <div className="db-meter-labels" style={{ marginBottom: 6 }}>
-                      <span className="db-meter-label db-paid"   style={{ fontWeight: 600, fontSize: 12 }}>จ่ายแล้ว {paidPct.toFixed(0)}%</span>
+                      <span className="db-meter-label db-paid" style={{ fontWeight: 600, fontSize: 12 }}>จ่ายแล้ว {paidPct.toFixed(0)}%</span>
                       <span className="db-meter-label db-unpaid" style={{ fontWeight: 600, fontSize: 12 }}>ยังไม่จ่าย {unpaidPct.toFixed(0)}%</span>
                     </div>
                     <div className="db-meter-bar">
-                      <div className="db-meter-fill db-paid"   style={{ width: `${paidPct}%` }} />
+                      <div className="db-meter-fill db-paid" style={{ width: `${paidPct}%` }} />
                       <div className="db-meter-fill db-unpaid" style={{ width: `${unpaidPct}%` }} />
                     </div>
                     <div className="db-meter-labels" style={{ marginTop: 8 }}>
@@ -408,19 +410,19 @@ export default function Dashboard() {
 // CHART: Gold intraday with day stepper
 // ─────────────────────────────────────────────────────────────────────
 function GoldLineChart({ history }) {
-  const chartRef      = useRef(null)
+  const chartRef = useRef(null)
   const chartInstance = useRef(null)
 
   // Unique sorted dates, capped to last 30
   const allDates = useMemo(() => {
     const seen = new Set()
     history.forEach(g => g.date && seen.add(g.date.slice(0, 10)))
-    return [...seen].sort().slice(-30)
+    return [...seen].sort((a, b) => b.localeCompare(a)).slice(-30)
   }, [history])
 
   const [dayOffset, setDayOffset] = useState(0)   // 0 = most recent
-  const minOffset    = -(allDates.length - 1)
-  const safeOffset   = Math.max(minOffset, Math.min(0, dayOffset))
+  const minOffset = -(allDates.length - 1)
+  const safeOffset = Math.max(minOffset, Math.min(0, dayOffset))
   const selectedDate = allDates[allDates.length - 1 + safeOffset] ?? null
 
   // Rows for the selected date, time-sorted
@@ -437,15 +439,15 @@ function GoldLineChart({ history }) {
     chartInstance.current = null
     if (!chartRef.current || dayRows.length === 0) return
 
-    const labels   = dayRows.map(g => parseUpdateTime(g.update_time) ?? g.update_time)
+    const labels = dayRows.map(g => parseUpdateTime(g.update_time) ?? g.update_time)
     const sellData = dayRows.map(g => g.sell_price_per_baht)
-    const buyData  = dayRows.map(g => g.buy_price_per_baht)
+    const buyData = dayRows.map(g => g.buy_price_per_baht)
 
     const allPrices = [...sellData, ...buyData].filter(Boolean)
     const minP = Math.min(...allPrices)
     const maxP = Math.max(...allPrices)
     const diff = maxP - minP
-    const pad  = Math.max(diff * 0.1, 20) // Tight padding
+    const pad = Math.max(diff * 0.1, 20) // Tight padding
     const yMin = minP - pad
     const yMax = maxP + pad
 
@@ -562,14 +564,14 @@ function GoldLineChart({ history }) {
         {dayRows.length === 0
           ? <div className="empty-state" style={{ height: '100%' }}><div className="empty-state-text">ไม่มีข้อมูล</div></div>
           : <>
-              {/* Added dedicated wrapper for Chart.js */}
-              <div className="db-chart-canvas-wrap">
-                <canvas ref={chartRef} />
-              </div>
-              <div className="db-gold-footer">
-                {dayRows.length} รายการ · ล่าสุด {parseUpdateTime(dayRows.at(-1)?.update_time) ?? '—'} น.
-              </div>
-            </>
+            {/* Added dedicated wrapper for Chart.js */}
+            <div className="db-chart-canvas-wrap">
+              <canvas ref={chartRef} />
+            </div>
+            <div className="db-gold-footer">
+              {dayRows.length} รายการ · ล่าสุด {parseUpdateTime(dayRows.at(-1)?.update_time) ?? '—'} น.
+            </div>
+          </>
         }
       </div>
     </div>
@@ -580,9 +582,9 @@ function GoldLineChart({ history }) {
 // CHART: Monthly Income vs Expense (Bar)
 // ─────────────────────────────────────────────────────────────────────
 function MonthlyChart({ data }) {
-  const chartRef      = useRef(null)
+  const chartRef = useRef(null)
   const chartInstance = useRef(null)
-  const visible       = data.slice(-7)
+  const visible = data.slice(-7)
 
   useEffect(() => {
     chartInstance.current?.destroy()
@@ -665,10 +667,10 @@ function MonthlyChart({ data }) {
 // CHART: Today Doughnut
 // ─────────────────────────────────────────────────────────────────────
 function TodayDoughnut({ summary }) {
-  const chartRef      = useRef(null)
+  const chartRef = useRef(null)
   const chartInstance = useRef(null)
   const { income, expense, incomeCash, incomeBank, expenseCash, expenseBank } = summary
-  const net     = income - expense
+  const net = income - expense
   const hasData = income > 0 || expense > 0
 
   useEffect(() => {
@@ -683,10 +685,10 @@ function TodayDoughnut({ summary }) {
     const total = income + expense
     const visualData = hasData
       ? [incomeCash, incomeBank, expenseBank, expenseCash].map(val => {
-          if (val === 0) return 0
-          const minVal = total * 0.03
-          return val < minVal ? minVal : val
-        })
+        if (val === 0) return 0
+        const minVal = total * 0.03
+        return val < minVal ? minVal : val
+      })
       : [1, 0]
 
     const backgroundColor = hasData
@@ -799,7 +801,20 @@ function UnpaidPawnList({ pawns, onNavigate }) {
           {pawns.map((p, index) => {
             const avClass = AVATAR_CLASSES[(p.customer_id || index) % AVATAR_CLASSES.length]
             return (
-              <div key={p.id} className="db-unpaid-row" onClick={() => onNavigate(`/pawns/${p.id}`)}>
+              <div
+                key={p.id}
+                className="db-unpaid-row"
+                role="button"
+                tabIndex={0}
+                onClick={() => onNavigate(`/pawns/${p.id}`)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    onNavigate(`/pawns/${p.id}`)
+                  }
+                }}
+              >
+
                 <div className="db-unpaid-left-group">
                   <div className={`cl-avatar ${avClass}`}>{getCustomerInitials(p.customer_name)}</div>
                   <div className="db-unpaid-left">
@@ -825,10 +840,10 @@ function UnpaidPawnList({ pawns, onNavigate }) {
 }
 
 /* ─── Icons ──────────────────────────────────────────────────────────── */
-function IconRefresh()      { return <FontAwesomeIcon icon={faRotateRight} style={{ fontSize: 13 }} /> }
-function IconPawn()         { return <FontAwesomeIcon icon={faBox} style={{ fontSize: 16 }} /> }
-function IconCash()         { return <FontAwesomeIcon icon={faCoins} style={{ fontSize: 16 }} /> }
-function IconIncome()       { return <FontAwesomeIcon icon={faArrowUp} style={{ fontSize: 16 }} /> }
-function IconExpense()      { return <FontAwesomeIcon icon={faArrowDown} style={{ fontSize: 16 }} /> }
-function IconChevronLeft()  { return <FontAwesomeIcon icon={faChevronLeft} style={{ fontSize: 11 }} /> }
+function IconRefresh() { return <FontAwesomeIcon icon={faRotateRight} style={{ fontSize: 13 }} /> }
+function IconPawn() { return <FontAwesomeIcon icon={faBox} style={{ fontSize: 16 }} /> }
+function IconCash() { return <FontAwesomeIcon icon={faCoins} style={{ fontSize: 16 }} /> }
+function IconIncome() { return <FontAwesomeIcon icon={faArrowUp} style={{ fontSize: 16 }} /> }
+function IconExpense() { return <FontAwesomeIcon icon={faArrowDown} style={{ fontSize: 16 }} /> }
+function IconChevronLeft() { return <FontAwesomeIcon icon={faChevronLeft} style={{ fontSize: 11 }} /> }
 function IconChevronRight() { return <FontAwesomeIcon icon={faChevronRight} style={{ fontSize: 11 }} /> }

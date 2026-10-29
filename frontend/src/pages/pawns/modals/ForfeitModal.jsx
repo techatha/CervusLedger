@@ -2,8 +2,8 @@ import { formatTicket } from '@/utils/thai'
 
 export default function ForfeitModal({ pawn, onConfirm, onClose }) {
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" style={{ width: 420 }} onClick={e => e.stopPropagation()}>
+    <div className="modal-backdrop" role="dialog" aria-modal={true} tabIndex={-1} onClick={(e) => { if (e.target === e.currentTarget) onClose() }} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
+      <div className="modal" style={{ width: 420 }}>
         <div className="modal-header">
           <div className="modal-title">ยืนยันการขาดจำนำ</div>
           <button className="modal-close" onClick={onClose}>×</button>

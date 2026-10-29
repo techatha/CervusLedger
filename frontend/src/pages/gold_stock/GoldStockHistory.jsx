@@ -36,7 +36,7 @@ export default function GoldStockHistory({ typeName, items, onClose }) {
     const [yearInput, setYearInput] = useState(String(now.getFullYear()))
 
     // Coerce year to a valid number; fall back to current year
-    const year = parseInt(yearInput) || now.getFullYear()
+    const year = Number.parseInt(yearInput) || now.getFullYear()
     const month = selectedMonth // 1–12
 
     const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear()
@@ -49,7 +49,7 @@ export default function GoldStockHistory({ typeName, items, onClose }) {
     // Navigate prev / next month
     const goMonth = (delta) => {
         let m = selectedMonth + delta
-        let y = parseInt(yearInput) || now.getFullYear()
+        let y = Number.parseInt(yearInput) || now.getFullYear()
         if (m < 1) { m = 12; y -= 1 }
         if (m > 12) { m = 1; y += 1 }
         setSelectedMonth(m)
@@ -77,7 +77,7 @@ export default function GoldStockHistory({ typeName, items, onClose }) {
                 setLoading(false)
             }
         }
-        fetchHistory()
+        void fetchHistory()
     }, [year, month])
 
     // Sort items by subtype for consistent row order
@@ -90,8 +90,8 @@ export default function GoldStockHistory({ typeName, items, onClose }) {
     }
 
     return (
-        <div className="gsh-backdrop" onClick={onClose}>
-            <div className="gsh-panel" onClick={e => e.stopPropagation()}>
+        <div className="gsh-backdrop" role="dialog" aria-modal="true" tabIndex={-1} onClick={(e) => { if (e.target === e.currentTarget) onClose() }} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }} >
+            <div className="gsh-panel">
 
                 {/* ── Header ────────────────────────────────────────────── */}
                 <div className="gsh-header">
@@ -113,7 +113,7 @@ export default function GoldStockHistory({ typeName, items, onClose }) {
                         <select
                             className="gsh-month-select"
                             value={selectedMonth}
-                            onChange={e => setSelectedMonth(parseInt(e.target.value))}
+                            onChange={e => setSelectedMonth(Number.parseInt(e.target.value))}
                         >
                             {THAI_MONTHS.map((name, i) => (
                                 <option key={i + 1} value={i + 1}>{name}</option>
@@ -129,7 +129,7 @@ export default function GoldStockHistory({ typeName, items, onClose }) {
                             onChange={e => setYearInput(e.target.value.replace(/\D/g, ''))}
                             onBlur={e => {
                                 // Snap to valid year on blur
-                                const v = parseInt(e.target.value)
+                                const v = Number.parseInt(e.target.value)
                                 if (!v || v < 2000 || v > 2100) setYearInput(String(now.getFullYear()))
                             }}
                         />

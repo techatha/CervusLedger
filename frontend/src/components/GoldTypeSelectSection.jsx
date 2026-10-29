@@ -51,9 +51,9 @@ export default function GoldTypeSelectSection({
 
       <div className="form-row form-row-2">
         <div className="form-group">
-          <label className="form-label form-label-required">ประเภทสินค้า</label>
+          <label className="form-label form-label-required" htmlFor="gold-type-selector">ประเภทสินค้า</label>
           <select
-            className="input"
+            id="gold-type-selector" className="input"
             value={selectedMainType}
             onChange={e => handleMainTypeChange(e.target.value)}
           >
@@ -63,9 +63,9 @@ export default function GoldTypeSelectSection({
         </div>
 
         <div className="form-group">
-          <label className="form-label form-label-required">เลือกรุ่น / น้ำหนัก</label>
+          <label className="form-label form-label-required" htmlFor="gold-subtype-selector">เลือกรุ่น / น้ำหนัก</label>
           <select
-            className="input"
+            id="gold-subtype-selector" className="input"
             value={selectedSubtype}
             disabled={!selectedMainType}
             onChange={e => handleSubtypeChange(e.target.value)}
@@ -84,9 +84,9 @@ export default function GoldTypeSelectSection({
 
           <div className="form-row form-row-2" style={{ marginTop: '12px' }}>
             <div className="form-group">
-              <label className="form-label form-label-required">น้ำหนัก (กรัม)</label>
+              <label className="form-label form-label-required" htmlFor="weight-input">น้ำหนัก (กรัม)</label>
               <input
-                className="input"
+                id="weight-input" className="input"
                 type="number"
                 min="0"
                 step="0.0001"
@@ -97,9 +97,9 @@ export default function GoldTypeSelectSection({
               />
             </div>
             <div className="form-group">
-              <label className="form-label form-label-required">ความบริสุทธิ์ (%)</label>
+              <label className="form-label form-label-required" htmlFor="purity-input">ความบริสุทธิ์ (%)</label>
               <input
-                className="input"
+                id="purity-input" className="input"
                 type="number"
                 min="0"
                 max="100"

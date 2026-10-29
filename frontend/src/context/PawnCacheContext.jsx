@@ -29,7 +29,7 @@ export function PawnCacheProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    reloadAll()
+    void reloadAll()
   }, [reloadAll])
 
   return (

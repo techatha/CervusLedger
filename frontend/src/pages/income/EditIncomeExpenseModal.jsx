@@ -42,7 +42,7 @@ export default function EditIncomeExpenseModal({ entry, startEditable, onSaved, 
       await UpdateIncomeExpense(entry.id, {
         notes: form.notes,
         is_bank_transfer: form.isBankTransfer,
-        amount: parseFloat(form.amount) || 0.0,
+        amount: Number.parseFloat(form.amount) || 0.0,
         category: form.category || '',
       })
       onSaved()
@@ -54,14 +54,14 @@ export default function EditIncomeExpenseModal({ entry, startEditable, onSaved, 
   }
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !saving) handleSave()
+    if (e.key === 'Enter' && !saving) void handleSave(); else if (e.key === 'Escape') onClose()
   }
 
   const isIncome = entry.type === 'income'
 
   return (
-    <div className="modal-backdrop mem-backdrop" onClick={onClose}>
-      <div className="modal mem-modal" onClick={e => e.stopPropagation()} onKeyDown={handleKeyDown}>
+    <div className="modal-backdrop mem-backdrop" role="dialog" aria-modal="true" tabIndex={-1} onClick={(e) => { if (e.target === e.currentTarget)onClose()}} onKeyDown={handleKeyDown}>
+      <div className="modal mem-modal">
 
         <div className="modal-header">
           <div className="modal-title">
@@ -116,9 +116,9 @@ export default function EditIncomeExpenseModal({ entry, startEditable, onSaved, 
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--bg-hover)', padding: '14px', borderRadius: 'var(--radius)', border: '1.5px solid var(--border)', marginBottom: '14px' }}>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label form-label-required" style={{ fontSize: '12px', marginBottom: '4px' }}>หมวดหมู่</label>
+                <label className="form-label form-label-required" htmlFor="edit-modal-category" style={{ fontSize: '12px', marginBottom: '4px' }}>หมวดหมู่</label>
                 <input
-                  className="input"
+                  id="edit-modal-category" className="input"
                   placeholder="ระบุหมวดหมู่..."
                   value={form.category}
                   onChange={e => set('category', e.target.value)}
@@ -127,10 +127,10 @@ export default function EditIncomeExpenseModal({ entry, startEditable, onSaved, 
                 />
               </div>
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label form-label-required" style={{ fontSize: '12px', marginBottom: '4px' }}>จำนวนเงิน</label>
+                <label className="form-label form-label-required" htmlFor="edit-modal-amount" style={{ fontSize: '12px', marginBottom: '4px' }}>จำนวนเงิน</label>
                 <div className="mem-amount-wrap" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                   <input
-                    className={`input mem-amount ${isIncome ? 'mem-amount-income' : 'mem-amount-expense'}`}
+                    id="edit-modal-amount" className={`input mem-amount ${isIncome ? 'mem-amount-income' : 'mem-amount-expense'}`}
                     type="number"
                     step="any"
                     placeholder="0"
@@ -181,10 +181,10 @@ export default function EditIncomeExpenseModal({ entry, startEditable, onSaved, 
 
           {/* ── Editable notes ── */}
           <div className="form-group">
-            <label className="form-label">หมายเหตุ</label>
+            <label className="form-label" htmlFor="edit-modal-notes">หมายเหตุ</label>
             <textarea
               ref={notesRef}
-              className="input eiem-notes-textarea"
+              id="edit-modal-notes" className="input eiem-notes-textarea"
               placeholder="เพิ่มหมายเหตุ... (ไม่บังคับ)"
               value={form.notes}
               onChange={e => set('notes', e.target.value)}

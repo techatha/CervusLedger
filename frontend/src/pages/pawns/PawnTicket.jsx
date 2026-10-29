@@ -38,8 +38,8 @@ export default function PawnTicket({ pawn, customer, shop, onClose }) {
 
   return (
     <>
-      <div className="modal-backdrop" onClick={onClose}>
-        <div className="modal receipt-preview-modal" onClick={e => e.stopPropagation()}>
+      <div className="modal-backdrop" role="dialog" aria-modal="true" tabIndex={-1} onClick={(e) => { if (e.target === e.currentTarget) onClose() }} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
+        <div className="modal receipt-preview-modal">
           <div className="modal-header">
             <div className="modal-title">ตัวอย่างเอกสาร</div>
             <button className="modal-close" onClick={onClose}>×</button>

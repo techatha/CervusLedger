@@ -112,7 +112,7 @@ export default function SalesList({ cartItems, setCartItems }) {
       processedStateRef.current = location.state
       setCartItems(prev => [...prev, ...location.state.addItems])
       // Clear location state immediately so reload doesn't duplicate
-      navigate(location.pathname, { replace: true, state: {} })
+      void navigate(location.pathname, { replace: true, state: {} })
     }
   }, [location.state, navigate])
 

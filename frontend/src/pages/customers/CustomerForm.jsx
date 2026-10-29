@@ -13,33 +13,33 @@ import { useNavigate } from 'react-router-dom'
 import './CustomerForm.css'
 
 const BLANK = {
-  id:           0,
-  prefix:       'นาย',
-  firstname:    '',
-  lastname:     '',
-  phone:        '',
-  id_card:      '',
-  address_no:   '',
+  id: 0,
+  prefix: 'นาย',
+  firstname: '',
+  lastname: '',
+  phone: '',
+  id_card: '',
+  address_no: '',
   address_line: '',
-  moo:          '',
-  road:         '',
-  tambon:       '',
-  amphoe:       '',
-  province:     'เชียงใหม่',
+  moo: '',
+  road: '',
+  tambon: '',
+  amphoe: '',
+  province: 'เชียงใหม่',
 }
 
 export default function CustomerForm({ customerId, onSaved, onClose, initialCardData }) {
   const isEdit = !!customerId
   const navigate = useNavigate()
 
-  const [form,         setForm]         = useState(BLANK)
-  const [loading,      setLoading]      = useState(isEdit)
-  const [saving,       setSaving]       = useState(false)
-  const [error,        setError]        = useState(null)
-  const [cardReading,  setCardReading]  = useState(false)
-  const [cardSuccess,  setCardSuccess]  = useState(false)
+  const [form, setForm] = useState(BLANK)
+  const [loading, setLoading] = useState(isEdit)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+  const [cardReading, setCardReading] = useState(false)
+  const [cardSuccess, setCardSuccess] = useState(false)
 
-  const [idFocused,    setIdFocused]    = useState(false)
+  const [idFocused, setIdFocused] = useState(false)
 
   const formRef = useRef(form)
   formRef.current = form
@@ -64,13 +64,13 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
     const handleSmartCardInsert = (e) => {
       const card = e.detail?.card
       if (!card) return
-      
+
       const currentForm = formRef.current
-      const hasTypedData = (currentForm.firstname || '').trim() || 
-                           (currentForm.lastname || '').trim() || 
-                           (currentForm.phone || '').trim() || 
-                           (currentForm.id_card || '').trim()
-      
+      const hasTypedData = (currentForm.firstname || '').trim() ||
+        (currentForm.lastname || '').trim() ||
+        (currentForm.phone || '').trim() ||
+        (currentForm.id_card || '').trim()
+
       if (hasTypedData) {
         const confirmImport = window.confirm('พบการเสียบบัตรประชาชน ต้องการนำเข้าข้อมูลจากบัตรทับข้อมูลที่กรอกอยู่หรือไม่?')
         if (!confirmImport) return
@@ -114,7 +114,7 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
 
   const validate = () => {
     if (!form.firstname.trim()) return 'กรุณากรอกชื่อ'
-    if (!form.lastname.trim())  return 'กรุณากรอกนามสกุล'
+    if (!form.lastname.trim()) return 'กรุณากรอกนามสกุล'
     if (trimmedId && trimmedId.length < 4)
       return 'เลขบัตรประชาชนหรือพาสปอร์ตต้องมีอย่างน้อย 4 หลัก'
     return null
@@ -140,7 +140,7 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
         onSaved()
       } else {
         const newId = await CreateCustomer(payload)
-        
+
         // Dispatch select event for NewPawnForm to catch
         const matched = {
           id: newId,
@@ -152,13 +152,13 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
         }
         dispatchPawnSelect(matched)
         dispatchSaleSelect(matched)
-        
+
         onSaved(newId)
-        
+
         const isPawnFormOpen = document.querySelector('.npf-modal') !== null
         const isSaleFormOpen = document.querySelector('.nsf-modal') !== null
         if (!isPawnFormOpen && !isSaleFormOpen) {
-          navigate(`/customers/${newId}`)
+          void navigate(`/customers/${newId}`)
         }
       }
     } catch (e) {
@@ -169,10 +169,10 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop" role="dialog" aria-modal="true" tabIndex={-1} onClick={(e) => { if (e.target === e.currentTarget) onClose() }} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
       <div
         className="modal cf-modal"
-        onClick={e => e.stopPropagation()}
+
       >
         {/* Header */}
         <div className="modal-header">
@@ -208,9 +208,9 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
 
               <div className="form-row" style={{ gridTemplateColumns: '130px 1fr 1fr' }}>
                 <div className="form-group">
-                  <label className="form-label">คำนำหน้า</label>
+                  <label className="form-label" htmlFor="cf-prefix">คำนำหน้า</label>
                   <select
-                    name="prefix"
+                    name="prefix" id="cf-prefix"
                     className="input"
                     value={form.prefix}
                     onChange={handleInput}
@@ -221,20 +221,20 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label form-label-required">ชื่อ</label>
+                  <label className="form-label form-label-required" htmlFor="cf-firstname">ชื่อ</label>
                   <input
-                    name="firstname"
+                    name="firstname" id="cf-firstname"
                     className="input"
                     value={form.firstname}
                     onChange={handleInput}
                     placeholder="ชื่อจริง"
-                    autoFocus
+
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label form-label-required">นามสกุล</label>
+                  <label className="form-label form-label-required" htmlFor="cf-surname">นามสกุล</label>
                   <input
-                    name="lastname"
+                    name="lastname" id="cf-surname"
                     className="input"
                     value={form.lastname}
                     onChange={handleInput}
@@ -245,9 +245,9 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
 
               <div className="form-row form-row-2">
                 <div className="form-group">
-                  <label className="form-label">เบอร์โทรศัพท์</label>
+                  <label className="form-label" htmlFor='cf-phone'>เบอร์โทรศัพท์</label>
                   <input
-                    name="phone"
+                    name="phone" id='cf-phone'
                     className="input"
                     value={form.phone}
                     onChange={handleInput}
@@ -256,9 +256,9 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">เลขบัตรประชาชน / Passport</label>
+                  <label className="form-label" htmlFor="cf-id-input">เลขบัตรประชาชน / Passport</label>
                   <input
-                    name="id_card"
+                    name="id_card" id="cf-id-input"
                     className="input"
                     value={form.id_card}
                     onChange={handleInput}
@@ -310,9 +310,9 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
 
               <div className="form-row form-row-2">
                 <div className="form-group">
-                  <label className="form-label">บ้านเลขที่</label>
+                  <label className="form-label" htmlFor="cf-address-no">บ้านเลขที่</label>
                   <input
-                    name="address_no"
+                    name="address_no" id="cf-address-no"
                     className="input"
                     value={form.address_no}
                     onChange={handleInput}
@@ -320,9 +320,9 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">หมู่ที่</label>
+                  <label className="form-label" htmlFor="cf-moo">หมู่ที่</label>
                   <input
-                    name="moo"
+                    name="moo" id="cf-moo"
                     className="input"
                     value={form.moo}
                     onChange={handleInput}
@@ -333,9 +333,9 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
 
               <div className="form-row">
                 <div className="form-group full">
-                  <label className="form-label">ที่อยู่เพิ่มเติม (อาคาร, ซอย ฯลฯ)</label>
+                  <label className="form-label" htmlFor="cf-address-line">ที่อยู่เพิ่มเติม (อาคาร, ซอย ฯลฯ)</label>
                   <input
-                    name="address_line"
+                    name="address_line" id="cf-address-line"
                     className="input"
                     value={form.address_line}
                     onChange={handleInput}
@@ -346,9 +346,9 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
 
               <div className="form-row form-row-2">
                 <div className="form-group">
-                  <label className="form-label">ถนน</label>
+                  <label className="form-label" htmlFor="cf-road">ถนน</label>
                   <input
-                    name="road"
+                    name="road" id="cf-road"
                     className="input"
                     value={form.road}
                     onChange={handleInput}
@@ -356,9 +356,9 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">ตำบล/แขวง</label>
+                  <label className="form-label" htmlFor="cf-tambon">ตำบล/แขวง</label>
                   <input
-                    name="tambon"
+                    name="tambon" id="cf-tambon"
                     className="input"
                     value={form.tambon}
                     onChange={handleInput}
@@ -369,9 +369,9 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
 
               <div className="form-row form-row-2">
                 <div className="form-group">
-                  <label className="form-label">อำเภอ/เขต</label>
+                  <label className="form-label" htmlFor="cf-amphoe">อำเภอ/เขต</label>
                   <input
-                    name="amphoe"
+                    name="amphoe" id="cf-amphoe"
                     className="input"
                     value={form.amphoe}
                     onChange={handleInput}
@@ -379,9 +379,9 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">จังหวัด</label>
+                  <label className="form-label" htmlFor="cf-province">จังหวัด</label>
                   <select
-                    name="province"
+                    name="province" id="cf-province"
                     className="input"
                     value={form.province}
                     onChange={handleInput}
@@ -418,8 +418,8 @@ export default function CustomerForm({ customerId, onSaved, onClose, initialCard
 function IconCard() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="5" width="20" height="14" rx="2"/>
-      <line x1="2" y1="10" x2="22" y2="10"/>
+      <rect x="2" y="5" width="20" height="14" rx="2" />
+      <line x1="2" y1="10" x2="22" y2="10" />
     </svg>
   )
 }

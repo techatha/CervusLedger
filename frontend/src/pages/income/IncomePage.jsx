@@ -94,7 +94,7 @@ export default function IncomePage() {
   }, [getDateRange])
 
   useEffect(() => {
-    load(year, month)
+    void load(year, month)
     GetAllSettings()
       .then(data => {
         try {
@@ -127,7 +127,7 @@ export default function IncomePage() {
     setSelectedDate(null)
     setTypeFilter('')
     setSourceFilter('')
-    load(y, m)
+    void load(y, m)
   }
 
   const goToPrevMonth = () => {
@@ -156,7 +156,7 @@ export default function IncomePage() {
     if (newY !== year || newM !== month) {
       setYear(newY)
       setMonth(newM)
-      load(newY, newM)
+      void load(newY, newM)
     }
   }
 
@@ -168,7 +168,7 @@ export default function IncomePage() {
     try {
       await DeleteIncomeExpense(confirmDel.id)
       setConfirmDel(null)
-      reload()
+      await reload()
     } catch (e) {
       setError(String(e))
       setConfirmDel(null)
@@ -203,7 +203,7 @@ export default function IncomePage() {
       await CancelIncomeExpense(confirmDel.id)
       setConfirmDel(null)
       setCancelPreview(null)
-      reload()
+      await reload()
     } catch (e) {
       setError('ยกเลิกรายการไม่สำเร็จ: ' + e)
       setConfirmDel(null)
@@ -305,7 +305,7 @@ export default function IncomePage() {
       {showForm && (
         <ManualEntryModal
           defaultDate={selectedDate}
-          onSaved={() => { setShowForm(false); reload() }}
+          onSaved={() => { setShowForm(false); void reload() }}
           onClose={() => setShowForm(false)}
         />
       )}
@@ -315,7 +315,7 @@ export default function IncomePage() {
         <EditIncomeExpenseModal
           entry={editEntry}
           startEditable={startEditable}
-          onSaved={() => { setEditEntry(null); reload() }}
+          onSaved={() => { setEditEntry(null); void reload() }}
           onClose={() => setEditEntry(null)}
           onRequestCancel={handleRequestCancel}
         />
@@ -323,8 +323,25 @@ export default function IncomePage() {
 
       {/* Confirm delete */}
       {confirmDel && (
-        <div className="modal-backdrop" onClick={() => { setConfirmDel(null); setCancelPreview(null) }}>
-          <div className="modal" style={{ width: 460 }} onClick={e => e.stopPropagation()}>
+        <div
+          className="modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          tabIndex={-1}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setConfirmDel(null)
+              setCancelPreview(null)
+            }
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setConfirmDel(null)
+              setCancelPreview(null)
+            }
+          }}
+        >
+          <div className="modal" style={{ width: 460 }}>
             <div className="modal-header">
               <div className="modal-title">
                 {confirmDel.source === 'auto' && confirmDel.transaction_id

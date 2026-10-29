@@ -31,21 +31,21 @@ export default function PawnFinancialCard({ pawn, isActive, onReload, onError })
   const handleRateChange = (e) => {
     const newRate = e.target.value
     setEditRate(newRate)
-    const parsedRate = parseFloat(newRate)
-    if (!isNaN(parsedRate) && parsedRate >= 0) {
+    const parsedRate = Number.parseFloat(newRate)
+    if (!Number.isNaN(parsedRate) && parsedRate >= 0) {
       const newAmt = Math.round(current * parsedRate / 100)
       setEditAmount(String(newAmt))
     }
   }
 
   const handleSave = async () => {
-    const rate = parseFloat(editRate)
-    const amt = parseFloat(editAmount)
-    if (isNaN(rate) || rate < 0) {
+    const rate = Number.parseFloat(editRate)
+    const amt = Number.parseFloat(editAmount)
+    if (Number.isNaN(rate) || rate < 0) {
       if (onError) onError('อัตราดอกเบี้ยไม่ถูกต้อง')
       return
     }
-    if (isNaN(amt) || amt < 0) {
+    if (Number.isNaN(amt) || amt < 0) {
       if (onError) onError('จำนวนดอกเบี้ยไม่ถูกต้อง')
       return
     }
@@ -118,22 +118,22 @@ export default function PawnFinancialCard({ pawn, isActive, onReload, onError })
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
               <div style={{ display: 'flex', gap: 8 }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>อัตราดอกเบี้ย (% / เดือน)</label>
+                  <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }} htmlFor="interest-rate-input">อัตราดอกเบี้ย (% / เดือน)</label>
                   <input
-                    className="input"
+                    id="interest-rate-input" className="input"
                     type="number"
                     step="0.01"
                     min="0"
                     style={{ fontSize: 13, padding: '6px 10px', width: '100%' }}
                     value={editRate}
                     onChange={handleRateChange}
-                    autoFocus
+                    
                   />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>ดอกเบี้ย (บาท / เดือน)</label>
+                  <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }} htmlFor="interest-amount-input">ดอกเบี้ย (บาท / เดือน)</label>
                   <input
-                    className="input"
+                    id="interest-amount-input" className="input"
                     type="number"
                     min="0"
                     style={{ fontSize: 13, padding: '6px 10px', width: '100%' }}

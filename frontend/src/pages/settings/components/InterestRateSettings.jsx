@@ -16,7 +16,7 @@ export default function InterestRateSettings({ initialValues, onSave }) {
     });
   };
 
-  const parsedThreshold = parseInt(threshold || 0);
+  const parsedThreshold = Number.parseInt(threshold || 0);
 
   return (
     <SettingBox

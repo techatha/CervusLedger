@@ -105,7 +105,7 @@ export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }
 
   /* 1. Auto-probe on mount */
   useEffect(() => {
-    (async () => {
+    void (async () => {
       let ip = null;
       try { ip = await GetWiFiDisplayerIP(); if (ip) setSavedIP(ip); } catch (_) { }
       if (!ip) {
@@ -156,7 +156,7 @@ export default function QRDisplayerWiFiSetup({ initialValues, onSave, shopName }
       }
     }
 
-    scan();
+    void scan();
 
     return () => {
       cancelled = true;

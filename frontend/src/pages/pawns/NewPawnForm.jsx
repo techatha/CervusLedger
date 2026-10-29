@@ -15,25 +15,25 @@ import './PrincipalChangeForm.css'
 const today = () => getLocalISOString().slice(0, 10)
 
 export default function NewPawnForm({ onSaved, onClose }) {
-  const [settings,   setSettings]   = useState(null)
-  const [customers,  setCustomers]  = useState([])
+  const [settings, setSettings] = useState(null)
+  const [customers, setCustomers] = useState([])
   const [custSearch, setCustSearch] = useState('')
-  const [showDrop,   setShowDrop]   = useState(false)
-  const [saving,     setSaving]     = useState(false)
-  const [error,      setError]      = useState(null)
+  const [showDrop, setShowDrop] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
   const dropRef = useRef(null)
 
   const [customRate, setCustomRate] = useState('')
 
   const [form, setForm] = useState({
-    customer_id:    0,
+    customer_id: 0,
     customer_label: '',
-    item_type:      '',
-    weight_grams:   '',
-    description:    '',
-    pawned_date:    today(),
+    item_type: '',
+    weight_grams: '',
+    description: '',
+    pawned_date: today(),
     initial_principal: '',
-    ticket_number:  '',
+    ticket_number: '',
   })
 
   // Calculated from principal + settings
@@ -46,14 +46,14 @@ export default function NewPawnForm({ onSaved, onClose }) {
         ...prev,
         ticket_number: String(s.LastTicket + 1)
       }))
-    }).catch(() => {})
+    }).catch(() => { })
   }, [])
 
   // Update interest rate input when principal or settings change
   useEffect(() => {
     if (!settings || !form.initial_principal) return
-    const p = parseFloat(form.initial_principal)
-    if (isNaN(p) || p <= 0) return
+    const p = Number.parseFloat(form.initial_principal)
+    if (Number.isNaN(p) || p <= 0) return
     const rate = p < settings.Threshold ? settings.LowRate : settings.HighRate
     setCustomRate(String(rate))
   }, [form.initial_principal, settings])
@@ -64,10 +64,10 @@ export default function NewPawnForm({ onSaved, onClose }) {
       setPreview({ rate: 0, amount: 0 })
       return
     }
-    const p = parseFloat(form.initial_principal)
-    if (isNaN(p) || p <= 0) { setPreview({ rate: 0, amount: 0 }); return }
+    const p = Number.parseFloat(form.initial_principal)
+    if (Number.isNaN(p) || p <= 0) { setPreview({ rate: 0, amount: 0 }); return }
 
-    const rate = parseFloat(customRate) || 0
+    const rate = Number.parseFloat(customRate) || 0
     const amount = Math.max(p * rate / 100, settings.MinInterest)
     setPreview({ rate, amount })
   }, [form.initial_principal, settings, customRate])
@@ -122,12 +122,12 @@ export default function NewPawnForm({ onSaved, onClose }) {
   }, [])
 
   const validate = () => {
-    if (!form.customer_id)         return 'กรุณาเลือกลูกค้า'
-    if (!form.item_type.trim())    return 'กรุณากรอกประเภทรายการ'
-    const tNum = parseInt(form.ticket_number, 10)
-    if (isNaN(tNum) || tNum <= 0)  return 'กรุณากรอกเลขที่ตั๋วที่ถูกต้อง'
-    const p = parseFloat(form.initial_principal)
-    if (!p || p <= 0)              return 'กรุณากรอกจำนวนเงินต้น'
+    if (!form.customer_id) return 'กรุณาเลือกลูกค้า'
+    if (!form.item_type.trim()) return 'กรุณากรอกประเภทรายการ'
+    const tNum = Number.parseInt(form.ticket_number, 10)
+    if (Number.isNaN(tNum) || tNum <= 0) return 'กรุณากรอกเลขที่ตั๋วที่ถูกต้อง'
+    const p = Number.parseFloat(form.initial_principal)
+    if (!p || p <= 0) return 'กรุณากรอกจำนวนเงินต้น'
     return null
   }
 
@@ -137,7 +137,7 @@ export default function NewPawnForm({ onSaved, onClose }) {
     setSaving(true)
     setError(null)
     try {
-      const ticketNum = parseInt(form.ticket_number, 10)
+      const ticketNum = Number.parseInt(form.ticket_number, 10)
 
       const isTaken = await CheckTicketNumberExists(ticketNum)
       if (isTaken) {
@@ -149,14 +149,14 @@ export default function NewPawnForm({ onSaved, onClose }) {
       await SetLastTicketNumber(ticketNum - 1)
 
       await CreatePawn({
-        customer_id:          form.customer_id,
-        item_type:            form.item_type,
-        weight_grams:         parseFloat(form.weight_grams) || 0,
-        description:          form.description,
-        pawned_date:          today(),
-        initial_principal:    parseFloat(form.initial_principal),
+        customer_id: form.customer_id,
+        item_type: form.item_type,
+        weight_grams: Number.parseFloat(form.weight_grams || 0),
+        description: form.description,
+        pawned_date: today(),
+        initial_principal: Number.parseFloat(form.initial_principal || 0),
         monthly_interest_rate: preview.rate,
-        interest_amount:      preview.amount,
+        interest_amount: preview.amount,
       })
       onSaved()
     } catch (e) {
@@ -167,8 +167,8 @@ export default function NewPawnForm({ onSaved, onClose }) {
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal npf-modal" onClick={e => e.stopPropagation()}>
+    <div className="modal-backdrop" role="dialog" aria-modal={true} tabIndex={-1} onClick={(e) => { if (e.target === e.currentTarget) onClose(); }} onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}>
+      <div className="modal npf-modal">
         <div className="modal-header">
           <div className="modal-title">รับจำนำใหม่</div>
           <button className="modal-close" onClick={onClose}>×</button>
@@ -180,9 +180,9 @@ export default function NewPawnForm({ onSaved, onClose }) {
           {/* ── ลูกค้า ── */}
           <div className="section-divider">ลูกค้า</div>
           <div className="form-group" style={{ position: 'relative' }} ref={dropRef}>
-            <label className="form-label form-label-required">ชื่อลูกค้า</label>
+            <label className="form-label form-label-required" htmlFor="pawn-customer-name-input">ชื่อลูกค้า</label>
             <input
-              className="input"
+              id="pawn-customer-name-input" className="input"
               placeholder="พิมพ์ชื่อหรือเบอร์โทรเพื่อค้นหา..."
               value={custSearch}
               onChange={e => {
@@ -192,7 +192,7 @@ export default function NewPawnForm({ onSaved, onClose }) {
                 setShowDrop(true)
               }}
               onFocus={() => custSearch && setShowDrop(true)}
-              autoFocus
+
             />
             {form.customer_id > 0 && (
               <div className="npf-cust-selected">
@@ -205,7 +205,30 @@ export default function NewPawnForm({ onSaved, onClose }) {
                   <div
                     key={c.id}
                     className="npf-drop-item"
-                    onMouseDown={() => selectCustomer(c)}
+                    role="option"
+                    aria-label={`เลือก ${fullName(c)}`}
+                    tabIndex={0}
+                    onClick={(e) => {
+                      if (e.target === e.currentTarget)
+                        selectCustomer(c)
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault()
+                        selectCustomer(c)
+                      }
+                      if (e.key === 'ArrowDown') {
+                        e.preventDefault()
+                        const next = e.target.nextElementSibling
+                        if (next) next.focus()
+                      }
+                      if (e.key === 'ArrowUp') {
+                        e.preventDefault()
+                        const prev = e.target.previousElementSibling
+                        if (prev) prev.focus()
+                      }
+                    }}
+
                   >
                     <span className="npf-drop-name">{fullName(c)}</span>
                     {c.phone && <span className="npf-drop-phone">{c.phone}</span>}
@@ -219,18 +242,18 @@ export default function NewPawnForm({ onSaved, onClose }) {
           <div className="section-divider">รายการที่จำนำ</div>
           <div className="form-row form-row-2">
             <div className="form-group">
-              <label className="form-label form-label-required">ประเภท</label>
+              <label className="form-label form-label-required" htmlFor="item_type_input">ประเภท</label>
               <input
-                className="input"
+                id="item_type_input" className="input"
                 placeholder="เช่น สร้อยคอ, แหวน, ทองแท่ง"
                 value={form.item_type}
                 onChange={e => set('item_type', e.target.value)}
               />
             </div>
             <div className="form-group">
-              <label className="form-label">น้ำหนัก (กรัม)</label>
+              <label className="form-label" htmlFor="weight_grams_input">น้ำหนัก (กรัม)</label>
               <input
-                className="input"
+                id="weight_grams_input" className="input"
                 type="number"
                 placeholder="0.00"
                 min="0"
@@ -241,9 +264,9 @@ export default function NewPawnForm({ onSaved, onClose }) {
             </div>
           </div>
           <div className="form-group">
-            <label className="form-label">รายละเอียดเพิ่มเติม</label>
+            <label className="form-label" htmlFor="pawn-description-input">รายละเอียดเพิ่มเติม</label>
             <input
-              className="input"
+              id="pawn-description-input" className="input"
               placeholder="ลักษณะ, ยี่ห้อ, เครื่องหมาย..."
               value={form.description}
               onChange={e => set('description', e.target.value)}
@@ -254,18 +277,18 @@ export default function NewPawnForm({ onSaved, onClose }) {
           <div className="section-divider">เงื่อนไข</div>
           <div className="form-row form-row-3">
             <div className="form-group">
-              <label className="form-label form-label-required">เลขที่ตั๋ว</label>
+              <label className="form-label form-label-required" htmlFor="pawn-ticket-number-input">เลขที่ตั๋ว</label>
               <input
-                className="input"
+                id="pawn-ticket-number-input" className="input"
                 type="number"
                 value={form.ticket_number}
                 onChange={e => set('ticket_number', e.target.value)}
               />
             </div>
             <div className="form-group">
-              <label className="form-label form-label-required">เงินต้น (บาท)</label>
+              <label className="form-label form-label-required" htmlFor="pawn-principal-input">เงินต้น (บาท)</label>
               <input
-                className="input npf-principal"
+                id="pawn-principal-input" className="input npf-principal"
                 type="number"
                 placeholder="0"
                 min="0"
@@ -275,9 +298,9 @@ export default function NewPawnForm({ onSaved, onClose }) {
               />
             </div>
             <div className="form-group">
-              <label className="form-label form-label-required">ดอกเบี้ย (% ต่อเดือน)</label>
+              <label className="form-label form-label-required" htmlFor="pawn-interest-rate-input">ดอกเบี้ย (% ต่อเดือน)</label>
               <input
-                className="input"
+                id="pawn-interest-rate-input" className="input"
                 type="number"
                 placeholder="0.00"
                 min="0"
@@ -317,6 +340,6 @@ export default function NewPawnForm({ onSaved, onClose }) {
 }
 
 function IconCheck() {
-  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+  return <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg>
 }
 

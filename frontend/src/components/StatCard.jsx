@@ -43,7 +43,7 @@ export default function StatCard({
     <div
       className="db-stat-card"
       style={{ background: c.bg, border: `1px solid ${c.border}`, cursor: onClick ? 'pointer' : 'default' }}
-      onClick={onClick}
+      role="button" tabIndex={0} aria-modal={true} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick() }} onClick={(e) => {if (e.target === e.currentTarget) onClick()}}
     >
       <div className="db-stat-top">
         {icon && <div className="db-stat-icon" style={{ color: c.text }}>{icon}</div>}

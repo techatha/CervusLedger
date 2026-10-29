@@ -91,7 +91,7 @@ export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
 
   const validate = () => {
     if (!form.category.trim()) return 'กรุณาเลือกหรือกรอกหมวดหมู่'
-    const a = parseFloat(form.amount)
+    const a = Number.parseFloat(form.amount)
     if (!a || a <= 0) return 'กรุณากรอกจำนวนเงิน'
     return null
   }
@@ -105,7 +105,7 @@ export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
       await CreateIncomeExpense({
         type: form.type,
         category: form.category,
-        amount: parseFloat(form.amount),
+        amount: Number.parseFloat(form.amount),
         notes: form.notes,
         is_bank_transfer: form.isBankTransfer,
         date: form.date,
@@ -120,7 +120,7 @@ export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
 
   // Handle Enter key to save
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !saving) handleSave()
+    if (e.key === 'Enter' && !saving) void handleSave()
   }
 
   const isIncome = form.type === 'income'
@@ -131,9 +131,25 @@ export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
   const filteredPresets = isIncome ? incomePresets : expensePresets
 
   return (
-    <div className="modal-backdrop mem-backdrop" onClick={onClose}>
-      <div className="modal mem-modal" onClick={e => e.stopPropagation()} onKeyDown={handleKeyDown}>
-
+    <div
+      className="modal-backdrop mem-backdrop"
+      role="dialog"
+      aria-modal="true"
+      tabIndex={-1}
+      onClick={(e) => {
+        if (e.currentTarget === e.target) {
+          onClose()
+        }
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          onClose()
+        } else if (e.key === 'Enter') {
+          handleKeyDown(e)
+        }
+      }}
+    >
+      <div className="modal mem-modal">
         {/* ── Header ── */}
         <div className="modal-header">
           <div className="modal-title">
@@ -172,7 +188,7 @@ export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
 
           {/* ── Category chips ── */}
           <div className="form-group">
-            <label className="form-label form-label-required">หมวดหมู่</label>
+            <span className="form-label form-label-required">หมวดหมู่</span>
 
             {filteredPresets.length > 0 && (
               <div className="mem-cat-chips">
@@ -228,7 +244,6 @@ export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
                   placeholder="พิมพ์ชื่อหมวดหมู่..."
                   value={form.category}
                   onChange={e => set('category', e.target.value)}
-                  autoFocus
                 />
               </div>
             )}
@@ -236,10 +251,11 @@ export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
 
           {/* ── Amount (prominent) ── */}
           <div className="form-group">
-            <label className="form-label form-label-required">จำนวนเงิน</label>
+            <label className="form-label form-label-required" htmlFor="mem-amount-input">จำนวนเงิน</label>
             <div className="mem-amount-wrap">
               <input
                 ref={amountRef}
+                id="mem-amount-input"
                 className={`input mem-amount ${isIncome ? 'mem-amount-income' : 'mem-amount-expense'}`}
                 type="number"
                 placeholder="0"
@@ -272,8 +288,9 @@ export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
           {/* ── Date & Notes ── */}
           <div className="form-row form-row-2">
             <div className="form-group">
-              <label className="form-label">วันที่</label>
+              <label className="form-label" htmlFor="mem-date-input">วันที่</label>
               <input
+                id="mem-date-input"
                 className="input"
                 type="date"
                 value={form.date}
@@ -281,8 +298,9 @@ export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">หมายเหตุ</label>
+              <label className="form-label" htmlFor="mem-notes-input">หมายเหตุ</label>
               <input
+                id="mem-notes-input"
                 className="input"
                 placeholder="(ไม่บังคับ)"
                 value={form.notes}
@@ -292,7 +310,7 @@ export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
           </div>
 
           {/* ── Summary preview ── */}
-          {parseFloat(form.amount) > 0 && form.category.trim() && (
+          {Number.parseFloat(form.amount) > 0 && form.category.trim() && (
             <div className={`mem-preview ${isIncome ? 'mem-preview-income' : 'mem-preview-expense'}`}>
               <div className="mem-preview-left">
                 <span className="mem-preview-label">{isIncome ? 'บันทึกรายรับ' : 'บันทึกรายจ่าย'}</span>
@@ -302,7 +320,7 @@ export default function ManualEntryModal({ onSaved, onClose, defaultDate }) {
                 </span>
               </div>
               <span className="mem-preview-amount">
-                {isIncome ? '+' : '−'}{parseFloat(form.amount).toLocaleString('th-TH')} ฿
+                {isIncome ? '+' : '−'}{Number.parseFloat(form.amount).toLocaleString('th-TH')} ฿
               </span>
             </div>
           )}

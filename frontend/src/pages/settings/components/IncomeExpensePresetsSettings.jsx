@@ -35,20 +35,20 @@ function EditBubble({ preset, onApply, onClose }) {
       <div className="iep-bubble__body">
         <div className="iep-bubble__row">
           <div className="form-group" style={{ flex: 1, minWidth: 0 }}>
-            <label className="form-label">ชื่อ</label>
+            <label className="form-label" htmlFor="iep-edit-input">ชื่อ</label>
             <input
-              className="input"
+              id="iep-edit-input" className="input"
               value={name}
               onChange={e => setName(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') handleApply(); if (e.key === 'Escape') onClose(); }}
-              autoFocus
+              
             />
           </div>
           <div className="form-group" style={{ width: '100px' }}>
-            <label className="form-label">สี</label>
+            <label className="form-label" htmlFor="color-editor-input">สี</label>
             <div className="iep-add-color-wrap">
               <input
-                type="color"
+                id="color-editor-input" type="color"
                 className="sp-color-input"
                 value={color}
                 onChange={e => setColor(e.target.value)}
@@ -244,10 +244,10 @@ export default function IncomeExpensePresetsSettings({ initialValues, onSave }) 
             />
           </div>
           <div className="form-group" style={{ width: '110px' }}>
-            <label className="form-label">สี</label>
+            <label className="form-label" htmlFor="color-input">สี</label>
             <div className="iep-add-color-wrap">
               <input
-                type="color"
+                id="color-input" type="color"
                 className="sp-color-input"
                 value={newCatColor}
                 onChange={e => setNewCatColor(e.target.value)}

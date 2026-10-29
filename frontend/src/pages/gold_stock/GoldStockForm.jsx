@@ -146,7 +146,7 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
         type: form.type,
         subtype: form.subtype,
         purity: form.no_purity ? '' : form.purity,
-        weight_grams: form.no_weight ? 0 : (parseFloat(form.weight_grams) || 0),
+        weight_grams: form.no_weight ? 0 : (Number.parseFloat(form.weight_grams) || 0),
         no_purity: form.no_purity ? 1 : 0,
         no_weight: form.no_weight ? 1 : 0,
       }
@@ -165,8 +165,8 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal gsf-modal" onClick={e => e.stopPropagation()}>
+    <div className="modal-backdrop" role="dialog" aria-modal={true} tabIndex={-1} onClick={(e) => { if (e.target === e.currentTarget) onClose() }} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
+      <div className="modal gsf-modal">
 
         <div className="modal-header">
           <div className="modal-title">
@@ -182,13 +182,13 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
 
           {/* ── Type ──────────────────────────────────────────────── */}
           <div className="form-group">
-            <label className="form-label form-label-required">ประเภท</label>
+            <label className="form-label form-label-required" htmlFor="type_selector">ประเภท</label>
 
             <select
-              className="input"
+              id="type_selector" className="input"
               value={showNewType ? '__new' : form.type}
               onChange={handleTypeSelect}
-              autoFocus={!isEdit}
+              
             >
               <option value="">— เลือกประเภท —</option>
               {mainTypes.map(t => (
@@ -212,7 +212,7 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
                   value={newTypeText}
                   onChange={e => setNewTypeText(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleNewTypeConfirm() }}
-                  autoFocus
+                  
                 />
                 <button
                   className="btn btn-primary btn-sm"
@@ -233,10 +233,10 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
 
           {/* ── Subtype ───────────────────────────────────────────── */}
           <div className="form-group">
-            <label className="form-label form-label-required">รุ่น / น้ำหนัก</label>
+            <label className="form-label form-label-required" htmlFor="subtype_selector">รุ่น / น้ำหนัก</label>
 
             {/* Preset chips */}
-            <div className="gsf-chips">
+            <div className="gsf-chips" id="subtype_chips">
               {SUBTYPE_PRESETS.map(val => (
                 <button
                   key={val}
@@ -306,7 +306,7 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
             {/* Purity */}
             <div className="form-group">
               <div className="gsf-field-header">
-                <label className="form-label form-label-required">ความบริสุทธิ์</label>
+                <label className="form-label form-label-required" htmlFor="purity_selector">ความบริสุทธิ์</label>
                 <span className="badge badge-red" style={{ visibility: form.no_purity ? 'visible' : 'hidden' }}>
                   ไม่ระบุ
                 </span>
@@ -317,7 +317,7 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
               ) : (
                 <>
                   <select
-                    className="input"
+                    id="purity_selector" className="input"
                     value={purityMode === 'custom' ? '__custom' : form.purity}
                     onChange={handlePuritySelect}
                   >
@@ -338,7 +338,7 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
                       placeholder="เช่น 80.5"
                       value={form.purity}
                       onChange={e => set('purity', e.target.value)}
-                      autoFocus
+                      
                       style={{ marginTop: 6 }}
                     />
                   )}
@@ -349,7 +349,7 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
             {/* Weight */}
             <div className="form-group">
               <div className="gsf-field-header">
-                <label className="form-label form-label-required">น้ำหนัก (กรัม)</label>
+                <label className="form-label form-label-required" htmlFor="weight_input">น้ำหนัก (กรัม)</label>
                 <span className="badge badge-red" style={{ visibility: form.no_weight ? 'visible' : 'hidden' }}>
                   ไม่ระบุ
                 </span>
@@ -359,7 +359,7 @@ export default function GoldStockForm({ item, onSaved, onClose }) {
                 <div className="gsf-unspecified-field">ไม่มีน้ำหนักที่แน่นอน</div>
               ) : (
                 <input
-                  className="input"
+                  id="weight_input" className="input"
                   type="number"
                   min="0"
                   step="0.0001"

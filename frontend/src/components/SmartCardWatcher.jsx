@@ -65,7 +65,7 @@ export default function SmartCardWatcher({ onOpenRegisterModal }) {
               dispatchSaleSelect(matched)
             } else if (location.pathname !== `/customers/${matched.id}`) {
               // console.log(`[SmartCardWatcher] Navigating to customer profile: /customers/${matched.id}`)
-              navigate(`/customers/${matched.id}`)
+              void navigate(`/customers/${matched.id}`)
             } else {
               // console.log('[SmartCardWatcher] Already on the target customer profile page. No navigation needed.')
             }
@@ -92,7 +92,7 @@ export default function SmartCardWatcher({ onOpenRegisterModal }) {
     }
 
     // Check immediately on mount
-    checkCard()
+    void checkCard()
 
     // Poll every 2 seconds
     const interval = setInterval(checkCard, 2000)

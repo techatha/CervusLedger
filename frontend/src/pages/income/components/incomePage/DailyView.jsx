@@ -75,7 +75,7 @@ export default function DailyView({
 
   useEffect(() => {
     if (date) {
-      loadDailyCash(date)
+      void loadDailyCash(date)
     }
   }, [date])
 
@@ -83,10 +83,10 @@ export default function DailyView({
     setIsSaving(true)
     setSaveSuccess(false)
     try {
-      const parsedActual = parseFloat(actualVal)
+      const parsedActual = Number.parseFloat(actualVal)
       const res = await SaveDailyCash({
         date: date,
-        actual_amount: isNaN(parsedActual) ? 0.0 : parsedActual,
+        actual_amount: Number.isNaN(parsedActual) ? 0.0 : parsedActual,
         notes: notesVal
       })
       setDailyCash(res)
@@ -115,8 +115,8 @@ export default function DailyView({
 
   const discrepancy = useMemo(() => {
     if (!dailyCash) return 0
-    const act = parseFloat(actualVal)
-    if (isNaN(act)) return -expectedAmount
+    const act = Number.parseFloat(actualVal)
+    if (Number.isNaN(act)) return -expectedAmount
     return act - expectedAmount
   }, [dailyCash, actualVal, expectedAmount])
 
@@ -410,7 +410,7 @@ export default function DailyView({
                   <div className="dv-cash-result-metric">
                     <span className="dv-cash-result-label">ยอดนับจริง</span>
                     <span className="dv-cash-result-val">
-                      {formatBaht(parseFloat(actualVal) || 0)}
+                      {formatBaht(Number.parseFloat(actualVal) || 0)}
                     </span>
                   </div>
                   <div className="dv-cash-result-sep" />
@@ -468,14 +468,14 @@ export default function DailyView({
                       placeholder="0.00"
                       value={actualVal}
                       onChange={e => setActualVal(e.target.value)}
-                      autoFocus
+                      
                     />
                   </div>
                 </div>
 
                 <div className="dv-cash-edit-field">
-                  <label className="dv-cash-edit-label">ผลต่าง (ขาด/เกิน)</label>
-                  <div className={`dv-cash-discrepancy-display ${discrepancy >= 0 ? 'ip-income' : 'ip-expense'}`}>
+                  <label className="dv-cash-edit-label" htmlFor="discrepancy-display">ผลต่าง (ขาด/เกิน)</label>
+                  <div id="discrepancy-display" className={`dv-cash-discrepancy-display ${discrepancy >= 0 ? 'ip-income' : 'ip-expense'}`}>
                     <span className="discrepancy-tag">
                       {discrepancy === 0 ? 'พอดี' : discrepancy > 0 ? 'เงินเกิน' : 'เงินขาด'}
                     </span>
@@ -530,7 +530,7 @@ function formatDateTimeThai(dtStr) {
   // SQLite format can be YYYY-MM-DD HH:MM:SS, let's parse it safely
   const formatted = dtStr.replace(' ', 'T')
   const d = new Date(formatted)
-  if (isNaN(d)) return dtStr
+  if (Number.isNaN(d)) return dtStr
   const day = d.getDate().toString().padStart(2, '0')
   const month = (d.getMonth() + 1).toString().padStart(2, '0')
   const year = d.getFullYear() + 543

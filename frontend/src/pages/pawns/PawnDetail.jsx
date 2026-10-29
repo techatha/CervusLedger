@@ -34,7 +34,7 @@ import './PawnDetail.css'
 export default function PawnDetail({ cartItems, setCartItems }) {
   const { id } = useParams()
   const navigate = useNavigate()
-  const pawnId = parseInt(id, 10)
+  const pawnId = Number.parseInt(id, 10)
   const { reloadAll } = usePawnCache()
 
   const [pawn, setPawn] = useState(null)
@@ -70,7 +70,9 @@ export default function PawnDetail({ cartItems, setCartItems }) {
     }
   }
 
-  useEffect(() => { load() }, [pawnId])
+  useEffect(() => { 
+    void load() 
+  }, [pawnId])
 
   // Receipt Function
   const handlePrintTicket = async () => {
@@ -170,15 +172,15 @@ export default function PawnDetail({ cartItems, setCartItems }) {
     }
     
     setModal(null)
-    navigate('/sales', { state: { addItems: cartAdds } })
+    void navigate('/sales', { state: { addItems: cartAdds } })
   }
 
   const handleForfeit = async () => {
     try {
       await ForfeitPawn(pawnId)
       setModal(null)
-      load()
-      reloadAll()
+      await load()
+      await reloadAll()
     } catch (e) { setError(String(e)) }
   }
 
@@ -186,8 +188,8 @@ export default function PawnDetail({ cartItems, setCartItems }) {
     if (!window.confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบตั๋ว #${formatTicket(pawn.ticket_number)}?\n(ข้อมูลการจ่ายดอกเบี้ยและการเปลี่ยนแปลงเงินต้นของตั๋วนี้จะถูกลบทั้งหมด)`)) return;
     try {
       await DeletePawn(pawnId)
-      reloadAll()
-      navigate('/pawns')
+      await reloadAll()
+      await navigate('/pawns')
     } catch (e) {
       alert('ลบตั๋วจำนำไม่สำเร็จ: ' + e)
       setError(String(e))
@@ -198,8 +200,8 @@ export default function PawnDetail({ cartItems, setCartItems }) {
     if (!window.confirm("คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลการจ่ายดอกเบี้ยงวดล่าสุด?\n(ระบบจะลบข้อมูลรายรับที่บันทึกอัตโนมัติออกด้วย)")) return;
     try {
       await DeletePayment(paymentId)
-      load()
-      reloadAll()
+      await load()
+      await reloadAll()
     } catch (e) { setError(String(e)) }
   }
 
@@ -239,7 +241,7 @@ export default function PawnDetail({ cartItems, setCartItems }) {
       notes: `ตั๋ว #${formatTicket(pawn.ticket_number)} (${pawn.customer_name_display || pawn.customer_name}) - งวด ${monthLabels}`
     }
 
-    navigate('/sales', { state: { addItems: [combinedItem] } })
+    void navigate('/sales', { state: { addItems: [combinedItem] } })
   }
 
   const handleAddToCartPendingInterest = (selectedIndexes) => {
@@ -385,14 +387,20 @@ export default function PawnDetail({ cartItems, setCartItems }) {
             pawnId={pawnId}
             isActive={isActive}
             onEditInfo={() => setModal('info')}
-            onReload={() => { load(); reloadAll(); }}
+            onReload={() => { 
+              void load(); 
+              void reloadAll(); 
+            }}
             onError={setError}
           />
 
           <PawnFinancialCard
             pawn={pawn}
             isActive={isActive}
-            onReload={() => { load(); reloadAll(); }}
+            onReload={() => { 
+              void load(); 
+              void reloadAll(); 
+            }}
             onError={setError}
           />
 
@@ -467,7 +475,11 @@ export default function PawnDetail({ cartItems, setCartItems }) {
             pawn={pawn}
             payments={payments}
             customerName={pawn.customer_name_display || ''}
-            onSaved={() => { setModal(null); load(); reloadAll() }}
+            onSaved={() => { 
+              setModal(null); 
+              void load(); 
+              void reloadAll();
+            }}
             onClose={() => setModal(null)}
           />
         )
@@ -476,7 +488,11 @@ export default function PawnDetail({ cartItems, setCartItems }) {
         modal === 'principal' && (
           <PrincipalChangeModal
             pawn={{ ...pawn, current_principal: current }}
-            onSaved={() => { setModal(null); load(); reloadAll() }}
+            onSaved={() => { 
+              setModal(null); 
+              void load(); 
+              void reloadAll();
+            }}
             onClose={() => setModal(null)}
           />
         )
@@ -516,7 +532,11 @@ export default function PawnDetail({ cartItems, setCartItems }) {
         modal === 'info' && (
           <EditPawnInfoModal
             pawn={pawn}
-            onSaved={() => { setModal(null); load(); reloadAll() }}
+            onSaved={() => {
+              setModal(null);
+              void load();
+              reloadAll()
+            }}
             onClose={() => setModal(null)}
           />
         )

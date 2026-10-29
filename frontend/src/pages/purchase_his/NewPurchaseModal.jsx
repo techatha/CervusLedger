@@ -56,11 +56,11 @@ export default function NewPurchaseModal({ onClose }) {
       type: 'buy',
       customer_id: formData.customer_id,
       gold_item_id: formData.gold_item_id || 0,
-      weight_baht: parseFloat(formData.weight_baht),
-      weight_grams: parseFloat(formData.weight_grams || 0),
+      weight_baht: Number.parseFloat(formData.weight_baht),
+      weight_grams: Number.parseFloat(formData.weight_grams || 0),
       gold_price_id: priceID,
-      price_per_baht: parseFloat(String(formData.price_per_baht).replace(/,/g, '') || 0),
-      total_amount: parseFloat(formData.total_amount),
+      price_per_baht: Number.parseFloat(String(formData.price_per_baht).replace(/,/g, '') || 0),
+      total_amount: Number.parseFloat(formData.total_amount),
       notes: formData.notes,
       date: formData.date,
       item_type: formData.item_type,
@@ -70,10 +70,10 @@ export default function NewPurchaseModal({ onClose }) {
     }
 
     onClose()
-    navigate('/sales', { state: { addItems: [itemToAdd] } })
+    void navigate('/sales', { state: { addItems: [itemToAdd] } })
   }
 
-  const parseNum = (v) => parseFloat(String(v ?? '').replace(/,/g, '')) || 0
+  const parseNum = (v) => Number.parseFloat(String(v ?? '').replace(/,/g, '')) || 0
   const footerTotal = parseNum(formData.total_amount)
   const footerLabel = 'ยอดรับซื้อ'
   const footerColor = 'var(--amber)'
@@ -88,8 +88,8 @@ export default function NewPurchaseModal({ onClose }) {
   })()
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal nsf-modal" onClick={e => e.stopPropagation()}>
+    <div className="modal-backdrop" role="dialog" aria-modal="true" tabIndex={-1} onClick={(e) => { if (e.target === e.currentTarget) onClose() }} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
+      <div className="modal nsf-modal">
         <div className="modal-header">
           <div className="modal-title">ทำรายการรับซื้อทองใหม่</div>
           <button className="modal-close" onClick={onClose}>×</button>

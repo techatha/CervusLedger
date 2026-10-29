@@ -62,7 +62,7 @@ export default function CustomerList() {
 
   useEffect(() => {
     if (!isMounted.current) {
-      load(search)
+      void load(search)
       isMounted.current = true
       return
     }
@@ -78,7 +78,7 @@ export default function CustomerList() {
       setConfirmDelete(null)
       setDeleteSuccess(deletedName)
       setTimeout(() => setDeleteSuccess(null), 3000)
-      load(search)
+      void load(search)
     } catch (e) {
       alert('ลบไม่สำเร็จ: ' + e)
     }
@@ -164,15 +164,15 @@ export default function CustomerList() {
       {modal !== null && (
         <CustomerForm
           customerId={modal === 'new' ? null : modal}
-          onSaved={() => { setModal(null); load(search) }}
+          onSaved={() => { setModal(null); void load(search) }}
           onClose={() => setModal(null)}
         />
       )}
 
       {/* ── Confirm Delete Modal ──────────────────────────────── */}
       {confirmDelete && (
-        <div className="modal-backdrop" onClick={() => setConfirmDelete(null)}>
-          <div className="modal" style={{ width: 400 }} onClick={e => e.stopPropagation()}>
+        <div className="modal-backdrop" role="dialog" aria-modal="true" tabIndex={-1} onClick={(e) => { if (e.target === e.currentTarget) setConfirmDelete(null) }} onKeyDown={(e) => { if (e.key === 'Escape') setConfirmDelete(null) }}>
+          <div className="modal" style={{ width: 400 }}>
             <div className="modal-header">
               <div className="modal-title">ยืนยันการลบ</div>
               <button className="modal-close" onClick={() => setConfirmDelete(null)}>×</button>
@@ -216,10 +216,10 @@ function CustomerCard({ customer: c, index, onOpen, onEdit, onDelete }) {
   const addr = shortAddress(c)
 
   return (
-    <div className="cl-card" onClick={onOpen}>
+    <div className="cl-card" role="button" tabIndex={0} onClick={(e) => { if (e.target === e.currentTarget) onOpen() }}>
 
       {/* Hover-reveal action buttons */}
-      <div className="cl-card-actions" onClick={e => e.stopPropagation()}>
+      <div className="cl-card-actions">
         <button className="btn-edit" onClick={onEdit} title="แก้ไข">
           <FontAwesomeIcon icon={faPenToSquare} />
         </button>

@@ -29,9 +29,9 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
 
 
 
-      const basePrice = parseFloat(String(next.price_per_baht).replace(/,/g, '') || 0)
-      const weightG = parseFloat(next.weight_grams || 0)
-      const purityVal = parseFloat(next.purity || 0)
+      const basePrice = Number.parseFloat(String(next.price_per_baht).replace(/,/g, '') || 0)
+      const weightG = Number.parseFloat(next.weight_grams || 0)
+      const purityVal = Number.parseFloat(next.purity || 0)
 
       let calculatedGold = 0
       if (basePrice && weightG && purityVal) {
@@ -73,17 +73,17 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
   }, [todayPrice])
 
   const calculatedTotal = calculatedRef.current
-  const currentTotal = parseFloat(String(formData.total_amount).replace(/,/g, '') || 0)
+  const currentTotal = Number.parseFloat(String(formData.total_amount).replace(/,/g, '') || 0)
   const priceDiff = formData.is_override ? currentTotal - calculatedTotal : 0
 
   const baseTotal = calculatedTotal || 0
-  const cleanedPrice = parseFloat(String(negotiatedPrice).replace(/,/g, '') || 0)
+  const cleanedPrice = Number.parseFloat(String(negotiatedPrice).replace(/,/g, '') || 0)
   const livePriceDiff = (cleanedPrice > 0 && baseTotal > 0) ? cleanedPrice - baseTotal : 0
 
   // Synchronize live calculation in editing mode
   useEffect(() => {
     if (negotiationMode !== 'editing') return
-    const cleaned = parseFloat(String(negotiatedPrice).replace(/,/g, '') || 0)
+    const cleaned = Number.parseFloat(String(negotiatedPrice).replace(/,/g, '') || 0)
     const base = calculatedTotal || 0
 
     if (cleaned > 0) {
@@ -108,9 +108,9 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
     <>
       {/* ─── Inventory checkbox ─────────────────────────────────── */}
       <div className="nsf-inventory">
-        <label className={`nsf-inventory-label ${formData.is_inventory === 1 ? 'nsf-inventory-label--active' : ''}`}>
+        <span className={`nsf-inventory-label ${formData.is_inventory === 1 ? 'nsf-inventory-label--active' : ''}`} htmlFor="nsb-inventory-checkbox">
           <input
-            type="checkbox"
+            id="nsb-inventory-checkbox" type="checkbox"
             checked={formData.is_inventory === 1}
             onChange={e => {
               const ticked = e.target.checked ? 1 : 0
@@ -137,7 +137,7 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
               บันทึกในคลังสำหรับนับสต็อกประจำเดือน
             </div>
           </div>
-        </label>
+        </span>
       </div>
       {formData.is_inventory === 1 ? (
         <GoldTypeSelectSection
@@ -166,9 +166,9 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
           <div className="section-divider">ข้อมูลทองคำที่รับซื้อ</div>
 
           <div className="form-group">
-            <label className="form-label form-label-required">ประเภททอง</label>
+            <label className="form-label form-label-required" htmlFor="nsb-item-type-input">ประเภททอง</label>
             <input
-              className="input"
+              id="nsb-item-type-input" className="input"
               type="text"
               placeholder="ระบุประเภททอง เช่น ทองรูปพรรณ, ทองแท่ง, เศษทอง..."
               value={formData.item_type || ''}
@@ -178,9 +178,9 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
 
           <div className="form-row form-row-2" style={{ marginTop: '12px' }}>
             <div className="form-group">
-              <label className="form-label form-label-required">น้ำหนัก (กรัม)</label>
+              <label className="form-label form-label-required" htmlFor="nsb-weight-grams-input">น้ำหนัก (กรัม)</label>
               <input
-                className="input"
+                id="nsb-weight-grams-input" className="input"
                 type="number"
                 min="0"
                 step="0.0001"
@@ -190,10 +190,10 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
               />
             </div>
             <div className="form-group">
-              <label className="form-label form-label-required">ความบริสุทธิ์ (%)</label>
+              <label className="form-label form-label-required" htmlFor="nsb-purity-input">ความบริสุทธิ์ (%)</label>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <input
-                  className="input"
+                  id="nsb-purity-input" className="input"
                   type="number"
                   min="0"
                   max="100"
@@ -221,9 +221,9 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
 
       <>
         <div className="form-group nsf-buy-price-group">
-          <label className="form-label form-label-required">ราคาทองแท่ง (บาท)</label>
+          <label className="form-label form-label-required" htmlFor="nsb-price-per-baht-input">ราคาทองแท่ง (บาท)</label>
           <input
-            className="input"
+            id="nsb-price-per-baht-input" className="input"
             type="text"
             value={formatNumberInput(formData.price_per_baht)}
             onChange={e => updateBuyCalculation({ price_per_baht: e.target.value })}
@@ -279,15 +279,15 @@ export default function NewSaleFormBuy({ formData, setFormData, todayPrice }) {
 
               <div className="nsf-negotiate-exchange-fields">
                 <div className="nsf-negotiate-exchange-group">
-                  <label className="nsf-negotiate-field-label">ระบุราคาที่ตกลงใหม่</label>
+                  <label className="nsf-negotiate-field-label" htmlFor="nsb-negotiated-price-input">ระบุราคาที่ตกลงใหม่</label>
                   <input
-                    className="input"
+                    id="nsb-negotiated-price-input" className="input"
                     type="text"
                     inputMode="decimal"
                     placeholder="ราคาที่ตกลงกับลูกค้า..."
                     value={formatNumberInput(negotiatedPrice)}
                     onChange={e => setNegotiatedPrice(e.target.value)}
-                    autoFocus
+                    
                   />
                   {cleanedPrice > 0 && (
                     <div className="nsf-negotiate-bar nsf-negotiate-bar--confirmed" style={{ marginTop: '8px' }}>

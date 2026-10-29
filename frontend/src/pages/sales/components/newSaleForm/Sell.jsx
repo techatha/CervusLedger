@@ -16,7 +16,7 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
   const [exchangePurity, setExchangePurity] = useState('')
   const [exchangeGoldPrice, setExchangeGoldPrice] = useState('')
 
-  const sellTotal = formData.total_amount ? parseFloat(formData.total_amount || 0) : 0
+  const sellTotal = formData.total_amount ? Number.parseFloat(formData.total_amount || 0) : 0
 
   useEffect(() => {
     setNegotiationMode('off')
@@ -33,9 +33,9 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
     if (negotiationMode !== 'editing') return
 
     if (isExchange) {
-      const w = parseFloat(String(exchangeWeight).replace(/,/g, '')) || 0
-      const p = parseFloat(String(exchangePurity).replace(/,/g, '')) || 0
-      const gp = parseFloat(String(exchangeGoldPrice).replace(/,/g, '')) || 0
+      const w = Number.parseFloat(String(exchangeWeight).replace(/,/g, '')) || 0
+      const p = Number.parseFloat(String(exchangePurity).replace(/,/g, '')) || 0
+      const gp = Number.parseFloat(String(exchangeGoldPrice).replace(/,/g, '')) || 0
       if (w > 0 && p > 0 && gp > 0) {
         const exchangeVal = Math.round(gp * (p / 100) * 656 * w / 10000)
         setFormData(prev => ({
@@ -53,8 +53,8 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
         setFormData(prev => ({ ...prev, discount_amount: 0, exchange_data: null }))
       }
     } else {
-      const cleanVal = parseFloat(String(negotiatedPrice).replace(/,/g, ''))
-      if (!isNaN(cleanVal) && cleanVal > 0) {
+      const cleanVal = Number.parseFloat(String(negotiatedPrice).replace(/,/g, ''))
+      if (!Number.isNaN(cleanVal) && cleanVal > 0) {
         const disc = sellTotal > 0 ? sellTotal - cleanVal : 0
         setFormData(prev => ({
           ...prev,
@@ -67,7 +67,7 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
     }
   }, [negotiationMode, isExchange, negotiatedPrice, exchangeWeight, exchangePurity, exchangeGoldPrice, sellTotal, setFormData])
 
-  const parsedNegotiated = parseFloat(String(negotiatedPrice).replace(/,/g, '')) || 0
+  const parsedNegotiated = Number.parseFloat(String(negotiatedPrice).replace(/,/g, '')) || 0
   const hasDiscount = (formData.discount_amount || 0) > 0
   const discountAmount = formData.discount_amount || 0
   const exchangeVal = formData.exchange_data?.total_amount || 0
@@ -76,10 +76,10 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
     setFormData(prev => {
       const next = { ...prev, ...updatedFields }
 
-      const basePrice = parseFloat(String(next.price_per_baht).replace(/,/g, '') || 0)
-      const labor = parseFloat(String(next.labor_fee).replace(/,/g, '') || 0)
-      const weightG = parseFloat(next.weight_grams || 0)
-      const purityVal = parseFloat(next.purity || 0)
+      const basePrice = Number.parseFloat(String(next.price_per_baht).replace(/,/g, '') || 0)
+      const labor = Number.parseFloat(String(next.labor_fee).replace(/,/g, '') || 0)
+      const weightG = Number.parseFloat(next.weight_grams || 0)
+      const purityVal = Number.parseFloat(next.purity || 0)
 
       let calculatedGold = 0
       if (basePrice && weightG && purityVal) {
@@ -130,12 +130,12 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
     }
   }, [formData.gold_item_id, setFormData])
 
-  const liveCleanVal = parseFloat(String(negotiatedPrice).replace(/,/g, '')) || 0
+  const liveCleanVal = Number.parseFloat(String(negotiatedPrice).replace(/,/g, '')) || 0
   const liveDiscount = (liveCleanVal > 0 && liveCleanVal < sellTotal) ? sellTotal - liveCleanVal : 0
 
-  const liveW = parseFloat(String(exchangeWeight).replace(/,/g, '')) || 0
-  const liveP = parseFloat(String(exchangePurity).replace(/,/g, '')) || 0
-  const liveGP = parseFloat(String(exchangeGoldPrice).replace(/,/g, '')) || 0
+  const liveW = Number.parseFloat(String(exchangeWeight).replace(/,/g, '')) || 0
+  const liveP = Number.parseFloat(String(exchangePurity).replace(/,/g, '')) || 0
+  const liveGP = Number.parseFloat(String(exchangeGoldPrice).replace(/,/g, '')) || 0
   const liveExchangeVal = (liveW > 0 && liveP > 0 && liveGP > 0) ? Math.round(liveGP * (liveP / 100) * 656 * liveW / 10000) : 0
 
   return (
@@ -150,9 +150,9 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
 
       <div className="form-row form-row-2">
         <div className="form-group">
-          <label className="form-label form-label-required">ราคาทองแท่ง (บาท)</label>
+          <label className="form-label form-label-required" htmlFor="nsf-sell-gold-price">ราคาทองแท่ง (บาท)</label>
           <input
-            className="input"
+            id="nsf-sell-gold-price" className="input"
             type="text"
             value={formatNumberInput(formData.price_per_baht)}
             onChange={e => updateSellCalculation({ price_per_baht: e.target.value })}
@@ -169,9 +169,9 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
         </div>
 
         <div className="form-group">
-          <label className="form-label">ค่ากำเหน็จ (บาท)</label>
+          <label className="form-label" htmlFor="nsf-sell-labor-fee">ค่ากำเหน็จ (บาท)</label>
           <input
-            className="input"
+            id="nsf-sell-labor-fee" className="input"
             type="text"
             value={formatNumberInput(formData.labor_fee)}
             onChange={e => updateSellCalculation({ labor_fee: e.target.value })}
@@ -192,7 +192,7 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
             </span>
           )}
           {formData.labor_fee
-            ? ` + ค่ากำเหน็จ: ${formatBaht(parseFloat(String(formData.labor_fee).replace(/,/g, '')))}`
+            ? ` + ค่ากำเหน็จ: ${formatBaht(Number.parseFloat(String(formData.labor_fee).replace(/,/g, '')))}`
             : ''}
         </div>
       )}
@@ -241,22 +241,22 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
               <div className="nsf-negotiate-exchange-fields">
                 <div className="nsf-negotiate-exchange-row">
                   <div className="nsf-negotiate-exchange-group">
-                    <label className="nsf-negotiate-field-label">น้ำหนัก (กรัม)</label>
+                    <label className="nsf-negotiate-field-label" htmlFor="nsf-negotiate-exchange-weight">น้ำหนัก (กรัม)</label>
                     <input
-                      className="input"
+                      id="nsf-negotiate-exchange-weight" className="input"
                       type="number"
                       min="0"
                       step="0.0001"
                       placeholder="0.00"
                       value={exchangeWeight}
                       onChange={e => setExchangeWeight(e.target.value)}
-                      autoFocus
+                      
                     />
                   </div>
                   <div className="nsf-negotiate-exchange-group">
-                    <label className="nsf-negotiate-field-label">ความบริสุทธิ์ (%)</label>
+                    <label className="nsf-negotiate-field-label" htmlFor="nsf-negotiate-exchange-purity">ความบริสุทธิ์ (%)</label>
                     <input
-                      className="input"
+                      id="nsf-negotiate-exchange-purity" className="input"
                       type="number"
                       min="0"
                       max="100"
@@ -268,9 +268,9 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
                   </div>
                 </div>
                 <div className="nsf-negotiate-exchange-group">
-                  <label className="nsf-negotiate-field-label">ราคาทองแท่ง (บาท)</label>
+                  <label className="nsf-negotiate-field-label" htmlFor="nsf-negotiate-exchange-gold-price">ราคาทองแท่ง (บาท)</label>
                   <input
-                    className="input"
+                    id="nsf-negotiate-exchange-gold-price" className="input"
                     type="text"
                     inputMode="decimal"
                     placeholder="0.00"
@@ -307,15 +307,15 @@ export default function NewSaleFormSell({ formData, setFormData, todayPrice }) {
             ) : (
               <div className="nsf-negotiate-exchange-fields">
                 <div className="nsf-negotiate-exchange-group">
-                  <label className="nsf-negotiate-field-label">ระบุราคาที่ตกลงใหม่</label>
+                  <label className="nsf-negotiate-field-label" htmlFor="nsf-negotiate-discount-price">ระบุราคาที่ตกลงใหม่</label>
                   <input
-                    className="input"
+                    id="nsf-negotiate-discount-price" className="input"
                     type="text"
                     inputMode="decimal"
                     placeholder="ราคาที่ตกลงกับลูกค้า..."
                     value={formatNumberInput(negotiatedPrice)}
                     onChange={e => setNegotiatedPrice(e.target.value)}
-                    autoFocus
+                    
                   />
                   {/* Live calculation card for discount */}
                   {liveCleanVal > 0 && (

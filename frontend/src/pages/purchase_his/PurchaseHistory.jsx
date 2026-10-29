@@ -30,7 +30,7 @@ export default function PurchaseHistory() {
     }
   }
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => { void loadData() }, [])
 
   const handleToggle = async (item) => {
     try {
@@ -97,12 +97,12 @@ export default function PurchaseHistory() {
         <div className="ph-filters">
           {/* Search */}
           <div className="form-group" style={{ flex: 2 }}>
-            <label className="form-label">ค้นหา</label>
+            <label className="form-label" htmlFor="search-input">ค้นหา</label>
             <div className="search-wrap">
               <span className="search-icon">🔍</span>
               <input
                 type="text"
-                className="input search-input"
+                id="search-input" className="input search-input"
                 placeholder="ชื่อลูกค้า หรือประเภททอง..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
@@ -112,8 +112,8 @@ export default function PurchaseHistory() {
 
           {/* Status filter */}
           <div className="form-group" style={{ flex: 1.5 }}>
-            <label className="form-label">สถานะของทอง</label>
-            <div className="ph-pill-row">
+            <label className="form-label" htmlFor="status-filter">สถานะของทอง</label>
+            <div id="status-filter" className="ph-pill-row">
               {[
                 { key: 'all', label: 'ทั้งหมด' },
                 { key: 'exists', label: 'ยังอยู่ในร้าน' },
@@ -132,8 +132,8 @@ export default function PurchaseHistory() {
 
           {/* Inventory filter */}
           <div className="form-group" style={{ flex: 1.5 }}>
-            <label className="form-label">การเข้าคลังสินค้า</label>
-            <div className="ph-pill-row">
+            <label className="form-label" htmlFor="inventory-filter">การเข้าคลังสินค้า</label>
+            <div id="inventory-filter" className="ph-pill-row">
               {[
                 { key: 'all', label: 'ทั้งหมด' },
                 { key: 'inventory', label: 'นำเข้าคลัง' },
@@ -235,8 +235,8 @@ export default function PurchaseHistory() {
                           color: 'var(--text-secondary)',
                         }}
                         onClick={(e) => {
-                          e.stopPropagation()
-                          handleToggle(item)
+                          if (e.target === e.currentTarget) {
+                            void handleToggle(item)}
                         }}
                         title="สลับสถานะ มีของในร้าน / ละลายแล้ว"
                       >

@@ -119,7 +119,7 @@ export default function CalendarGrid({
       <div className="cal-body">
         {cells.map(c => {
           if (c.blank) {
-            return <div key={c.key} className="cal-cell cal-cell-blank" />
+            return <div key={c.key} className="cal-cell cal-cell-blank" role="row" />
           }
 
           const isSelected = selectedDate === c.dateStr
@@ -136,8 +136,8 @@ export default function CalendarGrid({
                 'cal-cell',
                 isSelected && 'cal-cell-selected',
                 isToday && 'cal-cell-today',
-              ].filter(Boolean).join(' ')}
-              onClick={() => onSelectDate(c.dateStr)}
+              ].filter(Boolean).join(' ')} role="gridcell" aria-selected={isSelected} aria-current={isToday}
+              onClick={(e) => {if (e.target === e.currentTarget) onSelectDate(c.dateStr)}} tabIndex={0} onKeyDown={(e) => {if (e.key === 'Enter' || e.key === ' ') onSelectDate(c.dateStr)}}
             >
               <span className="cal-day-num">{c.day}</span>
 

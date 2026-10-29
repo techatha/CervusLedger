@@ -1,0 +1,7 @@
+{
+    "sonarlint.connectedMode.project": {
+        "connectionId": "http-127-0-0-1-9000",
+        "projectKey": "CervusLedger"
+    },
+    "sonarlint.pathToNodeExecutable": "/opt/homebrew/bin/node"
+}

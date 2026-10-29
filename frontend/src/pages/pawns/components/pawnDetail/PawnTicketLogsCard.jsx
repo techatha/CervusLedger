@@ -25,7 +25,7 @@ export default function PawnTicketLogsCard({ logs }) {
               try {
                 if (log.changed_at) {
                   const d = new Date(log.changed_at)
-                  if (!isNaN(d.getTime())) {
+                  if (!Number.isNaN(d.getTime())) {
                     const datePart = toBE(log.changed_at.split('T')[0] || log.changed_at.split(' ')[0])
                     const timePart = d.toTimeString().slice(0, 5)
                     formattedDate = `${datePart} ${timePart}`

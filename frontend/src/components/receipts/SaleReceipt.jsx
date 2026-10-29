@@ -18,11 +18,11 @@ export default function SaleReceipt({ sale, shop, onClose }) {
     : 0
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop" role="dialog" aria-modal={true} tabIndex={-1} onClick={(e) => { if (e.target === e.currentTarget) onClose(e) }} onKeyDown={(e) => { if (e.key === 'Escape') onClose(e) }}>
       <div
         className="modal receipt-preview-modal"
         style={{ width: 480 }}
-        onClick={e => e.stopPropagation()}
+        
       >
         <div className="modal-header">
           <div className="modal-title">ตัวอย่างใบ{isSell ? 'ขาย' : 'รับซื้อ'}</div>

@@ -8,21 +8,21 @@ import { getLatestPaidMonth } from '@/utils/pawn'
 import '../PrincipalChangeForm.css'
 
 const THAI_MONTHS = [
-  '','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน',
-  'กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม',
+  '', 'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม',
 ]
 
 const today = () => getLocalISOString().slice(0, 10)
 
 function IconInfo() {
-  return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+  return <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
 }
 
 export default function RecordPaymentModal({ pawn, payments, customerName, onSaved, onClose }) {
   const navigate = useNavigate()
-  
+
   const latestPaid = getLatestPaidMonth(pawn, payments) || { month: new Date().getMonth(), year: new Date().getFullYear() }
-  
+
   let defaultMonth = latestPaid.month + 2
   let defaultYear = latestPaid.year
   if (defaultMonth > 12) {
@@ -31,30 +31,30 @@ export default function RecordPaymentModal({ pawn, payments, customerName, onSav
   }
 
   const [form, setForm] = useState({
-    month:     defaultMonth,
-    year:      defaultYear,
+    month: defaultMonth,
+    year: defaultYear,
     paid_date: today(),
-    notes:     '',
+    notes: '',
   })
   const [saving, setSaving] = useState(false)
-  const [error,  setError]  = useState(null)
+  const [error, setError] = useState(null)
 
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
-  const selectedMonthIndex = parseInt(form.month) - 1
-  const selectedYear = parseInt(form.year)
+  const selectedMonthIndex = Number.parseInt(form.month) - 1
+  const selectedYear = Number.parseInt(form.year)
   const monthsDiff = (selectedYear - latestPaid.year) * 12 + (selectedMonthIndex - latestPaid.month)
 
   const generateMonths = () => {
     const arr = []
     for (let i = 1; i <= monthsDiff; i++) {
-       let m = latestPaid.month + i
-       let y = latestPaid.year
-       while (m > 11) {
-         m -= 12
-         y += 1
-       }
-       arr.push({ month: m + 1, year: y })
+      let m = latestPaid.month + i
+      let y = latestPaid.year
+      while (m > 11) {
+        m -= 12
+        y += 1
+      }
+      arr.push({ month: m + 1, year: y })
     }
     return arr
   }
@@ -64,12 +64,12 @@ export default function RecordPaymentModal({ pawn, payments, customerName, onSav
   const handleSave = () => {
     let itemsToProcess = targetMonths
     if (itemsToProcess.length === 0) {
-      itemsToProcess = [{ month: parseInt(form.month), year: parseInt(form.year) }]
+      itemsToProcess = [{ month: Number.parseInt(form.month), year: Number.parseInt(form.year) }]
     }
-    
+
     const ticketNo = String(pawn.ticket_number).padStart(4, '0')
     const totalAmount = pawn.interest_amount * itemsToProcess.length
-    
+
     let monthLabels = ''
     if (itemsToProcess.length > 2) {
       const first = itemsToProcess[0]
@@ -85,33 +85,33 @@ export default function RecordPaymentModal({ pawn, payments, customerName, onSav
       weight_baht: 0,
       price_per_baht: 0,
       total_amount: totalAmount,
-      
+
       payments: itemsToProcess.map(m => {
         const monthLabel = THAI_MONTHS[m.month]
         return {
-          pawn_record_id:  pawn.id,
-          month:           m.month,
-          year:            m.year,
-          paid_date:       form.paid_date,
-          notes:           `งวด ${monthLabel} ${m.year + 543}${form.notes ? ` | ${form.notes}` : ''}`,
+          pawn_record_id: pawn.id,
+          month: m.month,
+          year: m.year,
+          paid_date: form.paid_date,
+          notes: `งวด ${monthLabel} ${m.year + 543}${form.notes ? ` | ${form.notes}` : ''}`,
           interest_amount: pawn.interest_amount,
-          customer_name:   customerName || '',
-          ticket_number:   pawn.ticket_number,
+          customer_name: customerName || '',
+          ticket_number: pawn.ticket_number,
         }
       }),
-      
+
       notes: `ตั๋ว #${ticketNo} (${customerName || pawn.customer_name}) - งวด ${monthLabels}${form.notes ? ` | ${form.notes}` : ''}`,
     }
 
     onClose()
-    navigate('/sales', { state: { addItems: [combinedItem] } })
+    void navigate('/sales', { state: { addItems: [combinedItem] } })
   }
 
-  const beYear = parseInt(form.year) + 543
+  const beYear = Number.parseInt(form.year) + 543
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal pm-payment-modal" onClick={e => e.stopPropagation()}>
+    <div className="modal-backdrop" role="dialog" aria-modal="true" tabIndex={-1} onClick={(e) => { if (e.target === e.currentTarget) onClose() }} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
+      <div className="modal pm-payment-modal">
         <div className="modal-header">
           <div className="modal-title">บันทึกการจ่ายดอกเบี้ย</div>
           <button className="modal-close" onClick={onClose}>×</button>
@@ -123,7 +123,7 @@ export default function RecordPaymentModal({ pawn, payments, customerName, onSav
           <div className="pm-info-strip ">
             <div className="pm-info-row">
               <span>หมายเลขตั๋ว</span>
-              <strong># {String(pawn.ticket_number).padStart(4,'0')}</strong>
+              <strong># {String(pawn.ticket_number).padStart(4, '0')}</strong>
             </div>
             <div className="pm-info-row">
               <span>ดอกเบี้ย (ต่อเดือน)</span>
@@ -134,20 +134,20 @@ export default function RecordPaymentModal({ pawn, payments, customerName, onSav
           {/* Month / Year */}
           <div className="form-row form-row-2 pm-mt-16">
             <div className="form-group">
-              <label className="form-label">เดือน</label>
-              <select className="input" value={form.month} onChange={e => set('month', e.target.value)}>
+              <label className="form-label" htmlFor="modal_payment_month">เดือน</label>
+              <select id="modal_payment_month" className="input" value={form.month} onChange={e => set('month', e.target.value)}>
                 {THAI_MONTHS.slice(1).map((m, i) => (
-                  <option key={i+1} value={i+1}>{m}</option>
+                  <option key={i + 1} value={i + 1}>{m}</option>
                 ))}
               </select>
             </div>
             <div className="form-group">
-              <label className="form-label">ปี (พ.ศ.)</label>
+              <label className="form-label" htmlFor="modal_payment_year">ปี (พ.ศ.)</label>
               <input
-                className="input"
+                id="modal_payment_year" className="input"
                 type="number"
                 value={beYear}
-                onChange={e => set('year', parseInt(e.target.value) - 543)}
+                onChange={e => set('year', Number.parseInt(e.target.value) - 543)}
               />
             </div>
           </div>
@@ -161,18 +161,18 @@ export default function RecordPaymentModal({ pawn, payments, customerName, onSav
 
           <div className="form-row form-row-2" style={{ marginTop: '16px' }}>
             <div className="form-group">
-              <label className="form-label">วันที่จ่าย</label>
+              <label className="form-label" htmlFor="modal_payment_date">วันที่จ่าย</label>
               <input
-                className="input"
+                id="modal_payment_date" className="input"
                 type="date"
                 value={form.paid_date}
                 onChange={e => set('paid_date', e.target.value)}
               />
             </div>
             <div className="form-group">
-              <label className="form-label">หมายเหตุ</label>
+              <label className="form-label" htmlFor="modal_payment_notes">หมายเหตุ</label>
               <input
-                className="input"
+                id="modal_payment_notes" className="input"
                 placeholder="(ไม่บังคับ)"
                 value={form.notes}
                 onChange={e => set('notes', e.target.value)}
@@ -188,7 +188,7 @@ export default function RecordPaymentModal({ pawn, payments, customerName, onSav
         <div className="modal-footer">
           <button className="btn btn-ghost" onClick={onClose} disabled={saving}>ยกเลิก</button>
           <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-          <FontAwesomeIcon icon={faCartArrowDown} /> เพิ่มลงตะกร้า ({targetMonths.length || 1} เดือน)
+            <FontAwesomeIcon icon={faCartArrowDown} /> เพิ่มลงตะกร้า ({targetMonths.length || 1} เดือน)
           </button>
         </div>
       </div>

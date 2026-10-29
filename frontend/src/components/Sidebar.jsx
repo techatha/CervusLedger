@@ -99,7 +99,7 @@ export default function Sidebar({ cartItems }) {
       }
     }
 
-    checkDisplayerStatus()
+    void checkDisplayerStatus()
     const interval = setInterval(checkDisplayerStatus, 15000)
 
     const handleConnect = () => setDisplayerConnected(true)

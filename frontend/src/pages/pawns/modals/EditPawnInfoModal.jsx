@@ -11,13 +11,13 @@ export default function EditPawnInfoModal({ pawn, onSaved, onClose }) {
   const [error, setError] = useState(null)
 
   const handleSave = async () => {
-    const ticketNum = parseInt(ticketNumber, 10)
-    if (isNaN(ticketNum) || ticketNum <= 0) {
+    const ticketNum = Number.parseInt(ticketNumber, 10)
+    if (Number.isNaN(ticketNum) || ticketNum <= 0) {
       setError('กรุณากรอกเลขที่ตั๋วให้ถูกต้อง')
       return
     }
-    const weight = parseFloat(weightGrams)
-    if (isNaN(weight) || weight < 0) {
+    const weight = Number.parseFloat(weightGrams)
+    if (Number.isNaN(weight) || weight < 0) {
       setError('กรุณากรอกน้ำหนักให้ถูกต้อง')
       return
     }
@@ -39,8 +39,8 @@ export default function EditPawnInfoModal({ pawn, onSaved, onClose }) {
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" style={{ width: 450 }} onClick={e => e.stopPropagation()}>
+    <div className="modal-backdrop" role="dialog" aria-modal="true" tabIndex={-1} onClick={(e) => { if (e.target === e.currentTarget) onClose() }} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
+      <div className="modal" style={{ width: 450 }}>
         <div className="modal-header">
           <div className="modal-title">แก้ไขข้อมูลตั๋วจำนำ</div>
           <button className="modal-close" onClick={onClose}>×</button>
@@ -49,9 +49,9 @@ export default function EditPawnInfoModal({ pawn, onSaved, onClose }) {
           {error && <div className="alert alert-error" style={{ marginBottom: 12 }}>{error}</div>}
           
           <div className="form-group">
-            <label className="form-label form-label-required">เลขที่ตั๋ว</label>
+            <label className="form-label form-label-required" htmlFor="epim-ticket-number">เลขที่ตั๋ว</label>
             <input
-              className="input"
+              id="epim-ticket-number" className="input"
               type="number"
               value={ticketNumber}
               onChange={e => setTicketNumber(e.target.value)}
@@ -60,9 +60,9 @@ export default function EditPawnInfoModal({ pawn, onSaved, onClose }) {
           </div>
 
           <div className="form-group" style={{ marginTop: 12 }}>
-            <label className="form-label form-label-required">วันที่จำนำ</label>
+            <label className="form-label form-label-required" htmlFor="epim-pawned-date">วันที่จำนำ</label>
             <input
-              className="input"
+              id="epim-pawned-date" className="input"
               type="date"
               value={pawnedDate}
               onChange={e => setPawnedDate(e.target.value)}
@@ -72,9 +72,9 @@ export default function EditPawnInfoModal({ pawn, onSaved, onClose }) {
 
           <div className="form-row form-row-2" style={{ marginTop: 12 }}>
             <div className="form-group">
-              <label className="form-label">ประเภทสินค้า</label>
+              <label className="form-label" htmlFor="epim-item-type">ประเภทสินค้า</label>
               <input
-                className="input"
+                id="epim-item-type" className="input"
                 type="text"
                 placeholder="เช่น สร้อยคอ, แหวน"
                 value={itemType}
@@ -83,9 +83,9 @@ export default function EditPawnInfoModal({ pawn, onSaved, onClose }) {
               />
             </div>
             <div className="form-group">
-              <label className="form-label">น้ำหนัก (กรัม)</label>
+              <label className="form-label" htmlFor="epim-weight-grams">น้ำหนัก (กรัม)</label>
               <input
-                className="input"
+                id="epim-weight-grams" className="input"
                 type="number"
                 step="0.01"
                 placeholder="0.00"
@@ -97,9 +97,9 @@ export default function EditPawnInfoModal({ pawn, onSaved, onClose }) {
           </div>
 
           <div className="form-group" style={{ marginTop: 12 }}>
-            <label className="form-label">รายละเอียดสินค้า</label>
+            <label className="form-label" htmlFor="epim-description">รายละเอียดสินค้า</label>
             <textarea
-              className="input"
+              id="epim-description" className="input"
               rows="3"
               placeholder="รายละเอียดเพิ่มเติม..."
               value={description}

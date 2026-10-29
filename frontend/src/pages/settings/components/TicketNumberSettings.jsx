@@ -10,7 +10,7 @@ export default function TicketNumberSettings({ initialValues, onSave }) {
     });
   };
 
-  const nextTicketNum = (parseInt(lastTicketNumber || 0) % 9999) + 1;
+  const nextTicketNum = (Number.parseInt(lastTicketNumber || 0) % 9999) + 1;
   const formattedNextTicket = String(nextTicketNum).padStart(4, '0');
 
   return (

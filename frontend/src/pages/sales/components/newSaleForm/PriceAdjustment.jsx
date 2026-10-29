@@ -37,7 +37,7 @@ export default function NewSaleFormPriceAdjustment({ formData, setFormData }) {
     }))
   }
 
-  const amountNum = parseFloat(formData.amount) || 0
+  const amountNum = Number.parseFloat(formData.amount) || 0
 
   return (
     <>
@@ -84,7 +84,7 @@ export default function NewSaleFormPriceAdjustment({ formData, setFormData }) {
             placeholder={isAddition ? 'เช่น ค่าจัดส่ง, ค่าแรงเพิ่ม, งานเร่งด่วน...' : 'เช่น ส่วนลดพิเศษ, ปัดเศษ, ลดค่ากำเหน็จ...'}
             value={formData.title}
             onChange={e => setDiscountField('title', e.target.value)}
-            autoFocus
+            
           />
         </div>
 
@@ -111,9 +111,9 @@ export default function NewSaleFormPriceAdjustment({ formData, setFormData }) {
 
         {/* ── Notes ── */}
         <div className="form-group">
-          <label className="form-label">รายละเอียดเพิ่มเติม / หมายเหตุ</label>
+          <label className="form-label" htmlFor="price-adjustment-notes">รายละเอียดเพิ่มเติม / หมายเหตุ</label>
           <textarea
-            className="input"
+            id="price-adjustment-notes" className="input"
             rows={2}
             placeholder={isAddition ? 'ระบุเหตุผลการเพิ่มเงิน (เช่น ค่าจัดส่งด่วน)' : 'ระบุเหตุผลการลดราคา (เช่น ลูกค้าประจำ)'}
             value={formData.notes}

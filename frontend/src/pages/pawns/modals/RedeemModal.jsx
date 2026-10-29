@@ -40,8 +40,8 @@ export default function RedeemModal({ pawn, payments, pendingMonths, onConfirm, 
   const nextDueDateStr = `${actualDueDay} ${thaiMonthShort(checkMonth)} ${checkYear + 543}`
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" style={{ width: 460 }} onClick={e => e.stopPropagation()}>
+    <div className="modal-backdrop" role="dialog" aria-modal="true" tabIndex={-1} onClick={(e) => { if (e.target === e.currentTarget) onClose() }} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }}>
+      <div className="modal" style={{ width: 460 }}>
         <div className="modal-header">
           <div className="modal-title">ยืนยันการไถ่ถอน</div>
           <button className="modal-close" onClick={onClose}>×</button>

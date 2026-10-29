@@ -16,7 +16,7 @@ import './CustomerProfile.css'
 export default function CustomerProfile() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const custId = parseInt(id, 10)
+  const custId = Number.parseInt(id, 10)
 
   const [customer, setCustomer] = useState(null)
   const [pawns, setPawns] = useState([])

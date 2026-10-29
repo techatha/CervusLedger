@@ -45,7 +45,7 @@ export default function GoldStockWizard({ items, onClose, onSaved }) {
   const isLastStep = wizardStep === typeKeys.length - 1
 
   // ── Amount helpers ──────────────────────────────────────────────────────────
-  const getAmount = (id) => parseInt(wizardAmounts[id] ?? '0') || 0
+  const getAmount = (id) => Number.parseInt(wizardAmounts[id] ?? '0') || 0
 
   const setAmount = useCallback((id, val) => {
     const clamped = Math.max(0, val)
@@ -54,8 +54,8 @@ export default function GoldStockWizard({ items, onClose, onSaved }) {
 
   const handleInput = (id, raw) => {
     // Allow empty string while typing
-    const n = parseInt(raw)
-    setWizardAmounts(p => ({ ...p, [id]: isNaN(n) ? '' : String(Math.max(0, n)) }))
+    const n = Number.parseInt(raw)
+    setWizardAmounts(p => ({ ...p, [id]: Number.isNaN(n) ? '' : String(Math.max(0, n)) }))
   }
 
   // ── Save ────────────────────────────────────────────────────────────────────
@@ -82,8 +82,8 @@ export default function GoldStockWizard({ items, onClose, onSaved }) {
   const stepTotal = wizardCurrentItems.reduce((s, item) => s + getAmount(item.id), 0)
 
   return (
-    <div className="gsw-backdrop" onClick={onClose}>
-      <div className="gsw-modal" onClick={e => e.stopPropagation()}>
+    <div className="gsw-backdrop" role="dialog" aria-modal={true} tabIndex={-1} onKeyDown={(e) => { if (e.key === 'Escape') onClose() }} onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="gsw-modal">
 
         {/* ── Header ────────────────────────────────────────────── */}
         <div className="gsw-header">

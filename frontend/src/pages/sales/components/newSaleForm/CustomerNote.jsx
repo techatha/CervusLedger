@@ -86,9 +86,9 @@ export default function CustomerNoteSection({
           </label>
           <div style={{ position: 'relative' }}>
             {showCustDrop && customers.length > 0 && (
-              <div className="nsf-dropdown" style={{ bottom: 'calc(100% + 4px)', top: 'auto', zIndex: 100 }}>
+              <div className="nsf-dropdown" role="listbox" style={{ bottom: 'calc(100% + 4px)', top: 'auto', zIndex: 100 }}>
                 {customers.map(c => (
-                  <div key={c.id} className="nsf-drop-item" onMouseDown={() => handleSelect(c)}>
+                  <div key={c.id} className="nsf-drop-item" role="option" tabIndex={0} aria-label={`เลือก ${fullName(c)}${c.phone ? ', ' + c.phone : ''}`} onClick={(e) => { if (e.target === e.currentTarget) handleSelect(c) }} onKeyDown={(e) => { if (e.target === e.currentTarget && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); handleSelect(c); } if (e.key === 'ArrowDown') { e.preventDefault(); const next = e.target.nextElementSibling; if (next) next.focus(); } if (e.key === 'ArrowUp') { e.preventDefault(); const prev = e.target.previousElementSibling; if (prev) prev.focus(); } }}>
                     <span className="nsf-drop-name">{fullName(c)}</span>
                     {c.phone && <span className="nsf-drop-desc">{c.phone}</span>}
                   </div>
@@ -138,9 +138,9 @@ export default function CustomerNoteSection({
 
         {/* Notes Input */}
         <div className="form-group">
-          <label className="form-label">หมายเหตุ</label>
+          <label className="form-label" htmlFor="customer-note-input">หมายเหตุ</label>
           <input
-            className="input"
+            id="customer-note-input" className="input"
             placeholder="(ไม่บังคับ)"
             value={notes}
             onChange={e => onNotesChange(e.target.value)}

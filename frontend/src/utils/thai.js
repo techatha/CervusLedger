@@ -6,7 +6,7 @@ export function toBE(dateStr) {
   if (!dateStr) return '—'
   const part = dateStr.length > 10 ? dateStr.slice(0, 10) : dateStr
   const d = new Date(part)
-  if (isNaN(d)) return '—'
+  if (Number.isNaN(d)) return '—'
   const day   = d.getDate().toString().padStart(2, '0')
   const month = (d.getMonth() + 1).toString().padStart(2, '0')
   const year  = d.getFullYear() + 543
@@ -81,7 +81,7 @@ export function formatFullThaiDate(dateStr) {
   if (!dateStr) return '—';
   const part = dateStr.length > 10 ? dateStr.slice(0, 10) : dateStr;
   const d = new Date(part);
-  if (isNaN(d.getTime())) return dateStr;
+  if (Number.isNaN(d.getTime())) return dateStr;
   
   const day = d.getDate();
   const monthNames = [
@@ -101,7 +101,7 @@ export function formatShortThaiDate(dateStr) {
   if (!dateStr) return '—';
   const part = dateStr.length > 10 ? dateStr.slice(0, 10) : dateStr;
   const d = new Date(part);
-  if (isNaN(d.getTime())) return dateStr;
+  if (Number.isNaN(d.getTime())) return dateStr;
   
   const day = d.getDate();
   const monthNames = [
@@ -152,8 +152,8 @@ export const PROVINCES = [
  */
 export function thaiBahtText(num) {
   if (num == null || num === '') return '—';
-  let number = parseFloat(num);
-  if (isNaN(number)) return '—';
+  let number = Number.parseFloat(num);
+  if (Number.isNaN(number)) return '—';
   
   if (number === 0) return 'ศูนย์บาทถ้วน';
 
@@ -189,8 +189,8 @@ function convertToThaiText(number) {
     const millionStr = str.substring(0, len - 6);
     const unitsStr = str.substring(len - 6);
     
-    const millionVal = parseInt(millionStr, 10);
-    const unitsVal = parseInt(unitsStr, 10);
+    const millionVal = Number.parseInt(millionStr, 10);
+    const unitsVal = Number.parseInt(unitsStr, 10);
     
     let text = convertToThaiText(millionVal) + 'ล้าน';
     if (unitsVal > 0) {
@@ -205,7 +205,7 @@ function convertToThaiText(number) {
 
   let text = '';
   for (let i = 0; i < len; i++) {
-    const digit = parseInt(str.charAt(i), 10);
+    const digit = Number.parseInt(str.charAt(i), 10);
     const position = len - i - 1;
 
     if (digit !== 0) {

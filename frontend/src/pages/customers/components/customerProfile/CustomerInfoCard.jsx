@@ -53,8 +53,8 @@ function MaskedIdCard({ idCard }) {
   return (
     <span
       className={`cp-id-card ${!revealed ? 'cp-id-masked' : ''}`}
-      onClick={() => setRevealed(!revealed)}
-      title={revealed ? "คลิกเพื่อซ่อน" : "คลิกเพื่อดู"}
+      onClick={() => { setRevealed(!revealed) }} tabIndex={0}
+      title={revealed ? "คลิกเพื่อซ่อน" : "คลิกเพื่อดู"} role="button"
     >
       {revealed ? idCard : masked}
     </span>
