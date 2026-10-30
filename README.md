@@ -93,6 +93,10 @@ Unlike Electron-based alternatives that bundle an entire Chromium instance (~150
 - Serial-over-USB provisioning workflow with QR code-based WiFi setup
 - Local HTTP server for real-time display synchronization
 
+| Main Interface | PromptPay QR Code |
+| :---: | :---: |
+| ![Main Interface](./docs/esp32-main-interface.png) | ![PromptPay QR](./docs/esp32-displayQR.png) |
+
 ### ⚙️ Settings & Configuration
 - **Shop information** management (name, address, phone, PromptPay QR)
 - Interest rate threshold and minimum interest configuration
